@@ -10,6 +10,7 @@
     "dev:web": "webpack serve --mode development",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:ai": "npm run build && node run-comprehensive-ai-test.js",
     "lint": "eslint src/**/*.ts",
     "start": "node dist/index.js"
   },

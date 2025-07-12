@@ -25,10 +25,10 @@ buildProcess.on('close', (code) => {
   
   console.log('✅ Build complete!\n');
   
-  // Run the simple AI test
-  console.log('🎮 Running Simple AI vs AI Test...\n');
+  // Run the comprehensive AI test
+  console.log('🎮 Running Comprehensive AI vs AI Test...\n');
   
-  const testPath = path.join(__dirname, 'dist', 'testing', 'SimpleAITest.js');
+  const testPath = path.join(__dirname, 'dist', 'testing', 'ComprehensiveAITest.js');
   const testProcess = spawn('node', [testPath], { 
     stdio: 'inherit',
     cwd: __dirname 

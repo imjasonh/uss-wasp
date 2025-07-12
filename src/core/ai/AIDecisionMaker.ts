@@ -15,7 +15,7 @@ import {
   AIDifficulty
 } from './types';
 import { Unit } from '../game/Unit';
-import { Hex } from '../hex';
+import { Hex, HexCoordinate } from '../hex';
 import { UnitCategory } from '../game/types';
 
 /**
@@ -463,13 +463,28 @@ export class AIDecisionMaker {
   }
 
   private identifyKeyTerrain(context: AIDecisionContext): any[] {
-    // Implementation would identify strategically important terrain
-    return []; // Placeholder
+    // For now, identify positions near enemy units as key terrain
+    const keyTerrain: any[] = [];
+    
+    for (const enemy of context.enemyUnits) {
+      // Add positions around enemy units as potentially important
+      const adjacentPositions = this.getAdjacentPositions(enemy.state.position);
+      for (const pos of adjacentPositions) {
+        keyTerrain.push({
+          position: pos,
+          strategicValue: 5,
+          type: 'defensive_position'
+        });
+      }
+    }
+    
+    return keyTerrain.slice(0, 3); // Limit to avoid too many decisions
   }
 
   private canUnitReachPosition(unit: Unit, position: Hex, context: AIDecisionContext): boolean {
-    // Implementation would check if unit can reach position
-    return false; // Placeholder
+    // Simple movement range check
+    const distance = this.calculateDistance(unit.state.position, position);
+    return distance <= unit.stats.mv && !unit.state.hasMoved;
   }
 
   private selectBestUnitForPosition(units: Unit[], terrain: any): Unit {
@@ -478,22 +493,38 @@ export class AIDecisionMaker {
   }
 
   private findValidTargets(unit: Unit, enemies: Unit[], context: AIDecisionContext): Unit[] {
-    // Implementation would find valid attack targets
-    return []; // Placeholder
+    // Find enemies that this unit can potentially attack
+    const targets: Unit[] = [];
+    
+    for (const enemy of enemies) {
+      // Basic range check - for now, assume all ground units can attack adjacent hexes
+      const distance = this.calculateDistance(unit.state.position, enemy.state.position);
+      const maxRange = this.getUnitRange(unit);
+      
+      if (distance <= maxRange && enemy.isAlive()) {
+        targets.push(enemy);
+      }
+    }
+    
+    return targets;
   }
 
   private analyzeEngagement(attacker: Unit, target: Unit, context: AIDecisionContext): EngagementAnalysis {
-    // Implementation would analyze combat engagement
+    // Simple engagement analysis
+    const attackerPower = attacker.stats.atk;
+    const targetDefense = target.stats.def;
+    const confidence = Math.min(0.9, Math.max(0.1, attackerPower / (targetDefense + 1)));
+    
     return {
-      friendlyAdvantage: 1,
-      terrainAdvantage: 1,
-      supplyStatus: 1,
-      escapeOptions: 1,
-      strategicValue: 1,
-      playerVulnerability: 1,
-      shouldEngage: false,
-      confidence: 0.5
-    }; // Placeholder
+      friendlyAdvantage: attackerPower - targetDefense,
+      terrainAdvantage: 0, // TODO: implement terrain analysis
+      supplyStatus: 1.0,
+      escapeOptions: 1.0,
+      strategicValue: 1.0,
+      playerVulnerability: 1.0,
+      shouldEngage: confidence > 0.4,
+      confidence: confidence
+    };
   }
 
   private estimateCasualties(attacker: Unit, target: Unit): any {
@@ -502,8 +533,15 @@ export class AIDecisionMaker {
   }
 
   private identifyIntelligenceGaps(context: AIDecisionContext): Hex[] {
-    // Implementation would find areas needing reconnaissance
-    return []; // Placeholder
+    // Simple intelligence gap identification - areas around enemy units
+    const gaps: Hex[] = [];
+    
+    for (const enemy of context.enemyUnits) {
+      const scoutPositions = this.getAdjacentPositions(enemy.state.position);
+      gaps.push(...scoutPositions.slice(0, 1)); // One position per enemy
+    }
+    
+    return gaps.slice(0, 2); // Limit scouting missions
   }
 
   private findNearestUnit(units: Unit[], position: Hex): Unit | null {
@@ -524,5 +562,49 @@ export class AIDecisionMaker {
   private introduceMistakes(decisions: AIDecision[], context: AIDecisionContext): AIDecision[] {
     // Implementation would introduce AI mistakes based on difficulty
     return decisions; // Placeholder
+  }
+
+  // Additional helper methods for basic AI functionality
+  private calculateDistance(pos1: HexCoordinate, pos2: HexCoordinate): number {
+    // Simple hex distance calculation using cube coordinates
+    return Math.max(
+      Math.abs(pos1.q - pos2.q),
+      Math.abs(pos1.r - pos2.r),
+      Math.abs(pos1.s - pos2.s)
+    ) / 2;
+  }
+
+  private getUnitRange(unit: Unit): number {
+    // Basic unit range - most ground units can attack adjacent hexes
+    if (unit.hasCategory(UnitCategory.ARTILLERY)) {
+      return 3; // Artillery has longer range
+    }
+    if (unit.hasCategory(UnitCategory.AIRCRAFT)) {
+      return 5; // Aircraft have extended range
+    }
+    return 1; // Default range for most units
+  }
+
+  private getAdjacentPositions(center: HexCoordinate): Hex[] {
+    // Get positions adjacent to the center hex
+    const adjacent: Hex[] = [];
+    const directions = [
+      { q: 1, r: 0, s: -1 },
+      { q: 1, r: -1, s: 0 },
+      { q: 0, r: -1, s: 1 },
+      { q: -1, r: 0, s: 1 },
+      { q: -1, r: 1, s: 0 },
+      { q: 0, r: 1, s: -1 }
+    ];
+
+    for (const dir of directions) {
+      adjacent.push(new Hex(
+        center.q + dir.q,
+        center.r + dir.r,
+        center.s + dir.s
+      ));
+    }
+
+    return adjacent;
   }
 }
