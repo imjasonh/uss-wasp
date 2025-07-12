@@ -209,11 +209,34 @@ export class Unit {
   }
 
   /**
+   * Hide unit (place hidden marker)
+   */
+  hide(): void {
+    this.state.statusEffects.add(StatusEffect.HIDDEN);
+  }
+
+  /**
+   * Create dummy marker (deception)
+   */
+  makeDummy(): void {
+    this.state.statusEffects.add(StatusEffect.DUMMY);
+  }
+
+  /**
    * Reveal hidden unit
    */
   reveal(): void {
     this.state.statusEffects.delete(StatusEffect.HIDDEN);
     this.state.statusEffects.delete(StatusEffect.DUMMY);
+  }
+
+  /**
+   * Check if unit can be hidden
+   */
+  canBeHidden(): boolean {
+    // Only certain unit types can be hidden initially
+    return this.side === PlayerSide.Defender && 
+           this.hasCategory(UnitCategory.INFANTRY);
   }
 
   /**

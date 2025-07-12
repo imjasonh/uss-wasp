@@ -103,6 +103,11 @@ export class GameEngine {
     // Execute move
     unit.moveTo(targetHex);
     
+    // Force reveal if moving unit is hidden (moving reveals position)
+    if (unit.isHidden()) {
+      this.gameState.forceRevealUnit(unit.id);
+    }
+    
     this.gameState.addEvent('unit_moved', 
       `${unit.type} moved to (${targetHex.q}, ${targetHex.r})`,
       { unitId: unit.id, from: unit.state.position, to: targetHex, cost: path.totalCost }
@@ -135,6 +140,16 @@ export class GameEngine {
     // Check if defender is hidden and can be targeted
     if (defender.isHidden() && !this.canTargetHiddenUnit(attacker, defender)) {
       return { success: false, message: 'Cannot target hidden unit' };
+    }
+
+    // Force reveal attacking unit
+    if (attacker.isHidden()) {
+      this.gameState.forceRevealUnit(attacker.id);
+    }
+
+    // Force reveal defending unit when attacked
+    if (defender.isHidden()) {
+      this.gameState.forceRevealUnit(defender.id);
     }
 
     // Resolve combat

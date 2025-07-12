@@ -6,6 +6,7 @@ import { Hex } from '../hex';
 import { Unit } from './Unit';
 import { Player } from './Player';
 import { GameMap } from './Map';
+import { FogOfWar } from './FogOfWar';
 import { 
   PlayerSide, 
   TurnPhase, 
@@ -44,6 +45,7 @@ export class GameState {
   public readonly gameId: string;
   public readonly map: GameMap;
   public readonly players: Map<string, Player>;
+  public readonly fogOfWar: FogOfWar;
   public turn: number;
   public phase: TurnPhase;
   public activePlayerId: string;
@@ -65,6 +67,9 @@ export class GameState {
     this.isGameOver = false;
     this.events = [];
     this.lastActionTime = Date.now();
+    
+    // Initialize fog of war system
+    this.fogOfWar = new FogOfWar(this);
   }
 
   /**
@@ -185,6 +190,9 @@ export class GameState {
         break;
     }
     
+    // Update fog of war visibility
+    this.fogOfWar.updateVisibility();
+    
     this.addEvent('phase_change', `Advanced to ${this.phase} phase`);
   }
 
@@ -201,6 +209,9 @@ export class GameState {
       player.processSuppressionRemoval();
       player.clearCommandPoints();
     }
+    
+    // Update fog of war at start of turn
+    this.fogOfWar.updateVisibility();
     
     this.addEvent('turn_start', `Turn ${this.turn} begins`);
     
@@ -446,5 +457,59 @@ export class GameState {
     clone.lastActionTime = this.lastActionTime;
     
     return clone;
+  }
+
+  /**
+   * Get units visible to a specific player
+   */
+  getVisibleUnitsForPlayer(playerId: string): Unit[] {
+    const visibleUnitIds = this.fogOfWar.getVisibleUnitsForPlayer(playerId);
+    const allUnits: Unit[] = [];
+    
+    for (const player of this.players.values()) {
+      allUnits.push(...player.getLivingUnits());
+    }
+    
+    return allUnits.filter(unit => visibleUnitIds.has(unit.id));
+  }
+
+  /**
+   * Check if a unit is visible to a player
+   */
+  isUnitVisibleToPlayer(unitId: string, playerId: string): boolean {
+    return this.fogOfWar.isUnitVisibleToPlayer(unitId, playerId);
+  }
+
+  /**
+   * Get explored hexes for a player
+   */
+  getExploredHexesForPlayer(playerId: string): Set<string> {
+    return this.fogOfWar.getExploredHexesForPlayer(playerId);
+  }
+
+  /**
+   * Deploy hidden units for defender
+   */
+  deployHiddenUnits(): void {
+    const defender = this.getPlayerBySide(PlayerSide.Defender);
+    if (!defender) return;
+
+    for (const unit of defender.getLivingUnits()) {
+      if (unit.canBeHidden()) {
+        this.fogOfWar.deployHiddenUnit(unit);
+      }
+    }
+    
+    this.fogOfWar.updateVisibility();
+  }
+
+  /**
+   * Force reveal a unit (when attacked or moving visibly)
+   */
+  forceRevealUnit(unitId: string): void {
+    const unit = this.getUnit(unitId);
+    if (unit) {
+      this.fogOfWar.forceReveal(unit);
+    }
   }
 }

@@ -207,15 +207,25 @@ export class PixiRenderer {
   }
 
   /**
-   * Render units on the map
+   * Render units on the map (respecting fog of war)
    */
-  renderUnits(gameState: GameState): void {
+  renderUnits(gameState: GameState, viewingPlayerId?: string): void {
     this.unitContainer.removeChildren();
 
-    for (const player of gameState.getAllPlayers()) {
-      for (const unit of player.getLivingUnits()) {
-        const unitGraphics = this.createUnitGraphics(unit);
+    if (viewingPlayerId) {
+      // Render only units visible to the viewing player
+      const visibleUnits = gameState.getVisibleUnitsForPlayer(viewingPlayerId);
+      for (const unit of visibleUnits) {
+        const unitGraphics = this.createUnitGraphics(unit, unit.isHidden());
         this.unitContainer.addChild(unitGraphics);
+      }
+    } else {
+      // Render all units (admin view or no fog of war)
+      for (const player of gameState.getAllPlayers()) {
+        for (const unit of player.getLivingUnits()) {
+          const unitGraphics = this.createUnitGraphics(unit, unit.isHidden());
+          this.unitContainer.addChild(unitGraphics);
+        }
       }
     }
   }
@@ -223,23 +233,31 @@ export class PixiRenderer {
   /**
    * Create graphics for a unit
    */
-  private createUnitGraphics(unit: any): PIXI.Graphics {
+  private createUnitGraphics(unit: any, isHidden: boolean = false): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
     const center = this.hexLayout.hexToPixel(unit.state.position);
     
-    // Unit color based on side
-    const color = unit.side === 'assault' ? 0x0099ff : 0xff3300;
+    // Unit color based on side and hidden status
+    let color = unit.side === 'assault' ? 0x0099ff : 0xff3300;
+    let alpha = 0.9;
+    
+    if (isHidden) {
+      // Hidden units appear semi-transparent with question mark
+      alpha = 0.5;
+      color = 0x666666; // Gray for hidden units
+    }
     
     // Draw unit as a circle
-    graphics.beginFill(color, 0.9);
-    graphics.lineStyle(2, 0xffffff, 1);
+    graphics.beginFill(color, alpha);
+    graphics.lineStyle(2, isHidden ? 0x999999 : 0xffffff, 1);
     graphics.drawCircle(center.x, center.y, 20);
     graphics.endFill();
 
-    // Add unit type text
-    const text = new PIXI.Text(this.getUnitSymbol(unit.type), {
+    // Add unit type text (or ? for hidden units)
+    const symbol = isHidden ? '?' : this.getUnitSymbol(unit.type);
+    const text = new PIXI.Text(symbol, {
       fontSize: 12,
-      fill: 0xffffff,
+      fill: isHidden ? 0xcccccc : 0xffffff,
       fontWeight: 'bold',
       align: 'center',
     });

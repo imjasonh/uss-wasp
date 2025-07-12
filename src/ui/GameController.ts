@@ -289,9 +289,11 @@ export class GameController {
       }
     }
 
-    // Reveal for hidden units
+    // Hide/Reveal for eligible units
     if (unit.isHidden()) {
       buttons.push('<button onclick="gameController.revealUnit()">Reveal</button>');
+    } else if (unit.canBeHidden()) {
+      buttons.push('<button onclick="gameController.hideUnit()">Hide</button>');
     }
 
     actionButtons.innerHTML = buttons.join('');
@@ -313,6 +315,7 @@ export class GameController {
         break;
       case TurnPhase.DEPLOYMENT:
         buttons.push('<button onclick="gameController.showDeployment()">Deploy Units</button>');
+        buttons.push('<button onclick="gameController.deployHiddenUnits()">Deploy Hidden</button>');
         break;
       case TurnPhase.ACTION:
         buttons.push('<button onclick="gameController.endActions()">End Actions</button>');
@@ -322,6 +325,9 @@ export class GameController {
     // Always available
     buttons.push('<button onclick="gameController.nextPhase()">Next Phase</button>');
     buttons.push('<button onclick="gameController.endTurn()">End Turn</button>');
+    
+    // Debug controls
+    buttons.push('<button onclick="gameController.toggleFogOfWar()" style="background: #666; font-size: 10px;">Toggle FOW</button>');
 
     phaseButtons.innerHTML = buttons.join('');
   }
@@ -539,8 +545,10 @@ export class GameController {
     const hexes = this.mapRenderer.getAllHexes();
     this.renderer.renderHexGrid(hexes, (hex) => this.mapRenderer.getTerrainColor(hex));
 
-    // Render units
-    this.renderer.renderUnits(this.gameState);
+    // Render units (with fog of war for current player)
+    const activePlayer = this.gameState.getActivePlayer();
+    const viewingPlayerId = activePlayer?.id;
+    this.renderer.renderUnits(this.gameState, viewingPlayerId);
   }
 
   // Public methods for UI buttons
@@ -615,6 +623,42 @@ export class GameController {
   public endActions(): void {
     this.showMessage('Action phase ended', 'info');
     this.nextPhase();
+  }
+
+  public hideUnit(): void {
+    if (!this.selectedUnit) return;
+
+    if (!this.selectedUnit.canBeHidden()) {
+      this.showMessage('This unit cannot be hidden', 'error');
+      return;
+    }
+
+    if (this.selectedUnit.isHidden()) {
+      this.showMessage('Unit is already hidden', 'error');
+      return;
+    }
+
+    this.selectedUnit.hide();
+    this.gameState.fogOfWar.updateVisibility();
+    this.render();
+    this.showMessage(`${this.selectedUnit.type} is now hidden`, 'success');
+  }
+
+  public deployHiddenUnits(): void {
+    this.gameState.deployHiddenUnits();
+    this.render();
+    this.showMessage('Defender units deployed in hidden positions', 'success');
+  }
+
+  public toggleFogOfWar(): void {
+    // Toggle between fog of war and full visibility (for debugging)
+    const activePlayer = this.gameState.getActivePlayer();
+    if (activePlayer) {
+      // Clear fog of war to show all units
+      this.gameState.fogOfWar.clearFogOfWar();
+      this.render();
+      this.showMessage('Fog of war cleared (debug mode)', 'info');
+    }
   }
 
   public resetUIMode(): void {
