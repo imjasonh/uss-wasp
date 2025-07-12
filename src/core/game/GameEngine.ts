@@ -62,6 +62,10 @@ export class GameEngine {
         return this.executeSecureObjective(action);
       case ActionType.REVEAL:
         return this.executeReveal(action);
+      case ActionType.LAUNCH_FROM_WASP:
+        return this.executeLaunchFromWasp(action);
+      case ActionType.RECOVER_TO_WASP:
+        return this.executeRecoverToWasp(action);
       default:
         return { success: false, message: 'Unknown action type' };
     }
@@ -635,6 +639,62 @@ export class GameEngine {
       success: true,
       message: `${fortification.type} destroyed`,
       data: { fortification }
+    };
+  }
+
+  /**
+   * Execute launch from USS Wasp
+   */
+  private executeLaunchFromWasp(action: GameAction): ActionResult {
+    if (!action.data?.unitIds || !Array.isArray(action.data.unitIds)) {
+      return { success: false, message: 'No units specified for launch' };
+    }
+
+    // Get units to launch
+    const unitsToLaunch: Unit[] = [];
+    for (const unitId of action.data.unitIds) {
+      const unit = this.gameState.getUnit(unitId);
+      if (!unit) {
+        return { success: false, message: `Unit ${unitId} not found` };
+      }
+      unitsToLaunch.push(unit);
+    }
+
+    // Execute launch through game state
+    const result = this.gameState.launchUnitsFromWasp(unitsToLaunch);
+    
+    return {
+      success: result.success,
+      message: result.message,
+      data: { launchedUnits: result.success ? unitsToLaunch : [] }
+    };
+  }
+
+  /**
+   * Execute recovery to USS Wasp
+   */
+  private executeRecoverToWasp(action: GameAction): ActionResult {
+    if (!action.data?.unitIds || !Array.isArray(action.data.unitIds)) {
+      return { success: false, message: 'No units specified for recovery' };
+    }
+
+    // Get units to recover
+    const unitsToRecover: Unit[] = [];
+    for (const unitId of action.data.unitIds) {
+      const unit = this.gameState.getUnit(unitId);
+      if (!unit) {
+        return { success: false, message: `Unit ${unitId} not found` };
+      }
+      unitsToRecover.push(unit);
+    }
+
+    // Execute recovery through game state
+    const result = this.gameState.recoverUnitsToWasp(unitsToRecover);
+    
+    return {
+      success: result.success,
+      message: result.message,
+      data: { recoveredUnits: result.success ? unitsToRecover : [] }
     };
   }
 }

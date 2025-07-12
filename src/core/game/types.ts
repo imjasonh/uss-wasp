@@ -133,6 +133,8 @@ export enum ActionType {
   SPECIAL_ABILITY = 'special_ability',
   SECURE_OBJECTIVE = 'secure_objective',
   REVEAL = 'reveal',
+  LAUNCH_FROM_WASP = 'launch_from_wasp',
+  RECOVER_TO_WASP = 'recover_to_wasp',
 }
 
 /**

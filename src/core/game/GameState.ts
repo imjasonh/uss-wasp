@@ -7,11 +7,14 @@ import { Unit } from './Unit';
 import { Player } from './Player';
 import { GameMap } from './Map';
 import { FogOfWar } from './FogOfWar';
+import { WaspOperations } from './WaspOperations';
 import { 
   PlayerSide, 
   TurnPhase, 
   VictoryCondition,
-  ActionType 
+  ActionType,
+  UnitType,
+  UnitCategory
 } from './types';
 
 /**
@@ -46,6 +49,7 @@ export class GameState {
   public readonly map: GameMap;
   public readonly players: Map<string, Player>;
   public readonly fogOfWar: FogOfWar;
+  public waspOperations?: WaspOperations;
   public turn: number;
   public phase: TurnPhase;
   public activePlayerId: string;
@@ -81,6 +85,22 @@ export class GameState {
     // Set first player as active
     if (this.players.size === 1) {
       this.activePlayerId = player.id;
+    }
+
+    // Initialize Wasp operations if player has USS Wasp
+    this.initializeWaspOperations();
+  }
+
+  /**
+   * Initialize USS Wasp operations system
+   */
+  private initializeWaspOperations(): void {
+    for (const player of this.players.values()) {
+      const waspUnits = player.getLivingUnits().filter(unit => unit.type === UnitType.USS_WASP);
+      if (waspUnits.length > 0) {
+        this.waspOperations = new WaspOperations(waspUnits[0]);
+        break;
+      }
     }
   }
 
@@ -210,6 +230,11 @@ export class GameState {
       player.clearCommandPoints();
     }
     
+    // Reset Wasp operations for new turn
+    if (this.waspOperations) {
+      this.waspOperations.resetTurnLaunches();
+    }
+    
     // Update fog of war at start of turn
     this.fogOfWar.updateVisibility();
     
@@ -268,9 +293,19 @@ export class GameState {
   generateCommandPoints(): void {
     if (this.phase === TurnPhase.COMMAND) {
       for (const player of this.players.values()) {
-        player.generateCommandPoints();
+        // Use Wasp operations for assault player if available
+        if (player.side === PlayerSide.Assault && this.waspOperations) {
+          const waspCP = this.waspOperations.calculateCommandPoints();
+          player.commandPoints += waspCP;
+          this.addEvent('command_generation', `Assault gained ${waspCP} CP from USS Wasp`);
+        } else {
+          player.generateCommandPoints();
+        }
       }
-      this.addEvent('command_generation', 'Command points generated');
+      
+      if (!this.waspOperations) {
+        this.addEvent('command_generation', 'Command points generated');
+      }
     }
   }
 
@@ -511,5 +546,116 @@ export class GameState {
     if (unit) {
       this.fogOfWar.forceReveal(unit);
     }
+  }
+
+  /**
+   * Launch units from USS Wasp
+   */
+  launchUnitsFromWasp(units: Unit[]): { success: boolean; message: string } {
+    if (!this.waspOperations) {
+      return { success: false, message: 'USS Wasp not available' };
+    }
+
+    // Separate aircraft and amphibious craft
+    const aircraft = units.filter(unit => 
+      unit.hasCategory(UnitCategory.AIRCRAFT) || unit.hasCategory(UnitCategory.HELICOPTER)
+    );
+    const amphibiousCraft = units.filter(unit => 
+      unit.type === UnitType.LCAC || unit.type === UnitType.AAV_7
+    );
+
+    const results: string[] = [];
+
+    // Launch aircraft
+    if (aircraft.length > 0) {
+      const launchResult = this.waspOperations.launchAircraft(aircraft, this);
+      if (launchResult.success) {
+        results.push(launchResult.message);
+        this.addEvent('wasp_launch', launchResult.message, { 
+          units: launchResult.launchedUnits.map(u => u.id) 
+        });
+      } else {
+        return { success: false, message: launchResult.message };
+      }
+    }
+
+    // Launch amphibious craft
+    if (amphibiousCraft.length > 0) {
+      const launchResult = this.waspOperations.launchAmphibiousCraft(amphibiousCraft, this);
+      if (launchResult.success) {
+        results.push(launchResult.message);
+        this.addEvent('wasp_launch', launchResult.message, { 
+          units: launchResult.launchedUnits.map(u => u.id) 
+        });
+      } else {
+        return { success: false, message: launchResult.message };
+      }
+    }
+
+    return { success: true, message: results.join('. ') };
+  }
+
+  /**
+   * Recover units to USS Wasp
+   */
+  recoverUnitsToWasp(units: Unit[]): { success: boolean; message: string } {
+    if (!this.waspOperations) {
+      return { success: false, message: 'USS Wasp not available' };
+    }
+
+    const results: string[] = [];
+    const failed: string[] = [];
+
+    for (const unit of units) {
+      let recovered = false;
+      
+      if (unit.hasCategory(UnitCategory.AIRCRAFT) || unit.hasCategory(UnitCategory.HELICOPTER)) {
+        recovered = this.waspOperations.recoverAircraft(unit);
+      } else if (unit.type === UnitType.LCAC || unit.type === UnitType.AAV_7) {
+        recovered = this.waspOperations.recoverAmphibiousCraft(unit);
+      }
+
+      if (recovered) {
+        results.push(`${unit.type} recovered`);
+        this.addEvent('wasp_recovery', `${unit.type} recovered to USS Wasp`, { unitId: unit.id });
+      } else {
+        failed.push(`${unit.type} could not be recovered`);
+      }
+    }
+
+    const message = [...results, ...failed].join('. ');
+    return { success: failed.length === 0, message };
+  }
+
+  /**
+   * Get USS Wasp status summary
+   */
+  getWaspStatus(): any {
+    return this.waspOperations?.getStatusSummary() || null;
+  }
+
+  /**
+   * Apply damage to USS Wasp
+   */
+  damageWasp(damage: number): { systemDamage: string[]; destroyed: boolean } | null {
+    if (!this.waspOperations) {
+      return null;
+    }
+
+    const result = this.waspOperations.applyDamage(damage);
+    
+    if (result.systemDamage.length > 0) {
+      this.addEvent('wasp_damage', `USS Wasp damaged: ${result.systemDamage.join(', ')}`, {
+        damage,
+        systemDamage: result.systemDamage,
+        destroyed: result.destroyed
+      });
+    }
+
+    if (result.destroyed) {
+      this.checkVictoryConditions();
+    }
+
+    return result;
   }
 }
