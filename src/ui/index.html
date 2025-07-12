@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USS Wasp: Operation Beachhead Inferno</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        
+        #app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #header {
+            background: #16213e;
+            padding: 10px 20px;
+            border-bottom: 2px solid #0f3460;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #header h1 {
+            font-size: 24px;
+            color: #e94560;
+            margin: 0;
+        }
+        
+        #header .subtitle {
+            font-size: 14px;
+            color: #ffffff;
+            opacity: 0.8;
+        }
+        
+        #game-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+        
+        #game-canvas {
+            flex: 1;
+            background: #0f3460;
+        }
+        
+        #sidebar {
+            width: 300px;
+            background: #16213e;
+            border-left: 2px solid #0f3460;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .panel {
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .panel h3 {
+            color: #e94560;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .info-label {
+            opacity: 0.8;
+        }
+        
+        .info-value {
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 320px;
+            background: rgba(22, 33, 62, 0.9);
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #d63447;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .phase-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #0f3460;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 18px;
+            color: #e94560;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="header">
+            <h1>USS Wasp: Operation Beachhead Inferno</h1>
+            <div class="subtitle">Amphibious Assault Wargame</div>
+        </div>
+        
+        <div id="game-container">
+            <div id="game-canvas"></div>
+            
+            <div id="sidebar">
+                <div class="panel">
+                    <h3>Game Status</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Turn:</span>
+                            <span class="info-value" id="turn-display">1</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Phase:</span>
+                            <span class="info-value" id="phase-display">Event</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Active:</span>
+                            <span class="info-value" id="active-player">Assault</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Players</h3>
+                    <div id="player-info">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Assault CP:</span>
+                                <span class="info-value" id="assault-cp">0</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Defender CP:</span>
+                                <span class="info-value" id="defender-cp">0</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Assault Units:</span>
+                                <span class="info-value" id="assault-units">0</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Defender Units:</span>
+                                <span class="info-value" id="defender-units">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Selected Unit</h3>
+                    <div id="unit-info">
+                        <div class="info-item">
+                            <span class="info-label">No unit selected</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Objectives</h3>
+                    <div id="objectives-list">
+                        <div class="info-item">
+                            <span class="info-label">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="controls">
+            <div class="control-buttons">
+                <button id="next-phase-btn">Next Phase</button>
+                <button id="end-turn-btn">End Turn</button>
+                <button id="new-game-btn">New Game</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

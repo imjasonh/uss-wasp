@@ -26,11 +26,12 @@ This project follows a 6-phase development plan:
 
 ## Getting Started
 
+### Simulation Engine (Console)
 ```bash
 # Install dependencies
 npm install
 
-# Run development server
+# Run simulation demo
 npm run dev
 
 # Build for production
@@ -39,6 +40,17 @@ npm run build
 # Run tests
 npm test
 ```
+
+### Web Interface
+```bash
+# Start web development server
+npm run dev:web
+
+# Build web version
+npm run build:web
+```
+
+The web interface will be available at http://localhost:3000
 
 ## Project Structure
 
