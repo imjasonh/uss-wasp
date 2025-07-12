@@ -192,6 +192,44 @@
             flex-wrap: wrap;
             gap: 5px;
         }
+        
+        #wasp-launch-controls {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        #wasp-launch-controls button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .status-operational { color: #00ff00; font-weight: bold; }
+        .status-degraded { color: #ffaa00; font-weight: bold; }
+        .status-limited { color: #ff6600; font-weight: bold; }
+        .status-damaged { color: #ff3300; font-weight: bold; }
+        .status-offline { color: #666666; font-weight: bold; }
+        
+        #wasp-status .info-item {
+            margin-bottom: 8px;
+        }
+        
+        #wasp-operations .info-item {
+            margin-bottom: 5px;
+        }
+        
+        #wasp-cargo .info-item {
+            margin-bottom: 5px;
+        }
+        
+        .wasp-status-critical {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff3300;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -273,6 +311,42 @@
                     </div>
                 </div>
                 
+                <div class="panel">
+                    <h3>USS Wasp Status</h3>
+                    <div id="wasp-status">
+                        <div class="info-item">
+                            <span class="info-label">No USS Wasp</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Launch Operations</h3>
+                    <div id="wasp-operations">
+                        <div class="info-item">
+                            <span class="info-label">Flight Deck:</span>
+                            <span class="info-value" id="flight-deck-capacity">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Well Deck:</span>
+                            <span class="info-value" id="well-deck-capacity">-</span>
+                        </div>
+                        <div id="wasp-launch-controls">
+                            <button onclick="gameController.showWaspLaunchOptions()" disabled>Launch Units</button>
+                            <button onclick="gameController.showWaspRecoveryOptions()" disabled>Recover Units</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Aboard USS Wasp</h3>
+                    <div id="wasp-cargo">
+                        <div class="info-item">
+                            <span class="info-label">No units aboard</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="panel">
                     <h3>Objectives</h3>
                     <div id="objectives-list">

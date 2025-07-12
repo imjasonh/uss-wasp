@@ -8,7 +8,9 @@ import { GameEngine, ActionResult } from '../core/game/GameEngine';
 import { 
   ActionType, 
   TurnPhase, 
-  PlayerSide
+  PlayerSide,
+  UnitType,
+  UnitCategory
 } from '../core/game/types';
 import { PixiRenderer } from './renderer/PixiRenderer';
 import { MapRenderer } from './renderer/MapRenderer';
@@ -43,6 +45,10 @@ export class GameController {
   ) {
     this.gameEngine = new GameEngine(gameState);
     this.setupGameEventListeners();
+    
+    // Initialize displays
+    this.updateGameStatusDisplay();
+    this.updateWaspDisplay();
   }
 
   /**
@@ -198,6 +204,7 @@ export class GameController {
 
     // Update game displays
     this.updateGameStatusDisplay();
+    this.updateWaspDisplay();
   }
 
   /**
@@ -549,6 +556,9 @@ export class GameController {
     const activePlayer = this.gameState.getActivePlayer();
     const viewingPlayerId = activePlayer?.id;
     this.renderer.renderUnits(this.gameState, viewingPlayerId);
+    
+    // Update USS Wasp display
+    this.updateWaspDisplay();
   }
 
   // Public methods for UI buttons
@@ -664,5 +674,245 @@ export class GameController {
   public resetUIMode(): void {
     this.resetUIModeInternal();
     this.showMessage('Action cancelled', 'info');
+  }
+
+  public showWaspLaunchOptions(): void {
+    if (!this.gameState.waspOperations) {
+      this.showMessage('USS Wasp not available', 'error');
+      return;
+    }
+
+    // Get units aboard Wasp that can be launched
+    const aboardUnits = this.gameState.waspOperations.getAboardUnits();
+    if (aboardUnits.length === 0) {
+      this.showMessage('No units aboard USS Wasp to launch', 'error');
+      return;
+    }
+
+    // Show launch selection interface
+    this.showUnitSelectionModal(aboardUnits, 'Launch Units from USS Wasp', (selectedUnits) => {
+      if (selectedUnits.length > 0) {
+        this.executeLaunchFromWasp(selectedUnits);
+      }
+    });
+  }
+
+  public showWaspRecoveryOptions(): void {
+    if (!this.gameState.waspOperations) {
+      this.showMessage('USS Wasp not available', 'error');
+      return;
+    }
+
+    // Get nearby units that can be recovered
+    const recoverableUnits = this.getNearbyRecoverableUnits();
+    if (recoverableUnits.length === 0) {
+      this.showMessage('No units available for recovery', 'error');
+      return;
+    }
+
+    // Show recovery selection interface
+    this.showUnitSelectionModal(recoverableUnits, 'Recover Units to USS Wasp', (selectedUnits) => {
+      if (selectedUnits.length > 0) {
+        this.executeRecoveryToWasp(selectedUnits);
+      }
+    });
+  }
+
+  private showUnitSelectionModal(units: Unit[], title: string, onConfirm: (units: Unit[]) => void): void {
+    // For now, use simple browser prompts - in a full game this would be a proper modal
+    const unitOptions = units.map((unit, index) => `${index}: ${unit.type} (${unit.id})`).join('\n');
+    const selection = prompt(`${title}\n\nAvailable units:\n${unitOptions}\n\nEnter unit numbers separated by commas (e.g., 0,1,2):`);
+    
+    if (selection) {
+      const indices = selection.split(',').map(s => parseInt(s.trim())).filter(i => !isNaN(i) && i >= 0 && i < units.length);
+      const selectedUnits = indices.map(i => units[i]);
+      onConfirm(selectedUnits);
+    }
+  }
+
+  private executeLaunchFromWasp(units: Unit[]): void {
+    const action = {
+      type: ActionType.LAUNCH_FROM_WASP,
+      playerId: this.gameState.activePlayerId,
+      unitId: '', // Not used for Wasp operations
+      data: { unitIds: units.map(u => u.id) }
+    };
+
+    const result = this.gameEngine.executeAction(action);
+    this.handleActionResult(result);
+    
+    if (result.success) {
+      this.render();
+      this.updateWaspDisplay();
+    }
+  }
+
+  private executeRecoveryToWasp(units: Unit[]): void {
+    const action = {
+      type: ActionType.RECOVER_TO_WASP,
+      playerId: this.gameState.activePlayerId,
+      unitId: '', // Not used for Wasp operations
+      data: { unitIds: units.map(u => u.id) }
+    };
+
+    const result = this.gameEngine.executeAction(action);
+    this.handleActionResult(result);
+    
+    if (result.success) {
+      this.render();
+      this.updateWaspDisplay();
+    }
+  }
+
+  private getNearbyRecoverableUnits(): Unit[] {
+    if (!this.gameState.waspOperations) return [];
+
+    const activePlayer = this.gameState.getActivePlayer();
+    if (!activePlayer) return [];
+
+    // Get USS Wasp position
+    const waspUnit = this.gameState.waspOperations.getAboardUnits()[0]?.constructor === Unit ? 
+      this.gameState.getAllUnits().find(u => u.type === UnitType.USS_WASP) : null;
+    
+    if (!waspUnit) return [];
+
+    const waspPosition = new Hex(waspUnit.state.position.q, waspUnit.state.position.r, waspUnit.state.position.s);
+
+    // Find units that can be recovered (adjacent aircraft/amphibious craft)
+    return activePlayer.getLivingUnits().filter(unit => {
+      if (unit.type === UnitType.USS_WASP) return false;
+      
+      const distance = waspPosition.distanceTo(unit.state.position);
+      
+      return distance <= 1 && (
+        unit.hasCategory(UnitCategory.AIRCRAFT) ||
+        unit.hasCategory(UnitCategory.HELICOPTER) ||
+        unit.type === UnitType.LCAC ||
+        unit.type === UnitType.AAV_7
+      );
+    });
+  }
+
+  private updateWaspDisplay(): void {
+    if (!this.gameState.waspOperations) {
+      // No Wasp available
+      const waspStatusDiv = document.getElementById('wasp-status');
+      if (waspStatusDiv) {
+        waspStatusDiv.innerHTML = '<div class="info-item"><span class="info-label">No USS Wasp</span></div>';
+      }
+      
+      const launchButtons = document.querySelectorAll('#wasp-launch-controls button');
+      launchButtons.forEach(btn => (btn as HTMLButtonElement).disabled = true);
+      
+      return;
+    }
+
+    // Update Wasp status
+    const status = this.gameState.waspOperations.getStatusSummary();
+    this.updateWaspStatusDisplay(status);
+    this.updateWaspCapacityDisplay();
+    this.updateWaspCargoDisplay();
+    this.updateWaspLaunchButtons();
+  }
+
+  private updateWaspStatusDisplay(status: any): void {
+    const waspStatusDiv = document.getElementById('wasp-status');
+    if (!waspStatusDiv) return;
+
+    const getStatusClass = (level: string) => {
+      switch (level) {
+        case 'operational': return 'status-operational';
+        case 'degraded': return 'status-degraded';
+        case 'limited': return 'status-limited';
+        case 'damaged': return 'status-damaged';
+        case 'offline': return 'status-offline';
+        default: return '';
+      }
+    };
+
+    waspStatusDiv.innerHTML = `
+      <div class="info-item">
+        <span class="info-label">Structural:</span>
+        <span class="info-value">${status.structuralIntegrity}/${status.maxStructuralIntegrity}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Flight Deck:</span>
+        <span class="info-value ${getStatusClass(status.flightDeck)}">${status.flightDeck}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Well Deck:</span>
+        <span class="info-value ${getStatusClass(status.wellDeck)}">${status.wellDeck}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">C2 System:</span>
+        <span class="info-value ${getStatusClass(status.c2System)}">${status.c2System}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Defensive Ammo:</span>
+        <span class="info-value">${status.defensiveAmmo}/${status.maxDefensiveAmmo}</span>
+      </div>
+    `;
+  }
+
+  private updateWaspCapacityDisplay(): void {
+    if (!this.gameState.waspOperations) return;
+
+    const flightDeckCapacity = this.gameState.waspOperations.getFlightDeckCapacity();
+    const wellDeckCapacity = this.gameState.waspOperations.getWellDeckCapacity();
+
+    const flightDeckDisplay = document.getElementById('flight-deck-capacity');
+    const wellDeckDisplay = document.getElementById('well-deck-capacity');
+
+    if (flightDeckDisplay) {
+      flightDeckDisplay.textContent = `${flightDeckCapacity} aircraft`;
+    }
+
+    if (wellDeckDisplay) {
+      wellDeckDisplay.textContent = `${wellDeckCapacity.lcac} LCAC / ${wellDeckCapacity.aav} AAV`;
+    }
+  }
+
+  private updateWaspCargoDisplay(): void {
+    if (!this.gameState.waspOperations) return;
+
+    const aboardUnits = this.gameState.waspOperations.getAboardUnits();
+    const waspCargoDiv = document.getElementById('wasp-cargo');
+    
+    if (!waspCargoDiv) return;
+
+    if (aboardUnits.length === 0) {
+      waspCargoDiv.innerHTML = '<div class="info-item"><span class="info-label">No units aboard</span></div>';
+      return;
+    }
+
+    const unitCounts: Record<string, number> = {};
+    aboardUnits.forEach(unit => {
+      const typeName = unit.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      unitCounts[typeName] = (unitCounts[typeName] || 0) + 1;
+    });
+
+    waspCargoDiv.innerHTML = Object.entries(unitCounts).map(([type, count]) => 
+      `<div class="info-item">
+        <span class="info-label">${type}:</span>
+        <span class="info-value">${count}</span>
+      </div>`
+    ).join('');
+  }
+
+  private updateWaspLaunchButtons(): void {
+    if (!this.gameState.waspOperations) return;
+
+    const launchBtn = document.querySelector('#wasp-launch-controls button:nth-child(1)') as HTMLButtonElement;
+    const recoverBtn = document.querySelector('#wasp-launch-controls button:nth-child(2)') as HTMLButtonElement;
+
+    if (launchBtn) {
+      const aboardUnits = this.gameState.waspOperations.getAboardUnits();
+      launchBtn.disabled = aboardUnits.length === 0 || this.gameState.phase !== TurnPhase.DEPLOYMENT;
+    }
+
+    if (recoverBtn) {
+      const recoverableUnits = this.getNearbyRecoverableUnits();
+      recoverBtn.disabled = recoverableUnits.length === 0;
+    }
   }
 }
