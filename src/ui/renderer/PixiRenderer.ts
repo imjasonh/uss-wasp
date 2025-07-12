@@ -341,6 +341,55 @@ export class PixiRenderer {
   }
 
   /**
+   * Highlight hexes with specified type
+   */
+  highlightHexes(hexes: Hex[], type: 'movement' | 'attack' | 'ability'): void {
+    this.clearHighlights();
+
+    const colors = {
+      movement: 0x00ff00,
+      attack: 0xff0000,
+      ability: 0xffff00,
+    };
+
+    const color = colors[type];
+    const alpha = 0.3;
+
+    for (const hex of hexes) {
+      const highlight = new PIXI.Graphics();
+      highlight.name = `highlight_${type}`;
+      
+      const corners = this.hexLayout.hexCorners(hex);
+      highlight.beginFill(color, alpha);
+      highlight.lineStyle(2, color, 0.8);
+      
+      if (corners.length > 0) {
+        highlight.moveTo(corners[0].x, corners[0].y);
+        for (let i = 1; i < corners.length; i++) {
+          highlight.lineTo(corners[i].x, corners[i].y);
+        }
+        highlight.closePath();
+      }
+      
+      highlight.endFill();
+      this.uiContainer.addChild(highlight);
+    }
+  }
+
+  /**
+   * Clear all highlights
+   */
+  clearHighlights(): void {
+    const highlights = this.uiContainer.children.filter(child => 
+      child.name && child.name.startsWith('highlight_')
+    );
+    
+    for (const highlight of highlights) {
+      this.uiContainer.removeChild(highlight);
+    }
+  }
+
+  /**
    * Clean up resources
    */
   destroy(): void {

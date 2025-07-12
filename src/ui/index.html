@@ -153,6 +153,45 @@
             font-size: 18px;
             color: #e94560;
         }
+        
+        .message {
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+        
+        .message.success {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+        
+        .message.error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+        
+        .message.info {
+            background: rgba(0, 150, 255, 0.2);
+            color: #0096ff;
+            border: 1px solid #0096ff;
+        }
+        
+        #unit-actions button, #phase-actions button {
+            margin: 2px;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        #unit-actions, #phase-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
     </style>
 </head>
 <body>
@@ -209,11 +248,28 @@
                 </div>
                 
                 <div class="panel">
-                    <h3>Selected Unit</h3>
+                    <h3>Selection Info</h3>
                     <div id="unit-info">
                         <div class="info-item">
-                            <span class="info-label">No unit selected</span>
+                            <span class="info-label">No selection</span>
                         </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Unit Actions</h3>
+                    <div id="unit-actions">
+                        <div class="info-item">
+                            <span class="info-label">Select a unit</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Phase Actions</h3>
+                    <div id="phase-actions">
+                        <button onclick="gameController.nextPhase()">Next Phase</button>
+                        <button onclick="gameController.endTurn()">End Turn</button>
                     </div>
                 </div>
                 
@@ -229,10 +285,10 @@
         </div>
         
         <div id="controls">
+            <div id="game-message" class="message"></div>
             <div class="control-buttons">
-                <button id="next-phase-btn">Next Phase</button>
-                <button id="end-turn-btn">End Turn</button>
                 <button id="new-game-btn">New Game</button>
+                <button onclick="gameController.resetUIMode()">Cancel Action</button>
             </div>
         </div>
     </div>

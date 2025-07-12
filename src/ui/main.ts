@@ -4,6 +4,7 @@
 
 import { PixiRenderer } from './renderer/PixiRenderer';
 import { MapRenderer } from './renderer/MapRenderer';
+import { GameController } from './GameController';
 import { GameState, Player } from '../core/game';
 import { UnitType, PlayerSide } from '../core/game/types';
 import { Unit } from '../core/game/Unit';
@@ -17,7 +18,7 @@ class GameUI {
   private renderer!: PixiRenderer;
   private mapRenderer!: MapRenderer;
   private gameState!: GameState;
-  private selectedUnit?: Unit;
+  private gameController!: GameController;
 
   async initialize(): Promise<void> {
     console.log('🎮 Initializing USS Wasp Game UI...');
@@ -28,11 +29,17 @@ class GameUI {
     // Initialize renderer
     this.initializeRenderer();
 
+    // Initialize game controller
+    this.gameController = new GameController(this.gameState, this.renderer, this.mapRenderer);
+
     // Set up event handlers
     this.setupEventHandlers();
 
     // Initial render
     this.render();
+
+    // Make game controller globally available for button clicks
+    (window as any).gameController = this.gameController;
 
     console.log('✅ Game UI initialized successfully!');
   }
@@ -158,79 +165,22 @@ class GameUI {
   }
 
   private setupEventHandlers(): void {
-    // Hex selection
-    (this.renderer.getApp().view as EventTarget).addEventListener('hexSelected', (event: any) => {
-      const hex = event.detail as Hex;
-      this.onHexSelected(hex);
-    });
-
-    // Unit selection
-    (this.renderer.getApp().view as EventTarget).addEventListener('unitSelected', (event: any) => {
-      const unit = event.detail as Unit;
-      this.onUnitSelected(unit);
-    });
-
     // UI button handlers
-    const nextPhaseBtn = document.getElementById('next-phase-btn');
-    const endTurnBtn = document.getElementById('end-turn-btn');
     const newGameBtn = document.getElementById('new-game-btn');
-
-    nextPhaseBtn?.addEventListener('click', () => this.nextPhase());
-    endTurnBtn?.addEventListener('click', () => this.endTurn());
     newGameBtn?.addEventListener('click', () => this.newGame());
   }
 
-  private onHexSelected(hex: Hex): void {
-    console.log('Hex selected:', hex.q, hex.r);
-    
-    // Update hex info display
-    this.updateHexInfo(hex);
-    
-    // If we have a selected unit, try to move it
-    if (this.selectedUnit && this.selectedUnit.canMove()) {
-      this.moveUnit(this.selectedUnit, hex);
-    }
-  }
-
-  private onUnitSelected(unit: Unit): void {
-    console.log('Unit selected:', unit.type, unit.id);
-    this.selectedUnit = unit;
-    this.updateUnitInfo(unit);
-  }
-
-  private moveUnit(unit: Unit, targetHex: Hex): void {
-    // Simple movement - just move to target (no pathfinding for now)
-    unit.moveTo(targetHex);
-    this.render();
-    
-    console.log(`Moved ${unit.type} to (${targetHex.q}, ${targetHex.r})`);
-    
-    // Update unit info
-    this.updateUnitInfo(unit);
-  }
-
-  private nextPhase(): void {
-    this.gameState.nextPhase();
-    this.updateGameStatusDisplay();
-    
-    console.log(`Advanced to ${this.gameState.phase} phase`);
-  }
-
-  private endTurn(): void {
-    // Advance through remaining phases to end turn
-    while (this.gameState.phase !== 'event') {
-      this.gameState.nextPhase();
-    }
-    this.updateGameStatusDisplay();
-    
-    console.log(`Turn ${this.gameState.turn} started`);
-  }
 
   private newGame(): void {
     console.log('Starting new game...');
     this.initializeGame();
+    
+    // Reinitialize game controller
+    this.gameController = new GameController(this.gameState, this.renderer, this.mapRenderer);
+    (window as any).gameController = this.gameController;
+    
     this.render();
-    this.updateAllDisplays();
+    this.updateObjectivesDisplay();
   }
 
   private render(): void {
@@ -242,110 +192,6 @@ class GameUI {
     this.renderer.renderUnits(this.gameState);
   }
 
-  private updateHexInfo(hex: Hex): void {
-    const hexInfo = this.mapRenderer.getHexInfo(hex);
-    const unitInfoDiv = document.getElementById('unit-info');
-    
-    if (unitInfoDiv) {
-      unitInfoDiv.innerHTML = `
-        <div class="info-item">
-          <span class="info-label">Hex:</span>
-          <span class="info-value">${hexInfo.coordinate}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Terrain:</span>
-          <span class="info-value">${hexInfo.terrain}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Movement:</span>
-          <span class="info-value">${hexInfo.movementCost} MP</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Defense:</span>
-          <span class="info-value">+${hexInfo.defenseBonus}</span>
-        </div>
-        ${hexInfo.objective ? `
-        <div class="info-item">
-          <span class="info-label">Objective:</span>
-          <span class="info-value">${hexInfo.objective.type}</span>
-        </div>
-        ` : ''}
-      `;
-    }
-  }
-
-  private updateUnitInfo(unit: Unit): void {
-    const unitInfoDiv = document.getElementById('unit-info');
-    
-    if (unitInfoDiv) {
-      const unitName = unit.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      
-      unitInfoDiv.innerHTML = `
-        <div class="info-item">
-          <span class="info-label">Unit:</span>
-          <span class="info-value">${unitName}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Side:</span>
-          <span class="info-value">${unit.side}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">HP:</span>
-          <span class="info-value">${unit.state.currentHP}/${unit.stats.hp}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">ATK:</span>
-          <span class="info-value">${unit.getEffectiveAttack()}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">DEF:</span>
-          <span class="info-value">${unit.stats.def}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">MV:</span>
-          <span class="info-value">${unit.getEffectiveMovement()}</span>
-        </div>
-        ${unit.state.suppressionTokens > 0 ? `
-        <div class="info-item">
-          <span class="info-label">Suppression:</span>
-          <span class="info-value">${unit.state.suppressionTokens}</span>
-        </div>
-        ` : ''}
-      `;
-    }
-  }
-
-  private updateGameStatusDisplay(): void {
-    const turnDisplay = document.getElementById('turn-display');
-    const phaseDisplay = document.getElementById('phase-display');
-    const activePlayerDisplay = document.getElementById('active-player');
-
-    if (turnDisplay) turnDisplay.textContent = this.gameState.turn.toString();
-    if (phaseDisplay) phaseDisplay.textContent = this.gameState.phase.charAt(0).toUpperCase() + this.gameState.phase.slice(1);
-    
-    const activePlayer = this.gameState.getActivePlayer();
-    if (activePlayerDisplay && activePlayer) {
-      activePlayerDisplay.textContent = activePlayer.side.charAt(0).toUpperCase() + activePlayer.side.slice(1);
-    }
-
-    // Update player stats
-    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
-    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
-
-    if (assaultPlayer) {
-      const assaultCPDisplay = document.getElementById('assault-cp');
-      const assaultUnitsDisplay = document.getElementById('assault-units');
-      if (assaultCPDisplay) assaultCPDisplay.textContent = assaultPlayer.commandPoints.toString();
-      if (assaultUnitsDisplay) assaultUnitsDisplay.textContent = assaultPlayer.getLivingUnits().length.toString();
-    }
-
-    if (defenderPlayer) {
-      const defenderCPDisplay = document.getElementById('defender-cp');
-      const defenderUnitsDisplay = document.getElementById('defender-units');
-      if (defenderCPDisplay) defenderCPDisplay.textContent = defenderPlayer.commandPoints.toString();
-      if (defenderUnitsDisplay) defenderUnitsDisplay.textContent = defenderPlayer.getLivingUnits().length.toString();
-    }
-  }
 
   private updateObjectivesDisplay(): void {
     const objectivesDiv = document.getElementById('objectives-list');
@@ -366,16 +212,6 @@ class GameUI {
     ).join('');
   }
 
-  private updateAllDisplays(): void {
-    this.updateGameStatusDisplay();
-    this.updateObjectivesDisplay();
-    
-    // Clear unit/hex info
-    const unitInfoDiv = document.getElementById('unit-info');
-    if (unitInfoDiv) {
-      unitInfoDiv.innerHTML = '<div class="info-item"><span class="info-label">No unit selected</span></div>';
-    }
-  }
 }
 
 // Initialize the application when DOM is loaded
