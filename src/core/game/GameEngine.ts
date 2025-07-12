@@ -6,11 +6,14 @@ import { Hex, findPath } from '../hex';
 import { Unit } from './Unit';
 import { GameState, GameAction } from './GameState';
 import { CombatSystem } from './Combat';
+import { AIController } from '../ai/AIController';
 import { 
   ActionType, 
   UnitType,
-  UnitCategory 
+  UnitCategory,
+  PlayerSide
 } from './types';
+import { AIDifficulty } from '../ai/types';
 
 /**
  * Action result for UI feedback
@@ -34,6 +37,8 @@ export interface MovementPath {
  * Game engine that processes all player actions
  */
 export class GameEngine {
+  private aiControllers: Map<string, AIController> = new Map();
+
   constructor(private gameState: GameState) {}
 
   /**
@@ -696,5 +701,116 @@ export class GameEngine {
       message: result.message,
       data: { recoveredUnits: result.success ? unitsToRecover : [] }
     };
+  }
+
+  /**
+   * Add AI controller for a player
+   */
+  addAIController(playerId: string, difficulty: AIDifficulty = AIDifficulty.VETERAN): void {
+    const aiController = new AIController(playerId, difficulty);
+    this.aiControllers.set(playerId, aiController);
+    console.log(`[AI] Added AI controller for player ${playerId} with difficulty ${difficulty}`);
+  }
+
+  /**
+   * Remove AI controller for a player
+   */
+  removeAIController(playerId: string): void {
+    this.aiControllers.delete(playerId);
+    console.log(`[AI] Removed AI controller for player ${playerId}`);
+  }
+
+  /**
+   * Check if player is AI controlled
+   */
+  isAIControlled(playerId: string): boolean {
+    return this.aiControllers.has(playerId);
+  }
+
+  /**
+   * Update AI for current active player
+   */
+  updateAI(): GameAction[] {
+    const activePlayerId = this.gameState.activePlayerId;
+    const aiController = this.aiControllers.get(activePlayerId);
+    
+    if (!aiController) {
+      return []; // No AI for this player
+    }
+
+    // Generate AI actions
+    const aiActions = aiController.update(this.gameState);
+    
+    // Execute AI actions and provide feedback
+    const results: ActionResult[] = [];
+    for (const action of aiActions) {
+      const result = this.executeAction(action);
+      results.push(result);
+    }
+
+    // Let AI learn from action results
+    aiController.processActionResults(aiActions, results);
+
+    return aiActions;
+  }
+
+  /**
+   * Process player actions for AI learning
+   */
+  processPlayerActionsForAI(playerId: string, actions: GameAction[]): void {
+    // Find enemy AI controllers that should learn from these actions
+    for (const [aiPlayerId, aiController] of this.aiControllers) {
+      if (aiPlayerId !== playerId) {
+        // This AI should learn from the enemy player's behavior
+        aiController.analyzePlayerBehavior(this.gameState, actions);
+      }
+    }
+  }
+
+  /**
+   * Get AI status for UI display
+   */
+  getAIStatus(playerId: string): any {
+    const aiController = this.aiControllers.get(playerId);
+    return aiController ? aiController.getAIStatus() : null;
+  }
+
+  /**
+   * Set AI difficulty for a player
+   */
+  setAIDifficulty(playerId: string, difficulty: AIDifficulty): void {
+    const aiController = this.aiControllers.get(playerId);
+    if (aiController) {
+      aiController.setDifficulty(difficulty);
+    }
+  }
+
+  /**
+   * Enable/disable AI for a player
+   */
+  setAIEnabled(playerId: string, enabled: boolean): void {
+    const aiController = this.aiControllers.get(playerId);
+    if (aiController) {
+      aiController.setEnabled(enabled);
+    }
+  }
+
+  /**
+   * Get all AI controllers
+   */
+  getAllAIControllers(): Map<string, AIController> {
+    return new Map(this.aiControllers);
+  }
+
+  /**
+   * Auto-setup AI based on player sides
+   */
+  autoSetupAI(defenderDifficulty: AIDifficulty = AIDifficulty.VETERAN): void {
+    // Find defender player and make them AI controlled
+    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
+    if (defenderPlayer) {
+      this.addAIController(defenderPlayer.id, defenderDifficulty);
+      console.log(`[AI] Auto-setup: Defender AI enabled with ${defenderDifficulty} difficulty`);
+    }
   }
 }
