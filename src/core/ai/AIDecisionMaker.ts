@@ -83,8 +83,14 @@ export class AIDecisionMaker {
 
     // Analyze enemy vulnerability
     const enemyVulnerability = this.assessEnemyVulnerability(context.enemyUnits);
-    if (enemyVulnerability > 0.6) {
-      priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 6 });
+    if (enemyVulnerability > 0.1) { // Lower threshold to encourage combat
+      priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 8 });
+    }
+    
+    // If units are in combat range, prioritize fighting over movement
+    const unitsInRange = this.countUnitsInCombatRange(context);
+    if (unitsInRange > 0) {
+      priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 10 });
     }
 
     // Always include intelligence gathering
@@ -438,8 +444,31 @@ export class AIDecisionMaker {
   }
 
   private assessEnemyVulnerability(enemyUnits: Unit[]): number {
-    // Implementation would assess enemy weak points
-    return 0.4; // Placeholder
+    if (enemyUnits.length === 0) return 0;
+    
+    let vulnerabilityScore = 0;
+    
+    for (const enemy of enemyUnits) {
+      // Check if enemy is damaged (lower HP = more vulnerable)
+      const healthPercent = enemy.state.currentHP / enemy.stats.hp;
+      if (healthPercent < 1.0) {
+        vulnerabilityScore += (1.0 - healthPercent) * 0.3;
+      }
+      
+      // Check if enemy is suppressed or pinned (more vulnerable)
+      if (enemy.isSuppressed()) {
+        vulnerabilityScore += 0.2;
+      }
+      if (enemy.isPinned()) {
+        vulnerabilityScore += 0.3;
+      }
+      
+      // Base vulnerability for simply having enemies present
+      vulnerabilityScore += 0.2;
+    }
+    
+    // Normalize by number of enemies and cap at 1.0
+    return Math.min(1.0, vulnerabilityScore / enemyUnits.length);
   }
 
   private findSafeWithdrawalPosition(unit: Unit, context: AIDecisionContext): Hex | null {
@@ -463,22 +492,60 @@ export class AIDecisionMaker {
   }
 
   private identifyKeyTerrain(context: AIDecisionContext): any[] {
-    // For now, identify positions near enemy units as key terrain
+    // Identify reachable positions that move toward objectives
     const keyTerrain: any[] = [];
     
-    for (const enemy of context.enemyUnits) {
-      // Add positions around enemy units as potentially important
-      const adjacentPositions = this.getAdjacentPositions(enemy.state.position);
-      for (const pos of adjacentPositions) {
-        keyTerrain.push({
-          position: pos,
-          strategicValue: 5,
-          type: 'defensive_position'
-        });
+    for (const unit of context.availableUnits) {
+      if (unit.state.hasMoved) continue;
+      
+      // Find positions within movement range that move toward enemies
+      const moveRange = unit.stats.mv;
+      
+      // Generate positions in a circle around the unit
+      for (let dq = -moveRange; dq <= moveRange; dq++) {
+        for (let dr = -moveRange; dr <= moveRange; dr++) {
+          const ds = -dq - dr;
+          
+          // Check if position is within movement range (hex distance)
+          const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+          if (distance > moveRange || distance === 0) continue;
+          
+          const targetPos = new Hex(
+            unit.state.position.q + dq,
+            unit.state.position.r + dr,
+            unit.state.position.s + ds
+          );
+          
+          // Skip positions outside reasonable map bounds (0-10 range)
+          if (targetPos.q < 0 || targetPos.q > 10 || 
+              targetPos.r < 0 || targetPos.r > 10) {
+            continue;
+          }
+          
+          // Check if this position moves us closer to enemies
+          let improvesPosition = false;
+          for (const enemy of context.enemyUnits) {
+            const currentDistance = this.calculateDistance(unit.state.position, enemy.state.position);
+            const newDistance = this.calculateDistance(targetPos, enemy.state.position);
+            
+            if (newDistance < currentDistance) {
+              improvesPosition = true;
+              break;
+            }
+          }
+          
+          if (improvesPosition) {
+            keyTerrain.push({
+              position: targetPos,
+              strategicValue: 5,
+              type: 'advance_position'
+            });
+          }
+        }
       }
     }
     
-    return keyTerrain.slice(0, 3); // Limit to avoid too many decisions
+    return keyTerrain.slice(0, 5); // Return best movement options
   }
 
   private canUnitReachPosition(unit: Unit, position: Hex, context: AIDecisionContext): boolean {
@@ -577,12 +644,15 @@ export class AIDecisionMaker {
   private getUnitRange(unit: Unit): number {
     // Basic unit range - most ground units can attack adjacent hexes
     if (unit.hasCategory(UnitCategory.ARTILLERY)) {
-      return 3; // Artillery has longer range
+      return 4; // Artillery has longer range
     }
     if (unit.hasCategory(UnitCategory.AIRCRAFT)) {
-      return 5; // Aircraft have extended range
+      return 8; // Aircraft have much longer range
     }
-    return 1; // Default range for most units
+    if (unit.hasCategory(UnitCategory.HELICOPTER)) {
+      return 6; // Helicopters have good range
+    }
+    return 2; // Default range for most units (slightly increased)
   }
 
   private getAdjacentPositions(center: HexCoordinate): Hex[] {
@@ -606,5 +676,18 @@ export class AIDecisionMaker {
     }
 
     return adjacent;
+  }
+
+  private countUnitsInCombatRange(context: AIDecisionContext): number {
+    let count = 0;
+    
+    for (const unit of context.availableUnits) {
+      const targets = this.findValidTargets(unit, context.enemyUnits, context);
+      if (targets.length > 0) {
+        count++;
+      }
+    }
+    
+    return count;
   }
 }

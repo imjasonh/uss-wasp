@@ -741,11 +741,23 @@ export class GameEngine {
     // Generate AI actions
     const aiActions = aiController.update(this.gameState);
     
+    // Debug logging for AI actions
+    if (aiActions.length > 0) {
+      console.log(`[AI] Executing ${aiActions.length} actions for player ${activePlayerId}`);
+    }
+    
     // Execute AI actions and provide feedback
     const results: ActionResult[] = [];
     for (const action of aiActions) {
+      console.log(`[AI] Attempting action: ${action.type} for unit ${action.unitId}`);
       const result = this.executeAction(action);
       results.push(result);
+      
+      if (result.success) {
+        console.log(`[AI] ✅ Action succeeded: ${result.message}`);
+      } else {
+        console.log(`[AI] ❌ Action failed: ${result.message}`);
+      }
     }
 
     // Let AI learn from action results

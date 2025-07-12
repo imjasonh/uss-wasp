@@ -52,23 +52,32 @@ export class AIController {
   update(gameState: GameState): GameAction[] {
     if (!this.isEnabled) return [];
 
+    // Only generate actions for appropriate phases
+    const currentPhase = gameState.phase;
+    if (currentPhase === 'event' || currentPhase === 'end') {
+      return []; // No actions during event or end phases
+    }
+
     // Create decision context
     const context = this.createDecisionContext(gameState);
     
     // Update strategic state machine
     const strategicAssessment = this.stateMachine.update(context);
     
-    // Generate tactical decisions
+    // Generate tactical decisions appropriate for current phase
     const decisions = this.decisionMaker.makeDecisions(context);
     
+    // Filter decisions based on current phase
+    const phaseAppropriateDecisions = this.filterDecisionsForPhase(decisions, currentPhase);
+    
     // Convert AI decisions to game actions
-    const actions = this.convertDecisionsToActions(decisions, gameState);
+    const actions = this.convertDecisionsToActions(phaseAppropriateDecisions, gameState);
     
     // Update learning data
-    this.updateLearningData(decisions, context);
+    this.updateLearningData(phaseAppropriateDecisions, context);
     
     // Log AI state for debugging
-    this.logAIState(strategicAssessment, decisions);
+    this.logAIState(strategicAssessment, phaseAppropriateDecisions);
     
     return actions;
   }
@@ -181,6 +190,43 @@ export class AIController {
         territoryControl: this.calculateTerritoryControl(gameState, aiPlayer)
       }
     };
+  }
+
+  /**
+   * Filter decisions based on current game phase
+   */
+  private filterDecisionsForPhase(decisions: AIDecision[], phase: string): AIDecision[] {
+    const filtered: AIDecision[] = [];
+    
+    for (const decision of decisions) {
+      let isAppropriate = false;
+      
+      switch (phase) {
+        case 'command':
+          // Command phase - no movement/combat actions
+          isAppropriate = false;
+          break;
+        case 'deployment':
+        case 'movement':
+          // Movement phases - only movement actions
+          isAppropriate = (decision.type === 'move_unit' || decision.type === 'withdraw');
+          break;
+        case 'action':
+          // Action phase - combat and special abilities
+          isAppropriate = (decision.type === 'attack_target' || 
+                          decision.type === 'hide_unit' ||
+                          decision.type === 'special_ability');
+          break;
+        default:
+          isAppropriate = false;
+      }
+      
+      if (isAppropriate) {
+        filtered.push(decision);
+      }
+    }
+    
+    return filtered;
   }
 
   /**
