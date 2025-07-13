@@ -8,14 +8,14 @@ import { Player } from '../core/game/Player';
 import { GameState } from '../core/game/GameState';
 import { GameMap } from '../core/game/Map';
 import { CombatSystem } from '../core/game/Combat';
-import { 
-  UnitType, 
-  PlayerSide, 
+import {
+  UnitType,
+  PlayerSide,
   TurnPhase,
   TerrainType,
   ObjectiveType,
   ActionType,
-  WaspSystemStatus 
+  WaspSystemStatus,
 } from '../core/game/types';
 import { UNIT_DEFINITIONS } from '../core/units/UnitDefinitions';
 
@@ -88,9 +88,9 @@ describe('Unit', () => {
     it('should reset turn state', () => {
       unit.state.hasMoved = true;
       unit.state.hasActed = true;
-      
+
       unit.resetTurnState();
-      
+
       expect(unit.state.hasMoved).toBe(false);
       expect(unit.state.hasActed).toBe(false);
     });
@@ -183,7 +183,7 @@ describe('GameMap', () => {
     it('should set and get terrain correctly', () => {
       const hex = new Hex(0, 0, 0);
       map.setTerrain(hex, TerrainType.URBAN);
-      
+
       const mapHex = map.getHex(hex);
       expect(mapHex?.terrain).toBe(TerrainType.URBAN);
     });
@@ -191,9 +191,9 @@ describe('GameMap', () => {
     it('should calculate movement costs', () => {
       const clearHex = new Hex(0, 0, 0);
       const heavyWoodsHex = new Hex(1, 0, -1);
-      
+
       map.setTerrain(heavyWoodsHex, TerrainType.HEAVY_WOODS);
-      
+
       expect(map.getMovementCost(clearHex)).toBe(1);
       expect(map.getMovementCost(heavyWoodsHex)).toBe(3);
     });
@@ -201,7 +201,7 @@ describe('GameMap', () => {
     it('should provide defense bonuses', () => {
       const urbanHex = new Hex(0, 0, 0);
       map.setTerrain(urbanHex, TerrainType.URBAN);
-      
+
       expect(map.getDefenseBonus(urbanHex)).toBe(2);
     });
   });
@@ -210,7 +210,7 @@ describe('GameMap', () => {
     it('should add and track objectives', () => {
       const hex = new Hex(0, 0, 0);
       map.addObjective(hex, ObjectiveType.PORT, 'test-port');
-      
+
       const mapHex = map.getHex(hex);
       expect(mapHex?.objective?.type).toBe(ObjectiveType.PORT);
       expect(mapHex?.objective?.id).toBe('test-port');
@@ -222,7 +222,7 @@ describe('GameMap', () => {
       const dimensions = map.getDimensions();
       const offshoreHex = new Hex(0, dimensions.height - 1, -(dimensions.height - 1));
       const landHex = new Hex(0, 0, 0);
-      
+
       expect(map.isOffshoreZone(offshoreHex)).toBe(true);
       expect(map.isOffshoreZone(landHex)).toBe(false);
     });
@@ -236,10 +236,10 @@ describe('GameState', () => {
   beforeEach(() => {
     map = GameMap.createTestMap();
     gameState = new GameState('test-game', map);
-    
+
     const assaultPlayer = new Player('assault', PlayerSide.Assault);
     const defenderPlayer = new Player('defender', PlayerSide.Defender);
-    
+
     gameState.addPlayer(assaultPlayer);
     gameState.addPlayer(defenderPlayer);
   });
@@ -253,7 +253,7 @@ describe('GameState', () => {
     it('should advance phases correctly', () => {
       gameState.nextPhase();
       expect(gameState.phase).toBe(TurnPhase.COMMAND);
-      
+
       gameState.nextPhase();
       expect(gameState.phase).toBe(TurnPhase.DEPLOYMENT);
     });
@@ -261,7 +261,7 @@ describe('GameState', () => {
     it('should advance to next turn after end phase', () => {
       gameState.phase = TurnPhase.END;
       gameState.nextPhase();
-      
+
       expect(gameState.turn).toBe(2);
       expect(gameState.phase).toBe(TurnPhase.EVENT);
     });
@@ -270,7 +270,7 @@ describe('GameState', () => {
   describe('action validation', () => {
     it('should validate actions correctly', () => {
       gameState.phase = TurnPhase.ACTION;
-      
+
       const action = {
         type: ActionType.ATTACK,
         playerId: 'assault',
@@ -278,21 +278,21 @@ describe('GameState', () => {
       };
 
       // Should fail because unit doesn't exist
-      let result = gameState.canPerformAction(action);
+      const result = gameState.canPerformAction(action);
       expect(result.valid).toBe(false);
       expect(result.reason).toContain('Unit not found');
     });
 
     it('should check phase validity', () => {
       gameState.phase = TurnPhase.EVENT;
-      
+
       const action = {
         type: ActionType.ATTACK,
         playerId: 'assault',
         unitId: 'test-unit',
       };
 
-      let result = gameState.canPerformAction(action);
+      const result = gameState.canPerformAction(action);
       expect(result.valid).toBe(false);
       expect(result.reason).toContain('not valid in event phase');
     });
@@ -303,7 +303,7 @@ describe('GameState', () => {
       // Mock a victory condition
       gameState.turn = gameState.maxTurns + 1;
       const victory = gameState.checkVictoryConditions();
-      
+
       // Should check for time-based victory
       expect(victory).toBeDefined();
     });
@@ -318,7 +318,7 @@ describe('CombatSystem', () => {
   beforeEach(() => {
     const map = GameMap.createTestMap();
     gameState = new GameState('test-game', map);
-    
+
     attacker = new Unit(
       'attacker',
       UnitType.MARINE_SQUAD,
@@ -357,7 +357,7 @@ describe('CombatSystem', () => {
         UNIT_DEFINITIONS[UnitType.MARINE_SQUAD].specialAbilities,
         new Hex(1, 0, -1)
       );
-      
+
       const result = CombatSystem.canAttack(attacker, friendlyUnit, gameState);
       expect(result.valid).toBe(false);
       expect(result.reason).toBe('Cannot attack friendly units');
@@ -374,7 +374,7 @@ describe('CombatSystem', () => {
   describe('combat resolution', () => {
     it('should resolve combat correctly', () => {
       const result = CombatSystem.resolveCombat(attacker, defender, gameState);
-      
+
       expect(result.attacker).toBe(attacker);
       expect(result.defender).toBe(defender);
       expect(result.attackRoll).toBeDefined();
@@ -385,7 +385,7 @@ describe('CombatSystem', () => {
     it('should apply terrain modifiers', () => {
       // Place defender in urban terrain for cover bonus
       gameState.map.setTerrain(defender.state.position, TerrainType.URBAN);
-      
+
       const result = CombatSystem.resolveCombat(attacker, defender, gameState);
       expect(result.modifiers.terrainCover).toBe(2); // Urban gives +2 DEF
     });

@@ -24,7 +24,7 @@ export class PixiRenderer {
   private unitContainer: PIXI.Container;
   private uiContainer: PIXI.Container;
   private selectedHex?: Hex;
-  
+
   constructor(container: HTMLElement, config: RendererConfig) {
     // Initialize Pixi application
     this.app = new PIXI.Application({
@@ -38,11 +38,17 @@ export class PixiRenderer {
 
     container.appendChild(this.app.view as HTMLCanvasElement);
 
-    // Set up hex layout
+    // Set up hex layout - position map to show properly
+    // For a 12x8 map, we want to offset from center to show the full map
+    const mapWidth = 12 * config.hexSize * 0.75; // Approximate map width
+    const mapHeight = 8 * config.hexSize * 0.866; // Approximate map height
+    const offsetX = Math.max(50, (config.width - mapWidth) / 2);
+    const offsetY = Math.max(50, (config.height - mapHeight) / 2);
+
     this.hexLayout = new HexLayout(
       POINTY_TOP_ORIENTATION,
       { width: config.hexSize, height: config.hexSize },
-      { x: config.width / 2, y: config.height / 2 }
+      { x: offsetX, y: offsetY }
     );
 
     // Create main containers
@@ -100,10 +106,10 @@ export class PixiRenderer {
     (this.app.view as EventTarget).addEventListener('wheel', (event: Event) => {
       const wheelEvent = event as WheelEvent;
       wheelEvent.preventDefault();
-      
+
       const scaleFactor = wheelEvent.deltaY > 0 ? 0.9 : 1.1;
       const newScale = Math.max(0.5, Math.min(2.0, this.mapContainer.scale.x * scaleFactor));
-      
+
       this.mapContainer.scale.set(newScale);
       this.unitContainer.scale.set(newScale);
     });
@@ -127,11 +133,11 @@ export class PixiRenderer {
   private createHexGraphics(hex: Hex, fillColor: number): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
     const corners = this.hexLayout.hexCorners(hex);
-    
+
     // Draw hex fill
     graphics.beginFill(fillColor, 0.8);
     graphics.lineStyle(2, 0x333333, 1);
-    
+
     if (corners.length > 0) {
       graphics.moveTo(corners[0].x, corners[0].y);
       for (let i = 1; i < corners.length; i++) {
@@ -139,7 +145,7 @@ export class PixiRenderer {
       }
       graphics.closePath();
     }
-    
+
     graphics.endFill();
 
     // Add coordinate text for debugging
@@ -170,7 +176,7 @@ export class PixiRenderer {
   selectHex(hex: Hex): void {
     this.selectedHex = hex;
     this.highlightSelectedHex();
-    
+
     // Emit custom event for game logic
     const event = new CustomEvent('hexSelected', { detail: hex });
     this.app.view.dispatchEvent(event);
@@ -191,10 +197,10 @@ export class PixiRenderer {
     // Create new highlight
     const highlight = new PIXI.Graphics();
     highlight.name = 'hexHighlight';
-    
+
     const corners = this.hexLayout.hexCorners(this.selectedHex);
     highlight.lineStyle(4, 0xff0000, 1);
-    
+
     if (corners.length > 0) {
       highlight.moveTo(corners[0].x, corners[0].y);
       for (let i = 1; i < corners.length; i++) {
@@ -236,17 +242,17 @@ export class PixiRenderer {
   private createUnitGraphics(unit: any, isHidden: boolean = false): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
     const center = this.hexLayout.hexToPixel(unit.state.position);
-    
+
     // Unit color based on side and hidden status
     let color = unit.side === 'assault' ? 0x0099ff : 0xff3300;
     let alpha = 0.9;
-    
+
     if (isHidden) {
       // Hidden units appear semi-transparent with question mark
       alpha = 0.5;
       color = 0x666666; // Gray for hidden units
     }
-    
+
     // Draw unit as a circle
     graphics.beginFill(color, alpha);
     graphics.lineStyle(2, isHidden ? 0x999999 : 0xffffff, 1);
@@ -288,24 +294,24 @@ export class PixiRenderer {
    */
   private getUnitSymbol(unitType: string): string {
     const symbols: Record<string, string> = {
-      'uss_wasp': '🚢',
-      'harrier': '✈️',
-      'osprey': '🚁',
-      'super_stallion': '🚁',
-      'super_cobra': '🚁',
-      'lcac': '🚤',
-      'lcu': '🚤',
-      'aav_7': '🚗',
-      'marine_squad': '🪖',
-      'marsoc': '⭐',
-      'humvee': '🚗',
-      'infantry_squad': '👤',
-      'atgm_team': '🎯',
-      'aa_team': '🔫',
-      'mortar_team': '💥',
-      'technical': '🚗',
-      'militia_squad': '👤',
-      'long_range_artillery': '🎯',
+      uss_wasp: '🚢',
+      harrier: '✈️',
+      osprey: '🚁',
+      super_stallion: '🚁',
+      super_cobra: '🚁',
+      lcac: '🚤',
+      lcu: '🚤',
+      aav_7: '🚗',
+      marine_squad: '🪖',
+      marsoc: '⭐',
+      humvee: '🚗',
+      infantry_squad: '👤',
+      atgm_team: '🎯',
+      aa_team: '🔫',
+      mortar_team: '💥',
+      technical: '🚗',
+      militia_squad: '👤',
+      long_range_artillery: '🎯',
     };
     return symbols[unitType] || '?';
   }
@@ -318,18 +324,18 @@ export class PixiRenderer {
     const barWidth = 30;
     const barHeight = 4;
     const hpRatio = unit.state.currentHP / unit.stats.hp;
-    
+
     // Background
     hpBar.beginFill(0x333333);
-    hpBar.drawRect(center.x - barWidth/2, center.y + 25, barWidth, barHeight);
+    hpBar.drawRect(center.x - barWidth / 2, center.y + 25, barWidth, barHeight);
     hpBar.endFill();
-    
+
     // HP fill
     const hpColor = hpRatio > 0.5 ? 0x00ff00 : hpRatio > 0.25 ? 0xffff00 : 0xff0000;
     hpBar.beginFill(hpColor);
-    hpBar.drawRect(center.x - barWidth/2, center.y + 25, barWidth * hpRatio, barHeight);
+    hpBar.drawRect(center.x - barWidth / 2, center.y + 25, barWidth * hpRatio, barHeight);
     hpBar.endFill();
-    
+
     return hpBar;
   }
 
@@ -340,7 +346,7 @@ export class PixiRenderer {
     // Account for camera position and scale
     const worldX = (screenX - this.mapContainer.x) / this.mapContainer.scale.x;
     const worldY = (screenY - this.mapContainer.y) / this.mapContainer.scale.y;
-    
+
     return this.hexLayout.pixelToHex({ x: worldX, y: worldY });
   }
 
@@ -376,11 +382,11 @@ export class PixiRenderer {
     for (const hex of hexes) {
       const highlight = new PIXI.Graphics();
       highlight.name = `highlight_${type}`;
-      
+
       const corners = this.hexLayout.hexCorners(hex);
       highlight.beginFill(color, alpha);
       highlight.lineStyle(2, color, 0.8);
-      
+
       if (corners.length > 0) {
         highlight.moveTo(corners[0].x, corners[0].y);
         for (let i = 1; i < corners.length; i++) {
@@ -388,7 +394,7 @@ export class PixiRenderer {
         }
         highlight.closePath();
       }
-      
+
       highlight.endFill();
       this.uiContainer.addChild(highlight);
     }
@@ -398,10 +404,10 @@ export class PixiRenderer {
    * Clear all highlights
    */
   clearHighlights(): void {
-    const highlights = this.uiContainer.children.filter(child => 
-      child.name && child.name.startsWith('highlight_')
+    const highlights = this.uiContainer.children.filter(
+      child => child.name && child.name.startsWith('highlight_')
     );
-    
+
     for (const highlight of highlights) {
       this.uiContainer.removeChild(highlight);
     }

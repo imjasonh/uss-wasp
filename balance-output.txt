@@ -1,0 +1,755 @@
+⚖️ BALANCE TEST - 3 Games
+==========================
+
+🎮 Game 1:
+[AI] Added AI controller for player assault with difficulty veteran
+[AI] Added AI controller for player defender with difficulty veteran
+  Initial: A8 vs D8
+[AI] State transition: preparation -> active_defense (enemy_landed)
+[AI] State: active_defense, Decisions: 93
+  - attack_target: uss_wasp engaging infantry_squad with 50% confidence
+  - attack_target: uss_wasp engaging infantry_squad with 50% confidence
+  - attack_target: uss_wasp engaging atgm_team with 43% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit wasp
+[AI] ✅ Action succeeded: uss_wasp attacks infantry_squad (rolled 4, 5, 4) for 1 damage
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit canno t act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] State transition: preparation -> active_defense (enemy_landed)
+[AI] State: active_defense, Decisions: 112
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ✅ Action succeeded: infantry_squad attacks marine_squad (rolled 4, 2, 1) - no hits (+1 flanking)
+[AI] State: active_defense, Decisions: 84
+  - attack_target: harrier engaging infantry_squad with 95% confidence
+  - attack_target: harrier engaging infantry_squad with 95% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit harrier1
+[AI] ✅ Action succeeded: harrier attacks infantry_squad (rolled 3, 2, 5, 6) for 2 damage - TARGET DESTROYED
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+  T2: A8(-0) vs D7(-1)
+[AI] State: active_defense, Decisions: 60
+  - attack_target: harrier engaging infantry_squad with 67% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit harrier2
+[AI] ✅ Action succeeded: harrier attacks infantry_squad (rolled 4, 3, 5, 3) for 1 damage
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 48
+  - attack_target: osprey engaging infantry_squad with 63% confidence
+  - attack_target: osprey engaging atgm_team with 59% confidence
+  - attack_target: osprey engaging artillery with 50% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit osprey
+[AI] ✅ Action succeeded: osprey attacks infantry_squad (rolled 1, 6) for 1 damage
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 84
+  - attack_target: atgm_team engaging uss_wasp with 95% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ✅ Action succeeded: atgm_team attacks marine_squad (rolled 1, 2, 4, 2, 4, 3) - no hits (+1 flanking)
+[AI] State: active_defense, Decisions: 41
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit marines1
+[AI] ✅ Action succeeded: marine_squad attacks atgm_team (rolled 2, 1, 6, 3) for 1 damage (+1 flanking)
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 71
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging osprey with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 31
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+  - attack_target: marine_squad engaging atgm_team with 43% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marines2
+[AI] ✅ Action succeeded: marine_squad attacks infantry_squad (rolled 4, 2, 5, 4) for 1 damage - TARGET DESTROYED (+1 flanking)
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] State transition: active_defense -> final_stand (objective_threatened)
+[AI] State: final_stand, Decisions: 69
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging osprey with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+  T6: A8(-0) vs D6(-1)
+[AI] State: active_defense, Decisions: 14
+  - attack_target: marsoc engaging atgm_team with 87% confidence
+  - attack_target: marsoc engaging atgm_team with 87% confidence
+  - attack_target: marsoc engaging aa_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marsoc
+[AI] ✅ Action succeeded: marsoc attacks atgm_team (rolled 6, 2, 2, 1, 4) for 1 damage - TARGET DESTROYED (+1 flanking)
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Target is already destroyed
+[AI] State: final_stand, Decisions: 68
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging osprey with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+  T7: A8(-0) vs D5(-1)
+[AI] State: active_defense, Decisions: 3
+  - attack_target: aav_7 engaging atgm_team with 59% confidence
+  - attack_target: aav_7 engaging atgm_team with 59% confidence
+  - special_ability: Using special ability: [object Object]
+[AI] Executing 2 actions for player assault
+[AI] Attempting action: attack for unit aav
+[AI] ✅ Action succeeded: aav_7 attacks atgm_team (rolled 4, 3, 4) - no hits (+1 flanking)
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: final_stand, Decisions: 68
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging osprey with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+  Result: Assault victory (8 turns, A:0 D:3 casualties)
+
+🎮 Game 2:
+[AI] Added AI controller for player assault with difficulty veteran
+[AI] Added AI controller for player defender with difficulty veteran
+  Initial: A8 vs D8
+[AI] State transition: preparation -> active_defense (enemy_landed)
+[AI] State: active_defense, Decisions: 93
+  - attack_target: uss_wasp engaging infantry_squad with 50% confidence
+  - attack_target: uss_wasp engaging infantry_squad with 50% confidence
+  - attack_target: uss_wasp engaging atgm_team with 43% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit wasp
+[AI] ✅ Action succeeded: uss_wasp attacks infantry_squad (rolled 6, 6, 1) for 2 damage
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] State transition: preparation -> active_defense (enemy_landed)
+[AI] State: active_defense, Decisions: 112
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ✅ Action succeeded: infantry_squad attacks marine_squad (rolled 1, 5, 3) for 1 damage (+1 flanking)
+[AI] State: active_defense, Decisions: 84
+  - attack_target: harrier engaging infantry_squad with 95% confidence
+  - attack_target: harrier engaging infantry_squad with 95% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit harrier1
+[AI] ✅ Action succeeded: harrier attacks infantry_squad (rolled 5, 4, 3, 1) for 1 damage - TARGET DESTROYED
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+  T2: A8(-0) vs D7(-1)
+[AI] State: active_defense, Decisions: 60
+  - attack_target: harrier engaging infantry_squad with 67% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit harrier2
+[AI] ✅ Action succeeded: harrier attacks infantry_squad (rolled 3, 5, 1, 5) for 2 damage
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 48
+  - attack_target: osprey engaging infantry_squad with 63% confidence
+  - attack_target: osprey engaging atgm_team with 59% confidence
+  - attack_target: osprey engaging artillery with 50% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit osprey
+[AI] ✅ Action succeeded: osprey attacks infantry_squad (rolled 4, 3) - no hits
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 41
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit marines1
+[AI] ✅ Action succeeded: marine_squad attacks atgm_team (rolled 5, 6, 4) for 1 damage (+1 flanking)
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 31
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+  - attack_target: marine_squad engaging atgm_team with 43% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marines2
+[AI] ✅ Action succeeded: marine_squad attacks infantry_squad (rolled 5, 3, 4, 4) for 1 damage - TARGET DESTROYED (+1 flanking)
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] State transition: active_defense -> final_stand (objective_threatened)
+[AI] State: final_stand, Decisions: 83
+  - attack_target: atgm_team engaging uss_wasp with 95% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm1
+[AI] ✅ Action succeeded: atgm_team attacks marine_squad (rolled 3, 3, 3, 3, 5) for 1 damage (+1 flanking)
+  T6: A8(-0) vs D6(-1)
+[AI] State: active_defense, Decisions: 14
+  - attack_target: marsoc engaging atgm_team with 87% confidence
+  - attack_target: marsoc engaging atgm_team with 87% confidence
+  - attack_target: marsoc engaging aa_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marsoc
+[AI] ✅ Action succeeded: marsoc attacks atgm_team (rolled 5, 5, 6, 3, 4) for 1 damage - TARGET DESTROYED (+1 flanking)
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Target is already destroyed
+[AI] State: final_stand, Decisions: 68
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging osprey with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+  T7: A8(-0) vs D5(-1)
+[AI] State: active_defense, Decisions: 3
+  - attack_target: aav_7 engaging atgm_team with 59% confidence
+  - attack_target: aav_7 engaging atgm_team with 59% confidence
+  - special_ability: Using special ability: [object Object]
+[AI] Executing 2 actions for player assault
+[AI] Attempting action: attack for unit aav
+[AI] ✅ Action succeeded: aav_7 attacks atgm_team (rolled 3, 3, 4) - no hits (+1 flanking)
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: final_stand, Decisions: 68
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging harrier with 83% confidence
+  - attack_target: atgm_team engaging osprey with 83% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit atgm2
+[AI] ❌ Action failed: Target out of range
+  Result: Assault victory (8 turns, A:0 D:3 casualties)
+
+🎮 Game 3:
+[AI] Added AI controller for player assault with difficulty veteran
+[AI] Added AI controller for player defender with difficulty veteran
+  Initial: A8 vs D8
+[AI] State transition: preparation -> active_defense (enemy_landed)
+[AI] State: active_defense, Decisions: 93
+  - attack_target: uss_wasp engaging infantry_squad with 50% confidence
+  - attack_target: uss_wasp engaging infantry_squad with 50% confidence
+  - attack_target: uss_wasp engaging atgm_team with 43% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit wasp
+[AI] ✅ Action succeeded: uss_wasp attacks infantry_squad (rolled 2, 4, 6) for 1 damage
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit wasp
+[AI] ❌ Action failed: Unit cannot act
+[AI] State transition: preparation -> active_defense (enemy_landed)
+[AI] State: active_defense, Decisions: 112
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry1
+[AI] ✅ Action succeeded: infantry_squad attacks marine_squad (rolled 5, 5, 1) for 2 damage (+1 flanking)
+[AI] State: active_defense, Decisions: 84
+  - attack_target: harrier engaging infantry_squad with 95% confidence
+  - attack_target: harrier engaging infantry_squad with 95% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit harrier1
+[AI] ✅ Action succeeded: harrier attacks infantry_squad (rolled 3, 3, 2, 5) for 1 damage
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier1
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 71
+  - attack_target: harrier engaging infantry_squad with 67% confidence
+  - attack_target: harrier engaging infantry_squad with 67% confidence
+  - attack_target: harrier engaging atgm_team with 57% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit harrier2
+[AI] ✅ Action succeeded: harrier attacks infantry_squad (rolled 3, 4, 2, 2) - no hits
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit harrier2
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 56
+  - attack_target: osprey engaging infantry_squad with 63% confidence
+  - attack_target: osprey engaging infantry_squad with 63% confidence
+  - attack_target: osprey engaging atgm_team with 59% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit osprey
+[AI] ✅ Action succeeded: osprey attacks infantry_squad (rolled 4, 3) - no hits
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit osprey
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 47
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marines1
+[AI] ✅ Action succeeded: marine_squad attacks infantry_squad (rolled 1, 2, 3) - no hits (+1 flanking)
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines1
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 37
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging infantry_squad with 80% confidence
+  - attack_target: marine_squad engaging atgm_team with 73% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marines2
+[AI] ✅ Action succeeded: marine_squad attacks infantry_squad (rolled 4, 2, 4, 6) for 1 damage - TARGET DESTROYED (+1 flanking)
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marines2
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+  T6: A8(-0) vs D7(-1)
+[AI] State: active_defense, Decisions: 18
+  - attack_target: marsoc engaging infantry_squad with 67% confidence
+  - attack_target: marsoc engaging atgm_team with 87% confidence
+  - attack_target: marsoc engaging atgm_team with 87% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit marsoc
+[AI] ✅ Action succeeded: marsoc attacks atgm_team (rolled 3, 5, 3, 3, 3) - no hits (+1 flanking)
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit marsoc
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] State: active_defense, Decisions: 7
+  - attack_target: aav_7 engaging infantry_squad with 33% confidence
+  - attack_target: aav_7 engaging atgm_team with 59% confidence
+  - attack_target: aav_7 engaging atgm_team with 59% confidence
+[AI] Executing 5 actions for player assault
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit aav
+[AI] ✅ Action succeeded: aav_7 attacks atgm_team (rolled 5, 5, 3) - no hits (+1 flanking)
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Unit cannot act
+[AI] Attempting action: attack for unit aav
+[AI] ❌ Action failed: Unit cannot act
+[AI] State: active_defense, Decisions: 98
+  - attack_target: infantry_squad engaging uss_wasp with 75% confidence
+  - attack_target: infantry_squad engaging harrier with 80% confidence
+  - attack_target: infantry_squad engaging harrier with 50% confidence
+[AI] Executing 5 actions for player defender
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+[AI] Attempting action: attack for unit infantry2
+[AI] ❌ Action failed: Target out of range
+  Result: Assault victory (8 turns, A:0 D:1 casualties)
+
+📊 BALANCE ANALYSIS:
+  Assault Wins: 3/3 (100%)
+  Defender Wins: 0/3 (0%)
+  Avg Assault Casualties: 0.0
+  Avg Defender Casualties: 2.3
+  Avg Game Length: 8.0 turns
+
+🎯 BALANCE RECOMMENDATIONS:
+  ⚠️ ASSAULT TOO STRONG - Nerf air power or boost defender range
+  ⚠️ GAMES TOO LONG - Increase lethality or improve positioning
+  ⚠️ NOT ENOUGH CASUALTIES - Combat too conservative

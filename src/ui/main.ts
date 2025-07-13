@@ -38,6 +38,9 @@ class GameUI {
     // Initial render
     this.render();
 
+    // Update objectives display
+    this.updateObjectivesDisplay();
+
     // Make game controller globally available for button clicks
     (window as any).gameController = this.gameController;
 
@@ -58,7 +61,7 @@ class GameUI {
     this.gameState.addPlayer(defenderPlayer);
 
     // Add demo units for Assault force
-    const waspPosition = new Hex(0, 7, -7); // Offshore
+    const waspPosition = Hex.fromOffset(0, 7); // Offshore (bottom row)
     const wasp = new Unit(
       'wasp-1',
       UnitType.USS_WASP,
@@ -69,7 +72,7 @@ class GameUI {
       waspPosition
     );
 
-    const marinePosition = new Hex(2, 5, -7); // On beach
+    const marinePosition = Hex.fromOffset(2, 5); // On beach
     const marines = new Unit(
       'marines-1',
       UnitType.MARINE_SQUAD,
@@ -80,7 +83,7 @@ class GameUI {
       marinePosition
     );
 
-    const harrierPosition = new Hex(1, 7, -8); // Near Wasp
+    const harrierPosition = Hex.fromOffset(1, 6); // Near shore
     const harrier = new Unit(
       'harrier-1',
       UnitType.HARRIER,
@@ -96,7 +99,7 @@ class GameUI {
     assaultPlayer.addUnit(harrier);
 
     // Add demo units for Defender force
-    const defenderPosition1 = new Hex(4, 3, -7); // In urban area
+    const defenderPosition1 = Hex.fromOffset(3, 4); // In urban area
     const defender1 = new Unit(
       'infantry-1',
       UnitType.INFANTRY_SQUAD,
@@ -107,7 +110,7 @@ class GameUI {
       defenderPosition1
     );
 
-    const defenderPosition2 = new Hex(8, 1, -9); // In woods
+    const defenderPosition2 = Hex.fromOffset(8, 3); // In woods
     const defender2 = new Unit(
       'infantry-2',
       UnitType.INFANTRY_SQUAD,
@@ -118,7 +121,7 @@ class GameUI {
       defenderPosition2
     );
 
-    const atgmPosition = new Hex(6, 2, -8); // On hills
+    const atgmPosition = Hex.fromOffset(6, 2); // On hills
     const atgm = new Unit(
       'atgm-1',
       UnitType.ATGM_TEAM,
@@ -136,9 +139,30 @@ class GameUI {
     // Generate initial command points
     this.gameState.generateCommandPoints();
 
-    console.log('🗺️ Demo game initialized with', 
-      assaultPlayer.getLivingUnits().length, 'assault units and',
-      defenderPlayer.getLivingUnits().length, 'defender units');
+    console.log(
+      '🗺️ Demo game initialized with',
+      assaultPlayer.getLivingUnits().length,
+      'assault units and',
+      defenderPlayer.getLivingUnits().length,
+      'defender units'
+    );
+
+    // Log unit positions for debugging
+    assaultPlayer.getLivingUnits().forEach(unit => {
+      const hexPos = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+      const pos = hexPos.toOffset();
+      console.log(
+        `⚔️ ${unit.type} at offset (${pos.col}, ${pos.row}) cube (${unit.state.position.q}, ${unit.state.position.r}, ${unit.state.position.s})`
+      );
+    });
+
+    defenderPlayer.getLivingUnits().forEach(unit => {
+      const hexPos = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+      const pos = hexPos.toOffset();
+      console.log(
+        `🛡️ ${unit.type} at offset (${pos.col}, ${pos.row}) cube (${unit.state.position.q}, ${unit.state.position.r}, ${unit.state.position.s})`
+      );
+    });
   }
 
   private initializeRenderer(): void {
@@ -149,18 +173,25 @@ class GameUI {
 
     // Calculate canvas size
     const rect = gameCanvas.getBoundingClientRect();
-    
+    console.log('📏 Canvas dimensions:', rect.width, 'x', rect.height);
+
+    // Ensure minimum canvas size
+    const width = Math.max(800, rect.width);
+    const height = Math.max(600, rect.height);
+
     this.renderer = new PixiRenderer(gameCanvas, {
-      width: rect.width,
-      height: rect.height,
-      hexSize: 30,
+      width: width,
+      height: height,
+      hexSize: 35, // Slightly larger hexes for better visibility
       backgroundColor: 0x0f3460,
     });
 
     // Handle window resize
     window.addEventListener('resize', () => {
       const newRect = gameCanvas.getBoundingClientRect();
-      this.renderer.resize(newRect.width, newRect.height);
+      const newWidth = Math.max(800, newRect.width);
+      const newHeight = Math.max(600, newRect.height);
+      this.renderer.resize(newWidth, newHeight);
     });
   }
 
@@ -170,15 +201,14 @@ class GameUI {
     newGameBtn?.addEventListener('click', () => this.newGame());
   }
 
-
   private newGame(): void {
     console.log('Starting new game...');
     this.initializeGame();
-    
+
     // Reinitialize game controller
     this.gameController = new GameController(this.gameState, this.renderer, this.mapRenderer);
     (window as any).gameController = this.gameController;
-    
+
     this.render();
     this.updateObjectivesDisplay();
   }
@@ -186,43 +216,51 @@ class GameUI {
   private render(): void {
     // Render map
     const hexes = this.mapRenderer.getAllHexes();
-    this.renderer.renderHexGrid(hexes, (hex) => this.mapRenderer.getTerrainColor(hex));
+    console.log('🗺 Rendering', hexes.length, 'hexes');
+    this.renderer.renderHexGrid(hexes, hex => this.mapRenderer.getTerrainColor(hex));
 
     // Render units
+    const assaultUnits =
+      this.gameState.getPlayerBySide(PlayerSide.Assault)?.getLivingUnits().length || 0;
+    const defenderUnits =
+      this.gameState.getPlayerBySide(PlayerSide.Defender)?.getLivingUnits().length || 0;
+    console.log('🎮 Rendering units:', assaultUnits, 'assault,', defenderUnits, 'defender');
     this.renderer.renderUnits(this.gameState);
   }
-
 
   private updateObjectivesDisplay(): void {
     const objectivesDiv = document.getElementById('objectives-list');
     if (!objectivesDiv) return;
 
     const objectives = this.mapRenderer.getAllObjectives();
-    
+
     if (objectives.length === 0) {
-      objectivesDiv.innerHTML = '<div class="info-item"><span class="info-label">No objectives</span></div>';
+      objectivesDiv.innerHTML =
+        '<div class="info-item"><span class="info-label">No objectives</span></div>';
       return;
     }
 
-    objectivesDiv.innerHTML = objectives.map(obj => 
-      `<div class="info-item">
+    objectivesDiv.innerHTML = objectives
+      .map(
+        obj =>
+          `<div class="info-item">
          <span class="info-label">${obj.type}:</span>
          <span class="info-value">${obj.coordinate}</span>
        </div>`
-    ).join('');
+      )
+      .join('');
   }
-
 }
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
   const gameUI = new GameUI();
-  
+
   try {
     await gameUI.initialize();
   } catch (error) {
     console.error('Failed to initialize game UI:', error);
-    
+
     // Show error message to user
     const appElement = document.getElementById('app');
     if (appElement) {

@@ -29,7 +29,7 @@ const DEFAULT_UNIT_STATS: Record<UnitType, UnitStats> = {
   [UnitType.MILITIA_SQUAD]: { mv: 3, atk: 2, def: 6, hp: 2, pointCost: 20 },
   [UnitType.LONG_RANGE_ARTILLERY]: { mv: 1, atk: 6, def: 6, hp: 3, pointCost: 80 },
   [UnitType.ARTILLERY]: { mv: 0, atk: 4, def: 3, hp: 4, sp: 6, pointCost: 35 },
-  [UnitType.SAM_SITE]: { mv: 0, atk: 3, def: 2, hp: 3, sp: 4, pointCost: 25 }
+  [UnitType.SAM_SITE]: { mv: 0, atk: 3, def: 2, hp: 3, sp: 4, pointCost: 25 },
 };
 
 /**
@@ -55,7 +55,7 @@ const DEFAULT_UNIT_CATEGORIES: Record<UnitType, UnitCategory[]> = {
   [UnitType.MILITIA_SQUAD]: [UnitCategory.INFANTRY, UnitCategory.GROUND],
   [UnitType.LONG_RANGE_ARTILLERY]: [UnitCategory.ARTILLERY, UnitCategory.GROUND],
   [UnitType.ARTILLERY]: [UnitCategory.ARTILLERY, UnitCategory.GROUND],
-  [UnitType.SAM_SITE]: [UnitCategory.ARTILLERY, UnitCategory.GROUND]
+  [UnitType.SAM_SITE]: [UnitCategory.ARTILLERY, UnitCategory.GROUND],
 };
 
 /**
@@ -64,66 +64,48 @@ const DEFAULT_UNIT_CATEGORIES: Record<UnitType, UnitCategory[]> = {
 const DEFAULT_SPECIAL_ABILITIES: Record<UnitType, SpecialAbility[]> = {
   [UnitType.USS_WASP]: [
     { name: 'Amphibious Command', description: 'Generates extra CP', cpCost: 0 },
-    { name: 'Launch Operations', description: 'Deploy units', cpCost: 1 }
+    { name: 'Launch Operations', description: 'Deploy units', cpCost: 1 },
   ],
-  [UnitType.HARRIER]: [
-    { name: 'VTOL', description: 'Vertical takeoff/landing', cpCost: 0 }
-  ],
-  [UnitType.OSPREY]: [
-    { name: 'Tilt-rotor', description: 'Aircraft/helicopter hybrid', cpCost: 0 }
-  ],
+  [UnitType.HARRIER]: [{ name: 'VTOL', description: 'Vertical takeoff/landing', cpCost: 0 }],
+  [UnitType.OSPREY]: [{ name: 'Tilt-rotor', description: 'Aircraft/helicopter hybrid', cpCost: 0 }],
   [UnitType.SUPER_STALLION]: [
-    { name: 'Heavy Lift', description: 'Large cargo capacity', cpCost: 0 }
+    { name: 'Heavy Lift', description: 'Large cargo capacity', cpCost: 0 },
   ],
   [UnitType.SUPER_COBRA]: [
-    { name: 'Close Air Support', description: 'Enhanced ground attack', cpCost: 1 }
+    { name: 'Close Air Support', description: 'Enhanced ground attack', cpCost: 1 },
   ],
-  [UnitType.LCAC]: [
-    { name: 'Air Cushion', description: 'Over-the-beach capability', cpCost: 0 }
-  ],
-  [UnitType.LCU]: [
-    { name: 'Utility Landing', description: 'Beach assault capability', cpCost: 0 }
-  ],
+  [UnitType.LCAC]: [{ name: 'Air Cushion', description: 'Over-the-beach capability', cpCost: 0 }],
+  [UnitType.LCU]: [{ name: 'Utility Landing', description: 'Beach assault capability', cpCost: 0 }],
   [UnitType.AAV_7]: [
-    { name: 'Amphibious Assault', description: 'Water-to-land movement', cpCost: 0 }
+    { name: 'Amphibious Assault', description: 'Water-to-land movement', cpCost: 0 },
   ],
   [UnitType.MARINE_SQUAD]: [
-    { name: 'Amphibious Training', description: 'Beach assault bonus', cpCost: 0 }
+    { name: 'Amphibious Training', description: 'Beach assault bonus', cpCost: 0 },
   ],
   [UnitType.MARSOC]: [
     { name: 'Special Operations', description: 'Enhanced reconnaissance', cpCost: 1 },
-    { name: 'Direct Action', description: 'Stealth attacks', cpCost: 2 }
+    { name: 'Direct Action', description: 'Stealth attacks', cpCost: 2 },
   ],
-  [UnitType.HUMVEE]: [
-    { name: 'Mobility', description: 'Enhanced movement', cpCost: 0 }
-  ],
-  [UnitType.INFANTRY_SQUAD]: [
-    { name: 'Entrench', description: 'Defensive bonus', cpCost: 1 }
-  ],
-  [UnitType.ATGM_TEAM]: [
-    { name: 'Anti-Tank', description: 'Bonus vs vehicles', cpCost: 0 }
-  ],
-  [UnitType.AA_TEAM]: [
-    { name: 'Anti-Aircraft', description: 'Bonus vs aircraft', cpCost: 0 }
-  ],
-  [UnitType.MORTAR_TEAM]: [
-    { name: 'Indirect Fire', description: 'Ranged bombardment', cpCost: 1 }
-  ],
-  [UnitType.TECHNICAL]: [
-    { name: 'Improvised', description: 'Low cost mobility', cpCost: 0 }
-  ],
-  [UnitType.MILITIA_SQUAD]: [
-    { name: 'Local Knowledge', description: 'Terrain bonus', cpCost: 0 }
-  ],
+  [UnitType.HUMVEE]: [{ name: 'Mobility', description: 'Enhanced movement', cpCost: 0 }],
+  [UnitType.INFANTRY_SQUAD]: [{ name: 'Entrench', description: 'Defensive bonus', cpCost: 1 }],
+  [UnitType.ATGM_TEAM]: [{ name: 'Anti-Tank', description: 'Bonus vs vehicles', cpCost: 0 }],
+  [UnitType.AA_TEAM]: [{ name: 'Anti-Aircraft', description: 'Bonus vs aircraft', cpCost: 0 }],
+  [UnitType.MORTAR_TEAM]: [{ name: 'Indirect Fire', description: 'Ranged bombardment', cpCost: 1 }],
+  [UnitType.TECHNICAL]: [{ name: 'Improvised', description: 'Low cost mobility', cpCost: 0 }],
+  [UnitType.MILITIA_SQUAD]: [{ name: 'Local Knowledge', description: 'Terrain bonus', cpCost: 0 }],
   [UnitType.LONG_RANGE_ARTILLERY]: [
-    { name: 'Heavy Bombardment', description: 'Long range fire support', cpCost: 2 }
+    { name: 'Heavy Bombardment', description: 'Long range fire support', cpCost: 2 },
   ],
   [UnitType.ARTILLERY]: [
-    { name: 'Artillery Barrage', description: 'Target 3 adjacent hexes anywhere on map', cpCost: 2 }
+    {
+      name: 'Artillery Barrage',
+      description: 'Target 3 adjacent hexes anywhere on map',
+      cpCost: 2,
+    },
   ],
   [UnitType.SAM_SITE]: [
-    { name: 'SAM Strike', description: 'Target 1 Air Unit or USS Wasp anywhere on map', cpCost: 3 }
-  ]
+    { name: 'SAM Strike', description: 'Target 1 Air Unit or USS Wasp anywhere on map', cpCost: 3 },
+  ],
 };
 
 /**
@@ -137,34 +119,36 @@ export function createTestUnit(
   customStats?: Partial<UnitStats>,
   customAbilities?: SpecialAbility[]
 ): Unit {
-  const stats = customStats ? 
-    { ...DEFAULT_UNIT_STATS[type], ...customStats } : 
-    DEFAULT_UNIT_STATS[type];
-    
+  const stats = customStats
+    ? { ...DEFAULT_UNIT_STATS[type], ...customStats }
+    : DEFAULT_UNIT_STATS[type];
+
   const categories = DEFAULT_UNIT_CATEGORIES[type];
   const abilities = customAbilities || DEFAULT_SPECIAL_ABILITIES[type];
-  
+
   return new Unit(id, type, side, stats, categories, abilities, position);
 }
 
 /**
  * Create multiple test units at once
  */
-export function createTestUnits(unitConfigs: Array<{
-  id: string;
-  type: UnitType;
-  side: PlayerSide;
-  position: HexCoordinate;
-  stats?: Partial<UnitStats>;
-  abilities?: SpecialAbility[];
-}>): Unit[] {
-  return unitConfigs.map(config => 
+export function createTestUnits(
+  unitConfigs: Array<{
+    id: string;
+    type: UnitType;
+    side: PlayerSide;
+    position: HexCoordinate;
+    stats?: Partial<UnitStats>;
+    abilities?: SpecialAbility[];
+  }>
+): Unit[] {
+  return unitConfigs.map(config =>
     createTestUnit(
-      config.id, 
-      config.type, 
-      config.side, 
-      config.position, 
-      config.stats, 
+      config.id,
+      config.type,
+      config.side,
+      config.position,
+      config.stats,
       config.abilities
     )
   );

@@ -5,13 +5,13 @@
 import { Hex } from '../core/hex';
 import { GameState, Unit } from '../core/game';
 import { GameEngine, ActionResult } from '../core/game/GameEngine';
-import { 
-  ActionType, 
-  TurnPhase, 
+import {
+  ActionType,
+  TurnPhase,
   PlayerSide,
   UnitType,
   UnitCategory,
-  StatusEffect
+  StatusEffect,
 } from '../core/game/types';
 import { PixiRenderer } from './renderer/PixiRenderer';
 import { MapRenderer } from './renderer/MapRenderer';
@@ -46,7 +46,7 @@ export class GameController {
   ) {
     this.gameEngine = new GameEngine(gameState);
     this.setupGameEventListeners();
-    
+
     // Initialize displays
     this.updateGameStatusDisplay();
     this.updateWaspDisplay();
@@ -112,7 +112,7 @@ export class GameController {
     this.uiMode = UIMode.UNIT_SELECTED;
     this.updateUnitActionButtons(unit);
     this.displayUnitInfo(unit);
-    
+
     // Highlight valid movement hexes
     this.highlightValidMoves(unit);
   }
@@ -132,7 +132,7 @@ export class GameController {
 
     const result = this.gameEngine.executeAction(action);
     this.handleActionResult(result);
-    
+
     if (result.success) {
       this.render();
       this.resetUIModeInternal();
@@ -146,8 +146,8 @@ export class GameController {
     if (!this.selectedUnit) return;
 
     const targets = this.gameState.getUnitsAt(targetHex);
-    const transportableUnits = targets.filter(unit => 
-      unit.side === this.selectedUnit!.side && unit !== this.selectedUnit
+    const transportableUnits = targets.filter(
+      unit => unit.side === this.selectedUnit!.side && unit !== this.selectedUnit
     );
 
     if (transportableUnits.length === 0) {
@@ -157,7 +157,7 @@ export class GameController {
 
     // Load the first available unit
     const target = transportableUnits[0];
-    
+
     const action = {
       type: ActionType.LOAD,
       playerId: this.gameState.activePlayerId,
@@ -167,7 +167,7 @@ export class GameController {
 
     const result = this.gameEngine.executeAction(action);
     this.handleActionResult(result);
-    
+
     if (result.success) {
       this.render();
       this.resetUIModeInternal();
@@ -189,7 +189,7 @@ export class GameController {
 
     const result = this.gameEngine.executeAction(action);
     this.handleActionResult(result);
-    
+
     if (result.success) {
       this.render();
       this.resetUIModeInternal();
@@ -212,7 +212,7 @@ export class GameController {
 
     // For now, attack the first enemy unit
     const target = enemyTargets[0];
-    
+
     const action = {
       type: ActionType.ATTACK,
       playerId: this.gameState.activePlayerId,
@@ -222,7 +222,7 @@ export class GameController {
 
     const result = this.gameEngine.executeAction(action);
     this.handleActionResult(result);
-    
+
     if (result.success) {
       this.render();
       this.resetUIModeInternal();
@@ -247,7 +247,7 @@ export class GameController {
 
     const result = this.gameEngine.executeAction(action);
     this.handleActionResult(result);
-    
+
     if (result.success) {
       this.render();
       this.resetUIModeInternal();
@@ -259,7 +259,7 @@ export class GameController {
    */
   private handleActionResult(result: ActionResult): void {
     this.actionHistory.push(result);
-    
+
     if (result.success) {
       this.showMessage(`✅ ${result.message}`, 'success');
       this.updateGameStatusDisplay();
@@ -275,24 +275,24 @@ export class GameController {
   private updateGameStatusDisplay(): void {
     this.updateElement('turn-display', this.gameState.turn.toString());
     this.updateElement('phase-display', this.gameState.phase);
-    
+
     const activePlayer = this.gameState.getActivePlayer();
     this.updateElement('active-player', activePlayer ? activePlayer.side : 'None');
-    
+
     // Update player stats
     const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
     const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
-    
+
     if (assaultPlayer) {
       this.updateElement('assault-cp', assaultPlayer.commandPoints.toString());
       this.updateElement('assault-units', assaultPlayer.getLivingUnits().length.toString());
     }
-    
+
     if (defenderPlayer) {
       this.updateElement('defender-cp', defenderPlayer.commandPoints.toString());
       this.updateElement('defender-units', defenderPlayer.getLivingUnits().length.toString());
     }
-    
+
     // Check for victory conditions
     if (this.gameState.isGameOver) {
       this.showGameEndScreen();
@@ -305,20 +305,23 @@ export class GameController {
   private updateWaspDisplay(): void {
     const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
     if (!assaultPlayer) return;
-    
+
     const waspUnit = assaultPlayer.getLivingUnits().find(unit => unit.type === UnitType.USS_WASP);
     if (!waspUnit) {
-      this.updateElement('wasp-status', '<div class="info-item"><span class="info-label">No USS Wasp</span></div>');
+      this.updateElement(
+        'wasp-status',
+        '<div class="info-item"><span class="info-label">No USS Wasp</span></div>'
+      );
       return;
     }
-    
+
     const waspStatus = this.gameState.getWaspStatus();
     if (!waspStatus) return;
-    
+
     const statusClass = this.getStatusClass(waspStatus.flightDeck.status);
     const wellStatusClass = this.getStatusClass(waspStatus.wellDeck.status);
     const c2StatusClass = this.getStatusClass(waspStatus.c2.status);
-    
+
     const statusHtml = `
       <div class="info-item">
         <span class="info-label">Structural:</span>
@@ -337,13 +340,19 @@ export class GameController {
         <span class="info-value ${c2StatusClass}">${waspStatus.c2.status}</span>
       </div>
     `;
-    
+
     this.updateElement('wasp-status', statusHtml);
-    
+
     // Update launch capacities
-    this.updateElement('flight-deck-capacity', `${waspStatus.flightDeck.launches}/${waspStatus.flightDeck.maxLaunches}`);
-    this.updateElement('well-deck-capacity', `${waspStatus.wellDeck.launches}/${waspStatus.wellDeck.maxLaunches}`);
-    
+    this.updateElement(
+      'flight-deck-capacity',
+      `${waspStatus.flightDeck.launches}/${waspStatus.flightDeck.maxLaunches}`
+    );
+    this.updateElement(
+      'well-deck-capacity',
+      `${waspStatus.wellDeck.launches}/${waspStatus.wellDeck.maxLaunches}`
+    );
+
     // Update cargo display
     this.updateWaspCargoDisplay(waspUnit);
   }
@@ -353,11 +362,16 @@ export class GameController {
    */
   private getStatusClass(status: string): string {
     switch (status.toLowerCase()) {
-      case 'operational': return 'status-operational';
-      case 'limited': return 'status-limited';
-      case 'damaged': return 'status-damaged';
-      case 'offline': return 'status-offline';
-      default: return '';
+      case 'operational':
+        return 'status-operational';
+      case 'limited':
+        return 'status-limited';
+      case 'damaged':
+        return 'status-damaged';
+      case 'offline':
+        return 'status-offline';
+      default:
+        return '';
     }
   }
 
@@ -365,14 +379,18 @@ export class GameController {
    * Update Wasp cargo display
    */
   private updateWaspCargoDisplay(waspUnit: Unit): void {
-    const cargoDisplay = waspUnit.state.cargo.map(cargoUnit => 
-      `<div class="info-item">
+    const cargoDisplay = waspUnit.state.cargo
+      .map(
+        cargoUnit =>
+          `<div class="info-item">
         <span class="info-label">${cargoUnit.type}:</span>
         <span class="info-value">${cargoUnit.id}</span>
       </div>`
-    ).join('');
-    
-    this.updateElement('wasp-cargo', 
+      )
+      .join('');
+
+    this.updateElement(
+      'wasp-cargo',
       cargoDisplay || '<div class="info-item"><span class="info-label">No cargo</span></div>'
     );
   }
@@ -384,7 +402,10 @@ export class GameController {
     const winnerId = this.gameState.winner;
     if (winnerId) {
       const winnerPlayer = this.gameState.getPlayer(winnerId);
-      this.showMessage(`Game Over! ${winnerPlayer ? winnerPlayer.side + ' wins!' : 'Player ' + winnerId + ' wins!'}`, 'info');
+      this.showMessage(
+        `Game Over! ${winnerPlayer ? winnerPlayer.side + ' wins!' : 'Player ' + winnerId + ' wins!'}`,
+        'info'
+      );
     } else {
       this.showMessage('Game Over! Draw!', 'info');
     }
@@ -395,13 +416,13 @@ export class GameController {
    */
   private showMessage(message: string, type: 'info' | 'success' | 'error'): void {
     console.log(`[${type.toUpperCase()}] ${message}`);
-    
+
     // Display in UI message area
     const messageDiv = document.getElementById('game-message');
     if (messageDiv) {
       messageDiv.className = `message message-${type}`;
       messageDiv.textContent = message;
-      
+
       // Auto-clear after 3 seconds
       setTimeout(() => {
         messageDiv.className = 'message';
@@ -444,7 +465,7 @@ export class GameController {
     // Check all hexes within movement range
     for (const hex of currentPos.range(movement)) {
       if (hex.equals(currentPos)) continue;
-      
+
       const path = this.gameEngine.calculateMovementPath(unit, hex);
       if (path.valid) {
         validHexes.push(hex);
@@ -469,7 +490,7 @@ export class GameController {
       buttons.push('<button onclick="gameController.startMove()">Move</button>');
     }
 
-    // Attack button  
+    // Attack button
     if (unit.canAct() && this.isValidPhase(ActionType.ATTACK)) {
       buttons.push('<button onclick="gameController.startAttack()">Attack</button>');
     }
@@ -477,7 +498,9 @@ export class GameController {
     // Special abilities
     for (const ability of unit.specialAbilities) {
       if (this.canUseAbility(unit, ability.name)) {
-        buttons.push(`<button onclick="gameController.useAbility('${ability.name}')">${ability.name}</button>`);
+        buttons.push(
+          `<button onclick="gameController.useAbility('${ability.name}')">${ability.name}</button>`
+        );
       }
     }
 
@@ -525,9 +548,11 @@ export class GameController {
     // Always available
     buttons.push('<button onclick="gameController.nextPhase()">Next Phase</button>');
     buttons.push('<button onclick="gameController.endTurn()">End Turn</button>');
-    
+
     // Debug controls
-    buttons.push('<button onclick="gameController.toggleFogOfWar()" style="background: #666; font-size: 10px;">Toggle FOW</button>');
+    buttons.push(
+      '<button onclick="gameController.toggleFogOfWar()" style="background: #666; font-size: 10px;">Toggle FOW</button>'
+    );
 
     phaseButtons.innerHTML = buttons.join('');
   }
@@ -542,9 +567,14 @@ export class GameController {
       case TurnPhase.MOVEMENT:
         return actionType === ActionType.MOVE;
       case TurnPhase.ACTION:
-        return [ActionType.ATTACK, ActionType.LOAD, ActionType.UNLOAD, 
-                ActionType.SPECIAL_ABILITY, ActionType.SECURE_OBJECTIVE,
-                ActionType.REVEAL].includes(actionType);
+        return [
+          ActionType.ATTACK,
+          ActionType.LOAD,
+          ActionType.UNLOAD,
+          ActionType.SPECIAL_ABILITY,
+          ActionType.SECURE_OBJECTIVE,
+          ActionType.REVEAL,
+        ].includes(actionType);
       default:
         return false;
     }
@@ -586,11 +616,11 @@ export class GameController {
     // Check all hexes within attack range
     for (const hex of currentPos.range(range)) {
       if (hex.equals(currentPos)) continue;
-      
+
       // Check if there are enemy units at this hex
       const unitsAtHex = this.gameState.getUnitsAt(hex);
       const hasEnemies = unitsAtHex.some(target => target.side !== unit.side);
-      
+
       if (hasEnemies) {
         validHexes.push(hex);
       }
@@ -613,14 +643,12 @@ export class GameController {
     // Highlight adjacent hexes with friendly units that can be loaded
     for (const hex of currentPos.range(1)) {
       if (hex.equals(currentPos)) continue;
-      
+
       const unitsAtHex = this.gameState.getUnitsAt(hex);
-      const hasLoadableUnits = unitsAtHex.some(target => 
-        target.side === unit.side && 
-        target !== unit &&
-        this.canUnitLoad(unit, target)
+      const hasLoadableUnits = unitsAtHex.some(
+        target => target.side === unit.side && target !== unit && this.canUnitLoad(unit, target)
       );
-      
+
       if (hasLoadableUnits) {
         validHexes.push(hex);
       }
@@ -636,15 +664,15 @@ export class GameController {
     // Basic checks: transport has capacity and target is compatible
     if (transport.getCargoCapacity() === 0) return false;
     if (transport.state.cargo.length >= transport.getCargoCapacity()) return false;
-    
+
     // Infantry can usually be loaded into any transport
     if (target.hasCategory(UnitCategory.INFANTRY)) return true;
-    
+
     // Vehicles need appropriate transport
     if (target.hasCategory(UnitCategory.VEHICLE)) {
       return transport.type === UnitType.LCAC || transport.type === UnitType.SUPER_STALLION;
     }
-    
+
     return false;
   }
 
@@ -661,7 +689,7 @@ export class GameController {
     // Highlight adjacent hexes where units can be unloaded
     for (const hex of currentPos.range(1)) {
       if (hex.equals(currentPos)) continue;
-      
+
       // Check if hex is valid for unloading (basic check - not deep water)
       const mapHex = this.gameState.map.getHex(hex);
       if (mapHex && mapHex.terrain !== 'deep_water') {
@@ -685,7 +713,7 @@ export class GameController {
   private displayHexInfo(hex: Hex): void {
     const hexInfo = this.mapRenderer.getHexInfo(hex);
     const unitInfoDiv = document.getElementById('unit-info');
-    
+
     if (unitInfoDiv) {
       unitInfoDiv.innerHTML = `
         <h4>Hex Information</h4>
@@ -705,18 +733,26 @@ export class GameController {
           <span class="info-label">Defense Bonus:</span>
           <span class="info-value">+${hexInfo.defenseBonus}</span>
         </div>
-        ${hexInfo.objective ? `
+        ${
+          hexInfo.objective
+            ? `
         <div class="info-item">
           <span class="info-label">Objective:</span>
           <span class="info-value">${hexInfo.objective.type}</span>
         </div>
-        ` : ''}
-        ${hexInfo.isOffshore ? `
+        `
+            : ''
+        }
+        ${
+          hexInfo.isOffshore
+            ? `
         <div class="info-item">
           <span class="info-label">Special:</span>
           <span class="info-value">Offshore Zone</span>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
       `;
     }
   }
@@ -726,10 +762,10 @@ export class GameController {
    */
   private displayUnitInfo(unit: Unit): void {
     const unitInfoDiv = document.getElementById('unit-info');
-    
+
     if (unitInfoDiv) {
       const unitName = unit.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      
+
       unitInfoDiv.innerHTML = `
         <h4>${unitName}</h4>
         <div class="info-item">
@@ -752,24 +788,36 @@ export class GameController {
           <span class="info-label">Movement:</span>
           <span class="info-value">${unit.getEffectiveMovement()}/${unit.stats.mv}</span>
         </div>
-        ${unit.stats.sp ? `
+        ${
+          unit.stats.sp
+            ? `
         <div class="info-item">
           <span class="info-label">Supply:</span>
           <span class="info-value">${unit.state.currentSP}/${unit.stats.sp}</span>
         </div>
-        ` : ''}
-        ${unit.state.suppressionTokens > 0 ? `
+        `
+            : ''
+        }
+        ${
+          unit.state.suppressionTokens > 0
+            ? `
         <div class="info-item">
           <span class="info-label">Suppression:</span>
           <span class="info-value">${unit.state.suppressionTokens}</span>
         </div>
-        ` : ''}
-        ${unit.state.cargo.length > 0 ? `
+        `
+            : ''
+        }
+        ${
+          unit.state.cargo.length > 0
+            ? `
         <div class="info-item">
           <span class="info-label">Cargo:</span>
           <span class="info-value">${unit.state.cargo.length}/${unit.getCargoCapacity()}</span>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
         <div class="info-item">
           <span class="info-label">Status:</span>
           <span class="info-value">${this.getUnitStatus(unit)}</span>
@@ -783,13 +831,13 @@ export class GameController {
    */
   private getUnitStatus(unit: Unit): string {
     const statuses: string[] = [];
-    
+
     if (unit.isHidden()) statuses.push('Hidden');
     if (unit.isSuppressed()) statuses.push('Suppressed');
     if (unit.isPinned()) statuses.push('Pinned');
     if (unit.state.hasMoved) statuses.push('Moved');
     if (unit.state.hasActed) statuses.push('Acted');
-    
+
     return statuses.length > 0 ? statuses.join(', ') : 'Ready';
   }
 
@@ -799,13 +847,13 @@ export class GameController {
   private render(): void {
     // Render map
     const hexes = this.mapRenderer.getAllHexes();
-    this.renderer.renderHexGrid(hexes, (hex) => this.mapRenderer.getTerrainColor(hex));
+    this.renderer.renderHexGrid(hexes, hex => this.mapRenderer.getTerrainColor(hex));
 
     // Render units (with fog of war for current player)
     const activePlayer = this.gameState.getActivePlayer();
     const viewingPlayerId = activePlayer?.id;
     this.renderer.renderUnits(this.gameState, viewingPlayerId);
-    
+
     // Update USS Wasp display
     this.updateWaspDisplay();
   }
@@ -845,7 +893,7 @@ export class GameController {
 
     const result = this.gameEngine.executeAction(action);
     this.handleActionResult(result);
-    
+
     if (result.success) {
       this.render();
       this.resetUIModeInternal();
@@ -855,10 +903,10 @@ export class GameController {
   public nextPhase(): void {
     const previousPhase = this.gameState.phase;
     this.gameState.nextPhase();
-    
+
     // Handle phase transition effects
     this.handlePhaseTransition(previousPhase, this.gameState.phase);
-    
+
     this.updateGameStatusDisplay();
     this.updateActionButtons();
     this.resetUIModeInternal();
@@ -871,7 +919,7 @@ export class GameController {
   private handlePhaseTransition(fromPhase: TurnPhase, toPhase: TurnPhase): void {
     // Clear turn state when transitioning phases
     this.clearTurnState();
-    
+
     switch (toPhase) {
       case TurnPhase.EVENT:
         this.showMessage(`Turn ${this.gameState.turn} begins`, 'info');
@@ -903,7 +951,10 @@ export class GameController {
     for (const player of this.gameState.getAllPlayers()) {
       for (const unit of player.getLivingUnits()) {
         // Reset movement and action flags for appropriate phases
-        if (this.gameState.phase === TurnPhase.MOVEMENT || this.gameState.phase === TurnPhase.EVENT) {
+        if (
+          this.gameState.phase === TurnPhase.MOVEMENT ||
+          this.gameState.phase === TurnPhase.EVENT
+        ) {
           unit.state.hasMoved = false;
         }
         if (this.gameState.phase === TurnPhase.ACTION || this.gameState.phase === TurnPhase.EVENT) {
@@ -956,10 +1007,10 @@ export class GameController {
   private processEndPhase(): void {
     // Check victory conditions
     this.checkVictoryConditions();
-    
+
     // Reset suppression, recover units, etc.
     this.processEndTurnEffects();
-    
+
     this.showMessage('Turn completed', 'info');
   }
 
@@ -969,13 +1020,13 @@ export class GameController {
   private checkVictoryConditions(): void {
     // Check if game is already over
     if (this.gameState.isGameOver) return;
-    
+
     // Check various victory conditions
     const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
     const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
-    
+
     if (!assaultPlayer || !defenderPlayer) return;
-    
+
     // Check unit elimination victory
     if (assaultPlayer.getLivingUnits().length === 0) {
       this.gameState.winner = defenderPlayer.id;
@@ -983,14 +1034,14 @@ export class GameController {
       this.showMessage('Defender wins by elimination!', 'info');
       return;
     }
-    
+
     if (defenderPlayer.getLivingUnits().length === 0) {
       this.gameState.winner = assaultPlayer.id;
       this.gameState.isGameOver = true;
       this.showMessage('Assault wins by elimination!', 'info');
       return;
     }
-    
+
     // Check USS Wasp destruction
     const waspUnit = assaultPlayer.getLivingUnits().find(unit => unit.type === UnitType.USS_WASP);
     if (!waspUnit) {
@@ -999,13 +1050,13 @@ export class GameController {
       this.showMessage('Defender wins - USS Wasp destroyed!', 'info');
       return;
     }
-    
+
     // Check turn limit (example: 10 turns)
     if (this.gameState.turn >= 10) {
       // Determine winner by objectives or units remaining
       const assaultScore = this.calculatePlayerScore(assaultPlayer);
       const defenderScore = this.calculatePlayerScore(defenderPlayer);
-      
+
       if (assaultScore > defenderScore) {
         this.gameState.winner = assaultPlayer.id;
         this.showMessage('Assault wins by points!', 'info');
@@ -1024,15 +1075,15 @@ export class GameController {
    */
   private calculatePlayerScore(player: any): number {
     let score = 0;
-    
+
     // Points for surviving units
     score += player.getLivingUnits().length * 10;
-    
+
     // Points for command points remaining
     score += player.commandPoints * 5;
-    
+
     // TODO: Add objective control scoring when objectives are implemented
-    
+
     return score;
   }
 
@@ -1047,7 +1098,7 @@ export class GameController {
         if (unit.state.suppressionTokens > 0) {
           unit.state.suppressionTokens = Math.max(0, unit.state.suppressionTokens - 1);
         }
-        
+
         // Clear pinned status
         unit.state.statusEffects.delete(StatusEffect.PINNED);
       }

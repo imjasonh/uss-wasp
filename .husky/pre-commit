@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run TypeScript compilation check
+echo "📝 TypeScript compilation check..."
+npm run typecheck
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript compilation failed!"
+  exit 1
+fi
+
+# Run code formatting
+echo "🎨 Code formatting..."
+npx lint-staged
+if [ $? -ne 0 ]; then
+  echo "❌ Code formatting failed!"
+  exit 1
+fi
+
+# Run tests to ensure nothing is broken
+echo "🧪 Running tests..."
+npm test -- --silent
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed!"
+  exit 1
+fi
+
+echo "✅ Pre-commit checks completed!"

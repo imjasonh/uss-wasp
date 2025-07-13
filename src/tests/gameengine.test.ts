@@ -10,12 +10,7 @@ import { Unit } from '../core/game/Unit';
 import { GameMap } from '../core/game/Map';
 import { TerrainType } from '../core/game/types';
 import { Hex } from '../core/hex';
-import { 
-  PlayerSide, 
-  UnitType, 
-  ActionType,
-  TurnPhase 
-} from '../core/game/types';
+import { PlayerSide, UnitType, ActionType, TurnPhase } from '../core/game/types';
 import { UNIT_DEFINITIONS } from '../core/units/UnitDefinitions';
 
 describe('GameEngine', () => {
@@ -37,7 +32,7 @@ describe('GameEngine', () => {
       }
     }
     gameState = new GameState('test-game', map);
-    
+
     // Add players
     assaultPlayer = new Player('assault', PlayerSide.Assault);
     defenderPlayer = new Player('defender', PlayerSide.Defender);
@@ -80,7 +75,7 @@ describe('GameEngine', () => {
         type: ActionType.MOVE,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetPosition: new Hex(2, -1, -1)
+        targetPosition: new Hex(2, -1, -1),
       };
 
       const result = gameEngine.executeAction(moveAction);
@@ -92,12 +87,12 @@ describe('GameEngine', () => {
     it('should validate attack actions', () => {
       // Set phase to action for attacks
       gameState.phase = TurnPhase.ACTION;
-      
+
       const attackAction = {
         type: ActionType.ATTACK,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetId: enemyUnit.id
+        targetId: enemyUnit.id,
       };
 
       const result = gameEngine.executeAction(attackAction);
@@ -110,7 +105,7 @@ describe('GameEngine', () => {
         type: ActionType.MOVE,
         playerId: defenderPlayer.id, // Wrong player
         unitId: marineUnit.id,
-        targetPosition: new Hex(2, -1, -1)
+        targetPosition: new Hex(2, -1, -1),
       };
 
       const result = gameEngine.executeAction(moveAction);
@@ -120,12 +115,12 @@ describe('GameEngine', () => {
 
     it('should reject actions in wrong phase', () => {
       gameState.phase = TurnPhase.COMMAND; // Wrong phase for movement
-      
+
       const moveAction = {
         type: ActionType.MOVE,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetPosition: new Hex(2, -1, -1)
+        targetPosition: new Hex(2, -1, -1),
       };
 
       const result = gameEngine.executeAction(moveAction);
@@ -137,7 +132,7 @@ describe('GameEngine', () => {
     it('should calculate valid movement paths', () => {
       const targetHex = new Hex(2, -1, -1);
       const path = gameEngine.calculateMovementPath(marineUnit, targetHex);
-      
+
       expect(path).toBeDefined();
       expect(typeof path.valid).toBe('boolean');
       expect(Array.isArray(path.hexes)).toBe(true);
@@ -147,24 +142,28 @@ describe('GameEngine', () => {
     it('should respect movement allowances', () => {
       const farHex = new Hex(10, -5, -5); // Very far away
       const path = gameEngine.calculateMovementPath(marineUnit, farHex);
-      
+
       // Should be invalid due to distance
       expect(path.valid).toBe(false);
     });
 
     it('should execute valid movement', () => {
-      const originalPosition = new Hex(marineUnit.state.position.q, marineUnit.state.position.r, marineUnit.state.position.s);
+      const originalPosition = new Hex(
+        marineUnit.state.position.q,
+        marineUnit.state.position.r,
+        marineUnit.state.position.s
+      );
       const targetHex = new Hex(2, -1, -1);
-      
+
       const moveAction = {
         type: ActionType.MOVE,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetPosition: targetHex
+        targetPosition: targetHex,
       };
 
       const result = gameEngine.executeAction(moveAction);
-      
+
       if (result.success) {
         expect(targetHex.equals(marineUnit.state.position)).toBe(true);
         expect(marineUnit.state.hasMoved).toBe(true);
@@ -182,17 +181,17 @@ describe('GameEngine', () => {
 
     it('should execute attack actions', () => {
       const originalHP = enemyUnit.state.currentHP;
-      
+
       const attackAction = {
         type: ActionType.ATTACK,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetId: enemyUnit.id
+        targetId: enemyUnit.id,
       };
 
       const result = gameEngine.executeAction(attackAction);
       expect(result).toBeDefined();
-      
+
       if (result.success) {
         expect(marineUnit.state.hasActed).toBe(true);
       }
@@ -201,12 +200,12 @@ describe('GameEngine', () => {
     it('should validate attack range', () => {
       // Place enemy too far away
       enemyUnit.state.position = new Hex(10, -5, -5);
-      
+
       const attackAction = {
         type: ActionType.ATTACK,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetId: enemyUnit.id
+        targetId: enemyUnit.id,
       };
 
       const result = gameEngine.executeAction(attackAction);
@@ -224,12 +223,12 @@ describe('GameEngine', () => {
         new Hex(2, 0, -2)
       );
       assaultPlayer.addUnit(friendlyUnit);
-      
+
       const attackAction = {
         type: ActionType.ATTACK,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetId: friendlyUnit.id
+        targetId: friendlyUnit.id,
       };
 
       const result = gameEngine.executeAction(attackAction);
@@ -259,16 +258,16 @@ describe('GameEngine', () => {
       // Place marine adjacent to osprey
       marineUnit.state.position = new Hex(1, 0, -1);
       ospreytUnit.state.position = new Hex(2, 0, -2);
-      
+
       const loadAction = {
         type: ActionType.LOAD,
         playerId: assaultPlayer.id,
         unitId: ospreytUnit.id,
-        targetId: marineUnit.id
+        targetId: marineUnit.id,
       };
 
       const result = gameEngine.executeAction(loadAction);
-      
+
       if (result.success) {
         expect(ospreytUnit.state.cargo.length).toBeGreaterThan(0);
         // Check if marine is in the cargo
@@ -279,16 +278,16 @@ describe('GameEngine', () => {
     it('should execute unload actions', () => {
       // First load the unit manually
       ospreytUnit.state.cargo.push(marineUnit);
-      
+
       const unloadAction = {
         type: ActionType.UNLOAD,
         playerId: assaultPlayer.id,
         unitId: ospreytUnit.id,
-        targetPosition: new Hex(3, 0, -3)
+        targetPosition: new Hex(3, 0, -3),
       };
 
       const result = gameEngine.executeAction(unloadAction);
-      
+
       if (result.success) {
         expect(ospreytUnit.state.cargo.length).toBe(0);
         expect(ospreytUnit.state.cargo.includes(marineUnit)).toBe(false);
@@ -310,12 +309,12 @@ describe('GameEngine', () => {
         );
         ospreytUnit.state.cargo.push(extraUnit);
       }
-      
+
       const loadAction = {
         type: ActionType.LOAD,
         playerId: assaultPlayer.id,
         unitId: ospreytUnit.id,
-        targetId: marineUnit.id
+        targetId: marineUnit.id,
       };
 
       const result = gameEngine.executeAction(loadAction);
@@ -326,19 +325,19 @@ describe('GameEngine', () => {
   describe('Special Abilities', () => {
     it('should execute special abilities', () => {
       gameState.phase = TurnPhase.ACTION;
-      
+
       // Find a unit with special abilities
       if (marineUnit.specialAbilities.length > 0) {
         const ability = marineUnit.specialAbilities[0];
-        
+
         const abilityAction = {
           type: ActionType.SPECIAL_ABILITY,
           playerId: assaultPlayer.id,
           unitId: marineUnit.id,
           data: {
             abilityName: ability.name,
-            targetHex: new Hex(2, 0, -2)
-          }
+            targetHex: new Hex(2, 0, -2),
+          },
         };
 
         const result = gameEngine.executeAction(abilityAction);
@@ -350,10 +349,10 @@ describe('GameEngine', () => {
     it('should validate CP costs for abilities', () => {
       gameState.phase = TurnPhase.ACTION;
       assaultPlayer.commandPoints = 0; // No CP available
-      
+
       if (marineUnit.specialAbilities.length > 0) {
         const ability = marineUnit.specialAbilities[0];
-        
+
         if (ability.cpCost && ability.cpCost > 0) {
           const abilityAction = {
             type: ActionType.SPECIAL_ABILITY,
@@ -361,8 +360,8 @@ describe('GameEngine', () => {
             unitId: marineUnit.id,
             data: {
               abilityName: ability.name,
-              targetHex: new Hex(2, 0, -2)
-            }
+              targetHex: new Hex(2, 0, -2),
+            },
           };
 
           const result = gameEngine.executeAction(abilityAction);
@@ -378,7 +377,7 @@ describe('GameEngine', () => {
         type: ActionType.MOVE,
         playerId: assaultPlayer.id,
         unitId: 'nonexistent-unit',
-        targetPosition: new Hex(2, -1, -1)
+        targetPosition: new Hex(2, -1, -1),
       };
 
       const result = gameEngine.executeAction(action);
@@ -391,7 +390,7 @@ describe('GameEngine', () => {
         type: ActionType.MOVE,
         playerId: 'nonexistent-player',
         unitId: marineUnit.id,
-        targetPosition: new Hex(2, -1, -1)
+        targetPosition: new Hex(2, -1, -1),
       };
 
       const result = gameEngine.executeAction(action);
@@ -414,17 +413,21 @@ describe('GameEngine', () => {
   describe('State Consistency', () => {
     it('should maintain unit state after actions', () => {
       const originalHP = marineUnit.state.currentHP;
-      const originalPos = new Hex(marineUnit.state.position.q, marineUnit.state.position.r, marineUnit.state.position.s);
-      
+      const originalPos = new Hex(
+        marineUnit.state.position.q,
+        marineUnit.state.position.r,
+        marineUnit.state.position.s
+      );
+
       const moveAction = {
         type: ActionType.MOVE,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetPosition: new Hex(2, -1, -1)
+        targetPosition: new Hex(2, -1, -1),
       };
 
       gameEngine.executeAction(moveAction);
-      
+
       // HP should not change from movement
       expect(marineUnit.state.currentHP).toBe(originalHP);
       // Position should change if successful, or stay same if failed
@@ -434,12 +437,12 @@ describe('GameEngine', () => {
     it('should track action states correctly', () => {
       expect(marineUnit.state.hasMoved).toBe(false);
       expect(marineUnit.state.hasActed).toBe(false);
-      
+
       const moveAction = {
         type: ActionType.MOVE,
         playerId: assaultPlayer.id,
         unitId: marineUnit.id,
-        targetPosition: new Hex(2, -1, -1)
+        targetPosition: new Hex(2, -1, -1),
       };
 
       const result = gameEngine.executeAction(moveAction);

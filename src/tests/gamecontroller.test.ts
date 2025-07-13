@@ -13,13 +13,7 @@ import { TerrainType } from '../core/game/types';
 import { Player } from '../core/game/Player';
 import { Unit } from '../core/game/Unit';
 import { Hex } from '../core/hex';
-import { 
-  PlayerSide, 
-  UnitType, 
-  TurnPhase, 
-  ActionType,
-  UnitCategory 
-} from '../core/game/types';
+import { PlayerSide, UnitType, TurnPhase, ActionType, UnitCategory } from '../core/game/types';
 import { UNIT_DEFINITIONS } from '../core/units/UnitDefinitions';
 
 // Mock DOM elements
@@ -28,7 +22,7 @@ const mockElement = {
   textContent: '',
   className: '',
   addEventListener: jest.fn(),
-  removeEventListener: jest.fn()
+  removeEventListener: jest.fn(),
 };
 
 // Mock document methods
@@ -36,26 +30,26 @@ Object.defineProperty(global, 'document', {
   value: {
     getElementById: jest.fn(() => mockElement),
     createElement: jest.fn(() => mockElement),
-    addEventListener: jest.fn()
-  }
+    addEventListener: jest.fn(),
+  },
 });
 
 // Mock PIXI Application
 const mockPixiApp = {
   view: {
     addEventListener: jest.fn(),
-    dispatchEvent: jest.fn()
+    dispatchEvent: jest.fn(),
   },
   stage: {
     addChild: jest.fn(),
     on: jest.fn(),
     interactive: true,
-    hitArea: null
+    hitArea: null,
   },
   renderer: {
-    resize: jest.fn()
+    resize: jest.fn(),
   },
-  destroy: jest.fn()
+  destroy: jest.fn(),
 };
 
 // Mock PixiRenderer
@@ -68,8 +62,8 @@ jest.mock('../ui/renderer/PixiRenderer', () => {
       highlightHexes: jest.fn(),
       clearHighlights: jest.fn(),
       resize: jest.fn(),
-      destroy: jest.fn()
-    }))
+      destroy: jest.fn(),
+    })),
   };
 });
 
@@ -85,9 +79,9 @@ jest.mock('../ui/renderer/MapRenderer', () => {
         movementCost: 1,
         defenseBonus: 0,
         blocksLOS: false,
-        isOffshore: false
-      })
-    }))
+        isOffshore: false,
+      }),
+    })),
   };
 });
 
@@ -108,7 +102,7 @@ describe('GameController', () => {
       }
     }
     gameState = new GameState('test-game', map);
-    
+
     // Add test players
     const assaultPlayer = new Player('assault', PlayerSide.Assault);
     const defenderPlayer = new Player('defender', PlayerSide.Defender);
@@ -143,7 +137,7 @@ describe('GameController', () => {
       width: 800,
       height: 600,
       hexSize: 30,
-      backgroundColor: 0x000000
+      backgroundColor: 0x000000,
     });
     mockMapRenderer = new MapRenderer(map);
 
@@ -165,8 +159,14 @@ describe('GameController', () => {
     });
 
     it('should set up event listeners', () => {
-      expect(mockPixiApp.view.addEventListener).toHaveBeenCalledWith('hexSelected', expect.any(Function));
-      expect(mockPixiApp.view.addEventListener).toHaveBeenCalledWith('unitSelected', expect.any(Function));
+      expect(mockPixiApp.view.addEventListener).toHaveBeenCalledWith(
+        'hexSelected',
+        expect.any(Function)
+      );
+      expect(mockPixiApp.view.addEventListener).toHaveBeenCalledWith(
+        'unitSelected',
+        expect.any(Function)
+      );
     });
   });
 
@@ -196,8 +196,10 @@ describe('GameController', () => {
   describe('Unit Selection', () => {
     it('should handle unit selection for valid player units', () => {
       const assaultPlayer = gameState.getPlayerBySide(PlayerSide.Assault);
-      const marineUnit = assaultPlayer?.getLivingUnits().find(u => u.type === UnitType.MARINE_SQUAD);
-      
+      const marineUnit = assaultPlayer
+        ?.getLivingUnits()
+        .find(u => u.type === UnitType.MARINE_SQUAD);
+
       if (marineUnit) {
         // Simulate unit selection
         (gameController as any).onUnitSelected(marineUnit);
@@ -263,10 +265,15 @@ describe('GameController', () => {
 
     it('should validate unit abilities correctly', () => {
       const assaultPlayer = gameState.getPlayerBySide(PlayerSide.Assault);
-      const marineUnit = assaultPlayer?.getLivingUnits().find(u => u.type === UnitType.MARINE_SQUAD);
-      
+      const marineUnit = assaultPlayer
+        ?.getLivingUnits()
+        .find(u => u.type === UnitType.MARINE_SQUAD);
+
       if (marineUnit && marineUnit.specialAbilities.length > 0) {
-        const canUse = (gameController as any).canUseAbility(marineUnit, marineUnit.specialAbilities[0].name);
+        const canUse = (gameController as any).canUseAbility(
+          marineUnit,
+          marineUnit.specialAbilities[0].name
+        );
         expect(typeof canUse).toBe('boolean');
       }
     });
@@ -276,8 +283,10 @@ describe('GameController', () => {
     it('should identify units with cargo capacity', () => {
       const assaultPlayer = gameState.getPlayerBySide(PlayerSide.Assault);
       const waspUnit = assaultPlayer?.getLivingUnits().find(u => u.type === UnitType.USS_WASP);
-      const marineUnit = assaultPlayer?.getLivingUnits().find(u => u.type === UnitType.MARINE_SQUAD);
-      
+      const marineUnit = assaultPlayer
+        ?.getLivingUnits()
+        .find(u => u.type === UnitType.MARINE_SQUAD);
+
       if (waspUnit && marineUnit) {
         // Marines can't carry cargo, but let's test the general logic
         const marineCapacity = marineUnit.getCargoCapacity();
@@ -289,8 +298,10 @@ describe('GameController', () => {
     it('should validate load operations', () => {
       const assaultPlayer = gameState.getPlayerBySide(PlayerSide.Assault);
       const waspUnit = assaultPlayer?.getLivingUnits().find(u => u.type === UnitType.USS_WASP);
-      const marineUnit = assaultPlayer?.getLivingUnits().find(u => u.type === UnitType.MARINE_SQUAD);
-      
+      const marineUnit = assaultPlayer
+        ?.getLivingUnits()
+        .find(u => u.type === UnitType.MARINE_SQUAD);
+
       if (waspUnit && marineUnit) {
         // Test if marine can be loaded (basic validation)
         const canLoad = (gameController as any).canUnitLoad(waspUnit, marineUnit);
@@ -306,7 +317,7 @@ describe('GameController', () => {
       if (defenderPlayer) {
         // Clear all units
         (defenderPlayer as any).units = [];
-        
+
         // Trigger victory check
         (gameController as any).checkVictoryConditions();
         expect(gameState.isGameOver).toBe(true);
@@ -340,7 +351,7 @@ describe('GameController', () => {
     it('should update game status display', () => {
       const updateElementSpy = jest.spyOn(gameController as any, 'updateElement');
       (gameController as any).updateGameStatusDisplay();
-      
+
       expect(updateElementSpy).toHaveBeenCalledWith('turn-display', expect.any(String));
       expect(updateElementSpy).toHaveBeenCalledWith('phase-display', expect.any(String));
       expect(updateElementSpy).toHaveBeenCalledWith('active-player', expect.any(String));
@@ -363,7 +374,7 @@ describe('GameController', () => {
     it('should handle missing DOM elements gracefully', () => {
       // Mock getElementById to return null
       (document.getElementById as jest.Mock).mockReturnValue(null);
-      
+
       expect(() => {
         (gameController as any).updateGameStatusDisplay();
         (gameController as any).showMessage('Test', 'info');

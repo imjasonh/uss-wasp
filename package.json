@@ -12,28 +12,54 @@
     "test:watch": "jest --watch",
     "test:ai": "npm run build && node run-comprehensive-ai-test.js",
     "lint": "eslint src/**/*.ts",
-    "start": "node dist/index.js"
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "pre-commit": "lint-staged",
+    "start": "node dist/index.js",
+    "prepare": "husky"
   },
-  "keywords": ["wargame", "simulation", "typescript", "hex-grid"],
+  "keywords": [
+    "wargame",
+    "simulation",
+    "typescript",
+    "hex-grid"
+  ],
   "author": "Jason",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.0.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^7.2.1",
+    "html-webpack-plugin": "^5.5.0",
+    "husky": "^9.1.7",
     "jest": "^29.5.0",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.2",
     "ts-jest": "^29.1.0",
+    "ts-loader": "^9.4.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.0",
     "webpack": "^5.88.0",
     "webpack-cli": "^5.1.0",
-    "webpack-dev-server": "^4.15.0",
-    "ts-loader": "^9.4.0",
-    "html-webpack-plugin": "^5.5.0"
+    "webpack-dev-server": "^4.15.0"
   },
   "dependencies": {
     "pixi.js": "^7.4.0"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }

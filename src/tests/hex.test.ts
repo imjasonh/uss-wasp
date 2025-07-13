@@ -94,11 +94,7 @@ describe('Hex', () => {
 });
 
 describe('HexLayout', () => {
-  const layout = new HexLayout(
-    POINTY_TOP_ORIENTATION,
-    { width: 10, height: 10 },
-    { x: 0, y: 0 }
-  );
+  const layout = new HexLayout(POINTY_TOP_ORIENTATION, { width: 10, height: 10 }, { x: 0, y: 0 });
 
   describe('hexToPixel and pixelToHex', () => {
     it('should convert hex to pixel and back', () => {
@@ -180,7 +176,7 @@ describe('HexPath', () => {
       const start = new Hex(0, 0, 0);
       const end = new Hex(2, 0, -2);
       const blocker = new Hex(1, 0, -1);
-      const hasLOS = hasLineOfSight(start, end, (hex) => 
+      const hasLOS = hasLineOfSight(start, end, hex =>
         new Hex(hex.q, hex.r, hex.s).equals(blocker)
       );
       expect(hasLOS).toBe(false);
