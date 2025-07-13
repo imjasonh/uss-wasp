@@ -93,13 +93,36 @@ export class AIDecisionMaker {
       priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 10 });
     }
 
+    // Check for USS Wasp operations opportunities
+    const hasWasp = context.availableUnits.some(unit => unit.type === 'uss_wasp');
+    if (hasWasp) {
+      priorities.push({ priority: TacticalPriority.WASP_OPERATIONS, weight: 9 });
+    }
+    
+    // Check for transport/logistics needs
+    const hasTransports = context.availableUnits.some(unit => unit.getCargoCapacity() > 0);
+    if (hasTransports) {
+      priorities.push({ priority: TacticalPriority.MANAGE_LOGISTICS, weight: 6 });
+    }
+    
+    // Check for special ability opportunities
+    const hasSpecialAbilities = context.availableUnits.some(unit => 
+      unit.specialAbilities.length > 0 && unit.canAct()
+    );
+    if (hasSpecialAbilities) {
+      priorities.push({ priority: TacticalPriority.USE_SPECIAL_ABILITIES, weight: 8 });
+    }
+    
+    // Check for objective opportunities (always important)
+    priorities.push({ priority: TacticalPriority.SECURE_OBJECTIVES, weight: 7 });
+
     // Always include intelligence gathering
     priorities.push({ priority: TacticalPriority.GATHER_INTELLIGENCE, weight: 4 });
 
     // Sort by weight and return top priorities
     return priorities
       .sort((a, b) => b.weight - a.weight)
-      .slice(0, 3) // Focus on top 3 priorities
+      .slice(0, 7) // Increased to 7 priorities for new capabilities
       .map(p => p.priority);
   }
 
@@ -121,6 +144,14 @@ export class AIDecisionMaker {
         return this.generateCombatDecisions(context);
       case TacticalPriority.GATHER_INTELLIGENCE:
         return this.generateIntelligenceDecisions(context);
+      case TacticalPriority.WASP_OPERATIONS:
+        return this.generateWaspOperationsDecisions(context);
+      case TacticalPriority.MANAGE_LOGISTICS:
+        return this.generateLogisticsDecisions(context);
+      case TacticalPriority.USE_SPECIAL_ABILITIES:
+        return this.generateSpecialAbilityDecisions(context);
+      case TacticalPriority.SECURE_OBJECTIVES:
+        return this.generateObjectiveSecuringDecisions(context);
       default:
         return [];
     }
@@ -199,6 +230,7 @@ export class AIDecisionMaker {
    */
   private generateTerrainDenialDecisions(context: AIDecisionContext): AIDecision[] {
     const decisions: AIDecision[] = [];
+    const usedUnits = new Set<string>(); // Track units already assigned
 
     // Find key terrain that enemy is likely to use
     const keyTerrain = this.identifyKeyTerrain(context);
@@ -206,11 +238,12 @@ export class AIDecisionMaker {
     for (const terrain of keyTerrain) {
       // Find units that can occupy and deny this terrain
       const availableUnits = context.availableUnits.filter(unit => 
-        !unit.state.hasMoved && this.canUnitReachPosition(unit, terrain.position, context)
+        !unit.state.hasMoved && !usedUnits.has(unit.id) && this.canUnitReachPosition(unit, terrain.position, context)
       );
 
       if (availableUnits.length > 0) {
         const bestUnit = this.selectBestUnitForPosition(availableUnits, terrain);
+        usedUnits.add(bestUnit.id); // Mark unit as used
         
         decisions.push({
           type: AIDecisionType.MOVE_UNIT,
@@ -516,9 +549,9 @@ export class AIDecisionMaker {
             unit.state.position.s + ds
           );
           
-          // Skip positions outside reasonable map bounds (0-10 range)
-          if (targetPos.q < 0 || targetPos.q > 10 || 
-              targetPos.r < 0 || targetPos.r > 10) {
+          // Skip positions outside reasonable map bounds (0-5 range for 6x6 map)
+          if (targetPos.q < 0 || targetPos.q > 5 || 
+              targetPos.r < 0 || targetPos.r > 5) {
             continue;
           }
           
@@ -689,5 +722,100 @@ export class AIDecisionMaker {
     }
     
     return count;
+  }
+
+  /**
+   * Generate USS Wasp operations decisions
+   */
+  private generateWaspOperationsDecisions(context: AIDecisionContext): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    for (const unit of context.availableUnits) {
+      if (unit.type === 'uss_wasp') {
+        // Simple USS Wasp decisions - launch aircraft
+        decisions.push({
+          type: AIDecisionType.LAUNCH_FROM_WASP,
+          priority: 8,
+          unitId: unit.id,
+          reasoning: 'Launching aircraft from USS Wasp for assault operations'
+        });
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Generate logistics/transport decisions
+   */
+  private generateLogisticsDecisions(context: AIDecisionContext): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    const usedUnits = new Set<string>(); // Track units already assigned
+    
+    for (const unit of context.availableUnits) {
+      if (unit.getCargoCapacity() > 0 && !usedUnits.has(unit.id)) {
+        usedUnits.add(unit.id); // Mark unit as used
+        // Simple transport decision
+        decisions.push({
+          type: AIDecisionType.LOAD_TRANSPORT,
+          priority: 6,
+          unitId: unit.id,
+          reasoning: 'Loading transport for tactical deployment'
+        });
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Generate special ability decisions
+   */
+  private generateSpecialAbilityDecisions(context: AIDecisionContext): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    for (const unit of context.availableUnits) {
+      if (unit.specialAbilities.length > 0 && unit.canAct()) {
+        // Use first available special ability
+        decisions.push({
+          type: AIDecisionType.SPECIAL_ABILITY,
+          priority: 7,
+          unitId: unit.id,
+          reasoning: `Using special ability: ${unit.specialAbilities[0]}`
+        });
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Generate objective securing decisions
+   */
+  private generateObjectiveSecuringDecisions(context: AIDecisionContext): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    const usedUnits = new Set<string>(); // Track units already assigned
+    
+    // Create simple objective-based movement
+    for (const unit of context.availableUnits) {
+      if (!unit.state.hasMoved && !usedUnits.has(unit.id)) {
+        // Move toward center of map (simple objective)
+        const centerPos = new Hex(3, 3, -6);
+        const distance = this.calculateDistance(unit.state.position, centerPos);
+        
+        if (distance > 1) {
+          usedUnits.add(unit.id); // Mark unit as used
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 7,
+            unitId: unit.id,
+            targetPosition: centerPos,
+            reasoning: 'Moving toward central objective area'
+          });
+        }
+      }
+    }
+    
+    return decisions;
   }
 }

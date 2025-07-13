@@ -36,6 +36,8 @@ export enum UnitType {
   TECHNICAL = 'technical',
   MILITIA_SQUAD = 'militia_squad',
   LONG_RANGE_ARTILLERY = 'long_range_artillery',
+  ARTILLERY = 'artillery',
+  SAM_SITE = 'sam_site',
 }
 
 /**

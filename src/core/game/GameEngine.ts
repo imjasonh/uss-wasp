@@ -7,6 +7,7 @@ import { Unit } from './Unit';
 import { GameState, GameAction } from './GameState';
 import { CombatSystem } from './Combat';
 import { AIController } from '../ai/AIController';
+import { Player } from './Player';
 import { 
   ActionType, 
   UnitType,
@@ -764,6 +765,20 @@ export class GameEngine {
     aiController.processActionResults(aiActions, results);
 
     return aiActions;
+  }
+
+  /**
+   * Get all players in the game
+   */
+  getPlayers(): Player[] {
+    return this.gameState.getAllPlayers();
+  }
+
+  /**
+   * Get game state (for AI analysis)
+   */
+  getGameState(): GameState {
+    return this.gameState;
   }
 
   /**

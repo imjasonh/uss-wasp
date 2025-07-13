@@ -27,7 +27,9 @@ const DEFAULT_UNIT_STATS: Record<UnitType, UnitStats> = {
   [UnitType.MORTAR_TEAM]: { mv: 2, atk: 3, def: 6, hp: 2, pointCost: 35 },
   [UnitType.TECHNICAL]: { mv: 5, atk: 3, def: 6, hp: 2, pointCost: 25 },
   [UnitType.MILITIA_SQUAD]: { mv: 3, atk: 2, def: 6, hp: 2, pointCost: 20 },
-  [UnitType.LONG_RANGE_ARTILLERY]: { mv: 1, atk: 6, def: 6, hp: 3, pointCost: 80 }
+  [UnitType.LONG_RANGE_ARTILLERY]: { mv: 1, atk: 6, def: 6, hp: 3, pointCost: 80 },
+  [UnitType.ARTILLERY]: { mv: 0, atk: 4, def: 3, hp: 4, sp: 6, pointCost: 35 },
+  [UnitType.SAM_SITE]: { mv: 0, atk: 3, def: 2, hp: 3, sp: 4, pointCost: 25 }
 };
 
 /**
@@ -51,7 +53,9 @@ const DEFAULT_UNIT_CATEGORIES: Record<UnitType, UnitCategory[]> = {
   [UnitType.MORTAR_TEAM]: [UnitCategory.INFANTRY, UnitCategory.ARTILLERY, UnitCategory.GROUND],
   [UnitType.TECHNICAL]: [UnitCategory.VEHICLE, UnitCategory.GROUND],
   [UnitType.MILITIA_SQUAD]: [UnitCategory.INFANTRY, UnitCategory.GROUND],
-  [UnitType.LONG_RANGE_ARTILLERY]: [UnitCategory.ARTILLERY, UnitCategory.GROUND]
+  [UnitType.LONG_RANGE_ARTILLERY]: [UnitCategory.ARTILLERY, UnitCategory.GROUND],
+  [UnitType.ARTILLERY]: [UnitCategory.ARTILLERY, UnitCategory.GROUND],
+  [UnitType.SAM_SITE]: [UnitCategory.ARTILLERY, UnitCategory.GROUND]
 };
 
 /**
@@ -113,6 +117,12 @@ const DEFAULT_SPECIAL_ABILITIES: Record<UnitType, SpecialAbility[]> = {
   ],
   [UnitType.LONG_RANGE_ARTILLERY]: [
     { name: 'Heavy Bombardment', description: 'Long range fire support', cpCost: 2 }
+  ],
+  [UnitType.ARTILLERY]: [
+    { name: 'Artillery Barrage', description: 'Target 3 adjacent hexes anywhere on map', cpCost: 2 }
+  ],
+  [UnitType.SAM_SITE]: [
+    { name: 'SAM Strike', description: 'Target 1 Air Unit or USS Wasp anywhere on map', cpCost: 3 }
   ]
 };
 

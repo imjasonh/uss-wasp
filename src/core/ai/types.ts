@@ -35,7 +35,12 @@ export enum TacticalPriority {
   DENY_TERRAIN = 'deny_terrain',
   INFLICT_CASUALTIES = 'inflict_casualties',
   GATHER_INTELLIGENCE = 'gather_intelligence',
-  DEFEND_OBJECTIVES = 'defend_objectives'
+  DEFEND_OBJECTIVES = 'defend_objectives',
+  MANAGE_LOGISTICS = 'manage_logistics',
+  WASP_OPERATIONS = 'wasp_operations',
+  HIDDEN_OPERATIONS = 'hidden_operations',
+  USE_SPECIAL_ABILITIES = 'use_special_abilities',
+  SECURE_OBJECTIVES = 'secure_objectives'
 }
 
 /**
@@ -112,7 +117,12 @@ export enum AIDecisionType {
   SPECIAL_ABILITY = 'special_ability',
   COORDINATE_ATTACK = 'coordinate_attack',
   SET_AMBUSH = 'set_ambush',
-  CHANGE_STRATEGY = 'change_strategy'
+  CHANGE_STRATEGY = 'change_strategy',
+  LAUNCH_FROM_WASP = 'launch_from_wasp',
+  RECOVER_TO_WASP = 'recover_to_wasp',
+  LOAD_TRANSPORT = 'load_transport',
+  UNLOAD_TRANSPORT = 'unload_transport',
+  SECURE_OBJECTIVE = 'secure_objective'
 }
 
 /**

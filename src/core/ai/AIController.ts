@@ -215,6 +215,7 @@ export class AIController {
           // Action phase - combat and special abilities
           isAppropriate = (decision.type === 'attack_target' || 
                           decision.type === 'hide_unit' ||
+                          decision.type === 'reveal_unit' ||
                           decision.type === 'special_ability');
           break;
         default:
@@ -289,6 +290,74 @@ export class AIController {
             type: ActionType.REVEAL,
             playerId: this.aiPlayerId,
             unitId: decision.unitId
+          };
+        }
+        break;
+
+      case 'launch_from_wasp':
+        if (decision.unitId) {
+          return {
+            type: ActionType.LAUNCH_FROM_WASP,
+            playerId: this.aiPlayerId,
+            unitId: decision.metadata?.waspId || decision.unitId,
+            data: { unitIds: [decision.unitId] }
+          };
+        }
+        break;
+
+      case 'recover_to_wasp':
+        if (decision.unitId) {
+          return {
+            type: ActionType.RECOVER_TO_WASP,
+            playerId: this.aiPlayerId,
+            unitId: decision.metadata?.waspId || decision.unitId,
+            data: { unitIds: [decision.unitId] }
+          };
+        }
+        break;
+
+      case 'load_transport':
+        if (decision.unitId && decision.targetUnitId) {
+          return {
+            type: ActionType.LOAD,
+            playerId: this.aiPlayerId,
+            unitId: decision.unitId,
+            targetId: decision.targetUnitId
+          };
+        }
+        break;
+
+      case 'unload_transport':
+        if (decision.unitId) {
+          return {
+            type: ActionType.UNLOAD,
+            playerId: this.aiPlayerId,
+            unitId: decision.unitId,
+            ...(decision.targetPosition && { targetPosition: decision.targetPosition })
+          };
+        }
+        break;
+
+      case 'secure_objective':
+        if (decision.unitId) {
+          return {
+            type: ActionType.SECURE_OBJECTIVE,
+            playerId: this.aiPlayerId,
+            unitId: decision.unitId
+          };
+        }
+        break;
+
+      case 'special_ability':
+        if (decision.unitId && decision.metadata?.abilityName) {
+          return {
+            type: ActionType.SPECIAL_ABILITY,
+            playerId: this.aiPlayerId,
+            unitId: decision.unitId,
+            data: { 
+              abilityName: decision.metadata.abilityName,
+              ...decision.metadata 
+            }
           };
         }
         break;

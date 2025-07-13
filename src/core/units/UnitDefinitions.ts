@@ -471,6 +471,52 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitTemplate> = {
       },
     ],
   },
+
+  [UnitType.ARTILLERY]: {
+    type: UnitType.ARTILLERY,
+    side: PlayerSide.Defender,
+    name: 'Artillery Battery',
+    description: 'Heavy artillery position with long-range capability',
+    stats: {
+      mv: 0,  // Static emplacement
+      atk: 4,
+      def: 3,
+      hp: 4,
+      sp: 6,   // Ammunition supply
+      pointCost: 35,
+    },
+    categories: [UnitCategory.ARTILLERY],
+    specialAbilities: [
+      {
+        name: 'Artillery Barrage',
+        description: 'Target 3 adjacent hexes anywhere on map. 2 ATK dice vs all units, DEF 5 base, ignores cover. Costs 2 CP.',
+        cpCost: 2,
+      },
+    ],
+  },
+
+  [UnitType.SAM_SITE]: {
+    type: UnitType.SAM_SITE,
+    side: PlayerSide.Defender,
+    name: 'SAM Site',
+    description: 'Surface-to-air missile battery for anti-aircraft defense',
+    stats: {
+      mv: 0,  // Static emplacement
+      atk: 3,
+      def: 2,
+      hp: 3,
+      sp: 4,   // Missile supply
+      pointCost: 25,
+    },
+    categories: [UnitCategory.ARTILLERY],
+    specialAbilities: [
+      {
+        name: 'SAM Strike',
+        description: 'Target 1 Air Unit or USS Wasp anywhere on map. 3 ATK dice. Costs 3 CP.',
+        cpCost: 3,
+      },
+    ],
+  },
 };
 
 /**
