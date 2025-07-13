@@ -87,10 +87,10 @@ export class AIDecisionMaker {
       priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 8 });
     }
     
-    // If units are in combat range, prioritize fighting over movement
+    // If units are in combat range, prioritize fighting over movement (HIGHEST PRIORITY)
     const unitsInRange = this.countUnitsInCombatRange(context);
     if (unitsInRange > 0) {
-      priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 10 });
+      priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 20 }); // Maximum priority for combat
     }
 
     // Check for USS Wasp operations opportunities
@@ -277,10 +277,10 @@ export class AIDecisionMaker {
       for (const target of targets) {
         const engagement = this.analyzeEngagement(unit, target, context);
         
-        if (engagement.shouldEngage && engagement.confidence > 0.6) {
+        if (engagement.shouldEngage && engagement.confidence > 0.3) { // Much lower threshold for aggressive combat
           decisions.push({
             type: AIDecisionType.ATTACK_TARGET,
-            priority: 6,
+            priority: 15, // Very high priority for actual combat
             unitId: unit.id,
             targetUnitId: target.id,
             reasoning: `${unit.type} engaging ${target.type} with ${Math.round(engagement.confidence * 100)}% confidence`,
@@ -613,16 +613,22 @@ export class AIDecisionMaker {
     // Simple engagement analysis
     const attackerPower = attacker.stats.atk;
     const targetDefense = target.stats.def;
-    const confidence = Math.min(0.9, Math.max(0.1, attackerPower / (targetDefense + 1)));
+    
+    // Check if units are adjacent (distance 0 or 1) for bonus confidence
+    const distance = this.calculateDistance(attacker.state.position, target.state.position);
+    const adjacentBonus = distance <= 1 ? 0.3 : 0; // Big confidence boost for adjacent combat
+    
+    const baseConfidence = attackerPower / (targetDefense + 1);
+    const confidence = Math.min(0.95, Math.max(0.2, baseConfidence + adjacentBonus));
     
     return {
       friendlyAdvantage: attackerPower - targetDefense,
-      terrainAdvantage: 0, // TODO: implement terrain analysis
+      terrainAdvantage: adjacentBonus, // Use bonus as terrain advantage
       supplyStatus: 1.0,
       escapeOptions: 1.0,
       strategicValue: 1.0,
       playerVulnerability: 1.0,
-      shouldEngage: confidence > 0.4,
+      shouldEngage: confidence > 0.25, // Lower threshold
       confidence: confidence
     };
   }

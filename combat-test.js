@@ -85,22 +85,35 @@ function createSimpleCombatTest() {
       console.log('🔥 UNITS IN COMBAT RANGE!');
     }
     
-    // Process turn phases like the main tests
+    // Process turn phases properly with state reset
     // Assault phase
     gameState.setActivePlayerBySide(PlayerSide.Assault);
-    gameState.phase = 'movement';
+    
+    // Movement phase
+    gameState.nextPhase(); // Sets to movement phase and resets states
     const assaultMovement = gameEngine.updateAI();
     
-    gameState.phase = 'action';
+    // Action phase  
+    gameState.nextPhase(); // Sets to action phase
     const assaultActions = gameEngine.updateAI();
+    
+    // End assault turn
+    gameState.nextPhase(); // Sets to end phase
     
     // Defender phase
     gameState.setActivePlayerBySide(PlayerSide.Defender);
-    gameState.phase = 'movement';
+    
+    // Movement phase
+    gameState.nextPhase(); // Sets to movement phase
     const defenderMovement = gameEngine.updateAI();
     
-    gameState.phase = 'action';
+    // Action phase
+    gameState.nextPhase(); // Sets to action phase  
     const defenderActions = gameEngine.updateAI();
+    
+    // End defender turn and advance to next turn
+    gameState.nextPhase(); // Sets to end phase
+    gameState.nextPhase(); // Advances to next turn and resets all unit states
     
     const turnAssaultActions = assaultMovement.length + assaultActions.length;
     const turnDefenderActions = defenderMovement.length + defenderActions.length;
@@ -109,9 +122,9 @@ function createSimpleCombatTest() {
     console.log('Turn completed\n');
   }
   
-  // Final results
-  const finalAssault = Array.from(assaultPlayer.units.values());
-  const finalDefender = Array.from(defenderPlayer.units.values());
+  // Final results - count only living units
+  const finalAssault = Array.from(assaultPlayer.units.values()).filter(u => u.isAlive());
+  const finalDefender = Array.from(defenderPlayer.units.values()).filter(u => u.isAlive());
   
   console.log('🏁 FINAL RESULTS:');
   console.log(`  Assault survivors: ${finalAssault.length}`);
