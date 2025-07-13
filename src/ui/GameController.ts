@@ -10,7 +10,8 @@ import {
   TurnPhase, 
   PlayerSide,
   UnitType,
-  UnitCategory
+  UnitCategory,
+  StatusEffect
 } from '../core/game/types';
 import { PixiRenderer } from './renderer/PixiRenderer';
 import { MapRenderer } from './renderer/MapRenderer';
@@ -82,6 +83,12 @@ export class GameController {
       case UIMode.ATTACK_TARGET:
         this.attemptAttackAtHex(hex);
         break;
+      case UIMode.LOAD_TARGET:
+        this.attemptLoad(hex);
+        break;
+      case UIMode.UNLOAD_TARGET:
+        this.attemptUnload(hex);
+        break;
       case UIMode.ABILITY_TARGET:
         this.attemptAbilityAtHex(hex);
         break;
@@ -118,6 +125,63 @@ export class GameController {
 
     const action = {
       type: ActionType.MOVE,
+      playerId: this.gameState.activePlayerId,
+      unitId: this.selectedUnit.id,
+      targetPosition: targetHex,
+    };
+
+    const result = this.gameEngine.executeAction(action);
+    this.handleActionResult(result);
+    
+    if (result.success) {
+      this.render();
+      this.resetUIModeInternal();
+    }
+  }
+
+  /**
+   * Attempt load action
+   */
+  private attemptLoad(targetHex: Hex): void {
+    if (!this.selectedUnit) return;
+
+    const targets = this.gameState.getUnitsAt(targetHex);
+    const transportableUnits = targets.filter(unit => 
+      unit.side === this.selectedUnit!.side && unit !== this.selectedUnit
+    );
+
+    if (transportableUnits.length === 0) {
+      this.showMessage('No transportable units at target hex', 'error');
+      return;
+    }
+
+    // Load the first available unit
+    const target = transportableUnits[0];
+    
+    const action = {
+      type: ActionType.LOAD,
+      playerId: this.gameState.activePlayerId,
+      unitId: this.selectedUnit.id,
+      targetId: target.id,
+    };
+
+    const result = this.gameEngine.executeAction(action);
+    this.handleActionResult(result);
+    
+    if (result.success) {
+      this.render();
+      this.resetUIModeInternal();
+    }
+  }
+
+  /**
+   * Attempt unload action
+   */
+  private attemptUnload(targetHex: Hex): void {
+    if (!this.selectedUnit) return;
+
+    const action = {
+      type: ActionType.UNLOAD,
       playerId: this.gameState.activePlayerId,
       unitId: this.selectedUnit.id,
       targetPosition: targetHex,
@@ -197,33 +261,162 @@ export class GameController {
     this.actionHistory.push(result);
     
     if (result.success) {
-      this.showMessage(result.message, 'success');
+      this.showMessage(`✅ ${result.message}`, 'success');
+      this.updateGameStatusDisplay();
+      this.updateWaspDisplay();
     } else {
-      this.showMessage(result.message, 'error');
+      this.showMessage(`❌ ${result.message}`, 'error');
     }
-
-    // Update game displays
-    this.updateGameStatusDisplay();
-    this.updateWaspDisplay();
   }
 
   /**
-   * Show message to player
+   * Update all game status displays
    */
-  private showMessage(message: string, type: 'success' | 'error' | 'info'): void {
+  private updateGameStatusDisplay(): void {
+    this.updateElement('turn-display', this.gameState.turn.toString());
+    this.updateElement('phase-display', this.gameState.phase);
+    
+    const activePlayer = this.gameState.getActivePlayer();
+    this.updateElement('active-player', activePlayer ? activePlayer.side : 'None');
+    
+    // Update player stats
+    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
+    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
+    
+    if (assaultPlayer) {
+      this.updateElement('assault-cp', assaultPlayer.commandPoints.toString());
+      this.updateElement('assault-units', assaultPlayer.getLivingUnits().length.toString());
+    }
+    
+    if (defenderPlayer) {
+      this.updateElement('defender-cp', defenderPlayer.commandPoints.toString());
+      this.updateElement('defender-units', defenderPlayer.getLivingUnits().length.toString());
+    }
+    
+    // Check for victory conditions
+    if (this.gameState.isGameOver) {
+      this.showGameEndScreen();
+    }
+  }
+
+  /**
+   * Update USS Wasp status display
+   */
+  private updateWaspDisplay(): void {
+    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
+    if (!assaultPlayer) return;
+    
+    const waspUnit = assaultPlayer.getLivingUnits().find(unit => unit.type === UnitType.USS_WASP);
+    if (!waspUnit) {
+      this.updateElement('wasp-status', '<div class="info-item"><span class="info-label">No USS Wasp</span></div>');
+      return;
+    }
+    
+    const waspStatus = this.gameState.getWaspStatus();
+    if (!waspStatus) return;
+    
+    const statusClass = this.getStatusClass(waspStatus.flightDeck.status);
+    const wellStatusClass = this.getStatusClass(waspStatus.wellDeck.status);
+    const c2StatusClass = this.getStatusClass(waspStatus.c2.status);
+    
+    const statusHtml = `
+      <div class="info-item">
+        <span class="info-label">Structural:</span>
+        <span class="info-value">${waspStatus.structuralIntegrity}/${waspUnit.stats.hp} HP</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Flight Deck:</span>
+        <span class="info-value ${statusClass}">${waspStatus.flightDeck.status}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Well Deck:</span>
+        <span class="info-value ${wellStatusClass}">${waspStatus.wellDeck.status}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">C2 System:</span>
+        <span class="info-value ${c2StatusClass}">${waspStatus.c2.status}</span>
+      </div>
+    `;
+    
+    this.updateElement('wasp-status', statusHtml);
+    
+    // Update launch capacities
+    this.updateElement('flight-deck-capacity', `${waspStatus.flightDeck.launches}/${waspStatus.flightDeck.maxLaunches}`);
+    this.updateElement('well-deck-capacity', `${waspStatus.wellDeck.launches}/${waspStatus.wellDeck.maxLaunches}`);
+    
+    // Update cargo display
+    this.updateWaspCargoDisplay(waspUnit);
+  }
+
+  /**
+   * Get CSS status class for Wasp system status
+   */
+  private getStatusClass(status: string): string {
+    switch (status.toLowerCase()) {
+      case 'operational': return 'status-operational';
+      case 'limited': return 'status-limited';
+      case 'damaged': return 'status-damaged';
+      case 'offline': return 'status-offline';
+      default: return '';
+    }
+  }
+
+  /**
+   * Update Wasp cargo display
+   */
+  private updateWaspCargoDisplay(waspUnit: Unit): void {
+    const cargoDisplay = waspUnit.state.cargo.map(cargoUnit => 
+      `<div class="info-item">
+        <span class="info-label">${cargoUnit.type}:</span>
+        <span class="info-value">${cargoUnit.id}</span>
+      </div>`
+    ).join('');
+    
+    this.updateElement('wasp-cargo', 
+      cargoDisplay || '<div class="info-item"><span class="info-label">No cargo</span></div>'
+    );
+  }
+
+  /**
+   * Show game end screen
+   */
+  private showGameEndScreen(): void {
+    const winnerId = this.gameState.winner;
+    if (winnerId) {
+      const winnerPlayer = this.gameState.getPlayer(winnerId);
+      this.showMessage(`Game Over! ${winnerPlayer ? winnerPlayer.side + ' wins!' : 'Player ' + winnerId + ' wins!'}`, 'info');
+    } else {
+      this.showMessage('Game Over! Draw!', 'info');
+    }
+  }
+
+  /**
+   * Show message to user
+   */
+  private showMessage(message: string, type: 'info' | 'success' | 'error'): void {
     console.log(`[${type.toUpperCase()}] ${message}`);
     
-    // You could implement a toast notification system here
-    const messageEl = document.getElementById('game-message');
-    if (messageEl) {
-      messageEl.textContent = message;
-      messageEl.className = `message ${type}`;
+    // Display in UI message area
+    const messageDiv = document.getElementById('game-message');
+    if (messageDiv) {
+      messageDiv.className = `message message-${type}`;
+      messageDiv.textContent = message;
       
-      // Clear after 3 seconds
+      // Auto-clear after 3 seconds
       setTimeout(() => {
-        messageEl.textContent = '';
-        messageEl.className = 'message';
+        messageDiv.className = 'message';
+        messageDiv.textContent = '';
       }, 3000);
+    }
+  }
+
+  /**
+   * Helper to update DOM element content
+   */
+  private updateElement(id: string, content: string): void {
+    const element = document.getElementById(id);
+    if (element) {
+      element.innerHTML = content;
     }
   }
 
@@ -382,6 +575,104 @@ export class GameController {
   }
 
   /**
+   * Highlight valid attack targets for unit
+   */
+  private highlightValidTargets(unit: Unit, type: 'attack' | 'ability'): void {
+    const validHexes: Hex[] = [];
+    // Use a simple range calculation: attack value determines range
+    const range = Math.max(1, unit.getEffectiveAttack());
+    const currentPos = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+
+    // Check all hexes within attack range
+    for (const hex of currentPos.range(range)) {
+      if (hex.equals(currentPos)) continue;
+      
+      // Check if there are enemy units at this hex
+      const unitsAtHex = this.gameState.getUnitsAt(hex);
+      const hasEnemies = unitsAtHex.some(target => target.side !== unit.side);
+      
+      if (hasEnemies) {
+        validHexes.push(hex);
+      }
+    }
+
+    // Render highlights
+    this.renderer.highlightHexes(validHexes, type);
+  }
+
+  /**
+   * Highlight valid load targets for unit
+   */
+  private highlightLoadTargets(unit: Unit): void {
+    const validHexes: Hex[] = [];
+    const currentPos = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+
+    // Only highlight if this unit can carry cargo
+    if (unit.getCargoCapacity() === 0) return;
+
+    // Highlight adjacent hexes with friendly units that can be loaded
+    for (const hex of currentPos.range(1)) {
+      if (hex.equals(currentPos)) continue;
+      
+      const unitsAtHex = this.gameState.getUnitsAt(hex);
+      const hasLoadableUnits = unitsAtHex.some(target => 
+        target.side === unit.side && 
+        target !== unit &&
+        this.canUnitLoad(unit, target)
+      );
+      
+      if (hasLoadableUnits) {
+        validHexes.push(hex);
+      }
+    }
+
+    this.renderer.highlightHexes(validHexes, 'movement');
+  }
+
+  /**
+   * Check if unit can load target unit
+   */
+  private canUnitLoad(transport: Unit, target: Unit): boolean {
+    // Basic checks: transport has capacity and target is compatible
+    if (transport.getCargoCapacity() === 0) return false;
+    if (transport.state.cargo.length >= transport.getCargoCapacity()) return false;
+    
+    // Infantry can usually be loaded into any transport
+    if (target.hasCategory(UnitCategory.INFANTRY)) return true;
+    
+    // Vehicles need appropriate transport
+    if (target.hasCategory(UnitCategory.VEHICLE)) {
+      return transport.type === UnitType.LCAC || transport.type === UnitType.SUPER_STALLION;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Highlight valid unload targets for unit
+   */
+  private highlightUnloadTargets(unit: Unit): void {
+    const validHexes: Hex[] = [];
+    const currentPos = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+
+    // Only highlight if this unit has cargo
+    if (unit.state.cargo.length === 0) return;
+
+    // Highlight adjacent hexes where units can be unloaded
+    for (const hex of currentPos.range(1)) {
+      if (hex.equals(currentPos)) continue;
+      
+      // Check if hex is valid for unloading (basic check - not deep water)
+      const mapHex = this.gameState.map.getHex(hex);
+      if (mapHex && mapHex.terrain !== 'deep_water') {
+        validHexes.push(hex);
+      }
+    }
+
+    this.renderer.highlightHexes(validHexes, 'movement');
+  }
+
+  /**
    * Clear all highlights
    */
   private clearHighlights(): void {
@@ -503,48 +794,6 @@ export class GameController {
   }
 
   /**
-   * Update game status display
-   */
-  public updateGameStatusDisplay(): void {
-    const turnDisplay = document.getElementById('turn-display');
-    const phaseDisplay = document.getElementById('phase-display');
-    const activePlayerDisplay = document.getElementById('active-player');
-
-    if (turnDisplay) turnDisplay.textContent = this.gameState.turn.toString();
-    if (phaseDisplay) phaseDisplay.textContent = this.gameState.phase.charAt(0).toUpperCase() + this.gameState.phase.slice(1);
-    
-    const activePlayer = this.gameState.getActivePlayer();
-    if (activePlayerDisplay && activePlayer) {
-      activePlayerDisplay.textContent = activePlayer.side.charAt(0).toUpperCase() + activePlayer.side.slice(1);
-    }
-
-    // Update player stats
-    this.updatePlayerStats();
-  }
-
-  /**
-   * Update player statistics display
-   */
-  private updatePlayerStats(): void {
-    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
-    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
-
-    if (assaultPlayer) {
-      const assaultCPDisplay = document.getElementById('assault-cp');
-      const assaultUnitsDisplay = document.getElementById('assault-units');
-      if (assaultCPDisplay) assaultCPDisplay.textContent = assaultPlayer.commandPoints.toString();
-      if (assaultUnitsDisplay) assaultUnitsDisplay.textContent = assaultPlayer.getLivingUnits().length.toString();
-    }
-
-    if (defenderPlayer) {
-      const defenderCPDisplay = document.getElementById('defender-cp');
-      const defenderUnitsDisplay = document.getElementById('defender-units');
-      if (defenderCPDisplay) defenderCPDisplay.textContent = defenderPlayer.commandPoints.toString();
-      if (defenderUnitsDisplay) defenderUnitsDisplay.textContent = defenderPlayer.getLivingUnits().length.toString();
-    }
-  }
-
-  /**
    * Render the current game state
    */
   private render(): void {
@@ -566,11 +815,17 @@ export class GameController {
   public startMove(): void {
     this.uiMode = UIMode.MOVE_TARGET;
     this.showMessage('Select target hex for movement', 'info');
+    if (this.selectedUnit) {
+      this.highlightValidMoves(this.selectedUnit);
+    }
   }
 
   public startAttack(): void {
     this.uiMode = UIMode.ATTACK_TARGET;
     this.showMessage('Select target for attack', 'info');
+    if (this.selectedUnit) {
+      this.highlightValidTargets(this.selectedUnit, 'attack');
+    }
   }
 
   public useAbility(abilityName: string): void {
@@ -598,15 +853,204 @@ export class GameController {
   }
 
   public nextPhase(): void {
+    const previousPhase = this.gameState.phase;
     this.gameState.nextPhase();
+    
+    // Handle phase transition effects
+    this.handlePhaseTransition(previousPhase, this.gameState.phase);
+    
     this.updateGameStatusDisplay();
     this.updateActionButtons();
     this.resetUIModeInternal();
+    this.render();
+  }
+
+  /**
+   * Handle phase transition effects
+   */
+  private handlePhaseTransition(fromPhase: TurnPhase, toPhase: TurnPhase): void {
+    // Clear turn state when transitioning phases
+    this.clearTurnState();
     
-    // Handle phase-specific logic
-    if (this.gameState.phase === TurnPhase.COMMAND) {
-      this.gameState.generateCommandPoints();
-      this.updatePlayerStats();
+    switch (toPhase) {
+      case TurnPhase.EVENT:
+        this.showMessage(`Turn ${this.gameState.turn} begins`, 'info');
+        this.processEventPhase();
+        break;
+      case TurnPhase.COMMAND:
+        this.processCommandPhase();
+        break;
+      case TurnPhase.DEPLOYMENT:
+        this.processDeploymentPhase();
+        break;
+      case TurnPhase.MOVEMENT:
+        this.processMovementPhase();
+        break;
+      case TurnPhase.ACTION:
+        this.processActionPhase();
+        break;
+      case TurnPhase.END:
+        this.processEndPhase();
+        break;
+    }
+  }
+
+  /**
+   * Clear turn state (unit movement, actions, etc.)
+   */
+  private clearTurnState(): void {
+    // Reset unit states for new turn/phase
+    for (const player of this.gameState.getAllPlayers()) {
+      for (const unit of player.getLivingUnits()) {
+        // Reset movement and action flags for appropriate phases
+        if (this.gameState.phase === TurnPhase.MOVEMENT || this.gameState.phase === TurnPhase.EVENT) {
+          unit.state.hasMoved = false;
+        }
+        if (this.gameState.phase === TurnPhase.ACTION || this.gameState.phase === TurnPhase.EVENT) {
+          unit.state.hasActed = false;
+        }
+      }
+    }
+  }
+
+  /**
+   * Process event phase
+   */
+  private processEventPhase(): void {
+    // Roll for random events, update fog of war, etc.
+    this.gameState.fogOfWar.updateVisibility();
+  }
+
+  /**
+   * Process command phase
+   */
+  private processCommandPhase(): void {
+    this.gameState.generateCommandPoints();
+    this.showMessage('Command points generated', 'success');
+  }
+
+  /**
+   * Process deployment phase
+   */
+  private processDeploymentPhase(): void {
+    this.showMessage('Deployment phase - launch units and deploy hidden forces', 'info');
+  }
+
+  /**
+   * Process movement phase
+   */
+  private processMovementPhase(): void {
+    this.showMessage('Movement phase - move your units', 'info');
+  }
+
+  /**
+   * Process action phase
+   */
+  private processActionPhase(): void {
+    this.showMessage('Action phase - attack, use abilities, and secure objectives', 'info');
+  }
+
+  /**
+   * Process end phase
+   */
+  private processEndPhase(): void {
+    // Check victory conditions
+    this.checkVictoryConditions();
+    
+    // Reset suppression, recover units, etc.
+    this.processEndTurnEffects();
+    
+    this.showMessage('Turn completed', 'info');
+  }
+
+  /**
+   * Check victory conditions
+   */
+  private checkVictoryConditions(): void {
+    // Check if game is already over
+    if (this.gameState.isGameOver) return;
+    
+    // Check various victory conditions
+    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
+    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
+    
+    if (!assaultPlayer || !defenderPlayer) return;
+    
+    // Check unit elimination victory
+    if (assaultPlayer.getLivingUnits().length === 0) {
+      this.gameState.winner = defenderPlayer.id;
+      this.gameState.isGameOver = true;
+      this.showMessage('Defender wins by elimination!', 'info');
+      return;
+    }
+    
+    if (defenderPlayer.getLivingUnits().length === 0) {
+      this.gameState.winner = assaultPlayer.id;
+      this.gameState.isGameOver = true;
+      this.showMessage('Assault wins by elimination!', 'info');
+      return;
+    }
+    
+    // Check USS Wasp destruction
+    const waspUnit = assaultPlayer.getLivingUnits().find(unit => unit.type === UnitType.USS_WASP);
+    if (!waspUnit) {
+      this.gameState.winner = defenderPlayer.id;
+      this.gameState.isGameOver = true;
+      this.showMessage('Defender wins - USS Wasp destroyed!', 'info');
+      return;
+    }
+    
+    // Check turn limit (example: 10 turns)
+    if (this.gameState.turn >= 10) {
+      // Determine winner by objectives or units remaining
+      const assaultScore = this.calculatePlayerScore(assaultPlayer);
+      const defenderScore = this.calculatePlayerScore(defenderPlayer);
+      
+      if (assaultScore > defenderScore) {
+        this.gameState.winner = assaultPlayer.id;
+        this.showMessage('Assault wins by points!', 'info');
+      } else if (defenderScore > assaultScore) {
+        this.gameState.winner = defenderPlayer.id;
+        this.showMessage('Defender wins by points!', 'info');
+      } else {
+        this.showMessage('Game ends in a draw!', 'info');
+      }
+      this.gameState.isGameOver = true;
+    }
+  }
+
+  /**
+   * Calculate player score for victory determination
+   */
+  private calculatePlayerScore(player: any): number {
+    let score = 0;
+    
+    // Points for surviving units
+    score += player.getLivingUnits().length * 10;
+    
+    // Points for command points remaining
+    score += player.commandPoints * 5;
+    
+    // TODO: Add objective control scoring when objectives are implemented
+    
+    return score;
+  }
+
+  /**
+   * Process end of turn effects
+   */
+  private processEndTurnEffects(): void {
+    // Remove suppression tokens, recover units, etc.
+    for (const player of this.gameState.getAllPlayers()) {
+      for (const unit of player.getLivingUnits()) {
+        // Remove one suppression token per turn
+        if (unit.state.suppressionTokens > 0) {
+          unit.state.suppressionTokens = Math.max(0, unit.state.suppressionTokens - 1);
+        }
+        
+        // Clear pinned status
+        unit.state.statusEffects.delete(StatusEffect.PINNED);
+      }
     }
   }
 
@@ -622,7 +1066,7 @@ export class GameController {
 
   public generateCP(): void {
     this.gameState.generateCommandPoints();
-    this.updatePlayerStats();
+    this.updateGameStatusDisplay();
     this.showMessage('Command points generated', 'success');
   }
 
@@ -676,243 +1120,27 @@ export class GameController {
     this.showMessage('Action cancelled', 'info');
   }
 
+  public startLoad(): void {
+    this.uiMode = UIMode.LOAD_TARGET;
+    this.showMessage('Select unit to load into selected transport', 'info');
+    if (this.selectedUnit) {
+      this.highlightLoadTargets(this.selectedUnit);
+    }
+  }
+
+  public startUnload(): void {
+    this.uiMode = UIMode.UNLOAD_TARGET;
+    this.showMessage('Select hex to unload cargo', 'info');
+    if (this.selectedUnit) {
+      this.highlightUnloadTargets(this.selectedUnit);
+    }
+  }
+
   public showWaspLaunchOptions(): void {
-    if (!this.gameState.waspOperations) {
-      this.showMessage('USS Wasp not available', 'error');
-      return;
-    }
-
-    // Get units aboard Wasp that can be launched
-    const aboardUnits = this.gameState.waspOperations.getAboardUnits();
-    if (aboardUnits.length === 0) {
-      this.showMessage('No units aboard USS Wasp to launch', 'error');
-      return;
-    }
-
-    // Show launch selection interface
-    this.showUnitSelectionModal(aboardUnits, 'Launch Units from USS Wasp', (selectedUnits) => {
-      if (selectedUnits.length > 0) {
-        this.executeLaunchFromWasp(selectedUnits);
-      }
-    });
+    this.showMessage('USS Wasp launch operations not yet implemented', 'info');
   }
 
   public showWaspRecoveryOptions(): void {
-    if (!this.gameState.waspOperations) {
-      this.showMessage('USS Wasp not available', 'error');
-      return;
-    }
-
-    // Get nearby units that can be recovered
-    const recoverableUnits = this.getNearbyRecoverableUnits();
-    if (recoverableUnits.length === 0) {
-      this.showMessage('No units available for recovery', 'error');
-      return;
-    }
-
-    // Show recovery selection interface
-    this.showUnitSelectionModal(recoverableUnits, 'Recover Units to USS Wasp', (selectedUnits) => {
-      if (selectedUnits.length > 0) {
-        this.executeRecoveryToWasp(selectedUnits);
-      }
-    });
-  }
-
-  private showUnitSelectionModal(units: Unit[], title: string, onConfirm: (units: Unit[]) => void): void {
-    // For now, use simple browser prompts - in a full game this would be a proper modal
-    const unitOptions = units.map((unit, index) => `${index}: ${unit.type} (${unit.id})`).join('\n');
-    const selection = prompt(`${title}\n\nAvailable units:\n${unitOptions}\n\nEnter unit numbers separated by commas (e.g., 0,1,2):`);
-    
-    if (selection) {
-      const indices = selection.split(',').map(s => parseInt(s.trim())).filter(i => !isNaN(i) && i >= 0 && i < units.length);
-      const selectedUnits = indices.map(i => units[i]);
-      onConfirm(selectedUnits);
-    }
-  }
-
-  private executeLaunchFromWasp(units: Unit[]): void {
-    const action = {
-      type: ActionType.LAUNCH_FROM_WASP,
-      playerId: this.gameState.activePlayerId,
-      unitId: '', // Not used for Wasp operations
-      data: { unitIds: units.map(u => u.id) }
-    };
-
-    const result = this.gameEngine.executeAction(action);
-    this.handleActionResult(result);
-    
-    if (result.success) {
-      this.render();
-      this.updateWaspDisplay();
-    }
-  }
-
-  private executeRecoveryToWasp(units: Unit[]): void {
-    const action = {
-      type: ActionType.RECOVER_TO_WASP,
-      playerId: this.gameState.activePlayerId,
-      unitId: '', // Not used for Wasp operations
-      data: { unitIds: units.map(u => u.id) }
-    };
-
-    const result = this.gameEngine.executeAction(action);
-    this.handleActionResult(result);
-    
-    if (result.success) {
-      this.render();
-      this.updateWaspDisplay();
-    }
-  }
-
-  private getNearbyRecoverableUnits(): Unit[] {
-    if (!this.gameState.waspOperations) return [];
-
-    const activePlayer = this.gameState.getActivePlayer();
-    if (!activePlayer) return [];
-
-    // Get USS Wasp position
-    const waspUnit = this.gameState.waspOperations.getAboardUnits()[0]?.constructor === Unit ? 
-      this.gameState.getAllUnits().find(u => u.type === UnitType.USS_WASP) : null;
-    
-    if (!waspUnit) return [];
-
-    const waspPosition = new Hex(waspUnit.state.position.q, waspUnit.state.position.r, waspUnit.state.position.s);
-
-    // Find units that can be recovered (adjacent aircraft/amphibious craft)
-    return activePlayer.getLivingUnits().filter(unit => {
-      if (unit.type === UnitType.USS_WASP) return false;
-      
-      const distance = waspPosition.distanceTo(unit.state.position);
-      
-      return distance <= 1 && (
-        unit.hasCategory(UnitCategory.AIRCRAFT) ||
-        unit.hasCategory(UnitCategory.HELICOPTER) ||
-        unit.type === UnitType.LCAC ||
-        unit.type === UnitType.AAV_7
-      );
-    });
-  }
-
-  private updateWaspDisplay(): void {
-    if (!this.gameState.waspOperations) {
-      // No Wasp available
-      const waspStatusDiv = document.getElementById('wasp-status');
-      if (waspStatusDiv) {
-        waspStatusDiv.innerHTML = '<div class="info-item"><span class="info-label">No USS Wasp</span></div>';
-      }
-      
-      const launchButtons = document.querySelectorAll('#wasp-launch-controls button');
-      launchButtons.forEach(btn => (btn as HTMLButtonElement).disabled = true);
-      
-      return;
-    }
-
-    // Update Wasp status
-    const status = this.gameState.waspOperations.getStatusSummary();
-    this.updateWaspStatusDisplay(status);
-    this.updateWaspCapacityDisplay();
-    this.updateWaspCargoDisplay();
-    this.updateWaspLaunchButtons();
-  }
-
-  private updateWaspStatusDisplay(status: any): void {
-    const waspStatusDiv = document.getElementById('wasp-status');
-    if (!waspStatusDiv) return;
-
-    const getStatusClass = (level: string) => {
-      switch (level) {
-        case 'operational': return 'status-operational';
-        case 'degraded': return 'status-degraded';
-        case 'limited': return 'status-limited';
-        case 'damaged': return 'status-damaged';
-        case 'offline': return 'status-offline';
-        default: return '';
-      }
-    };
-
-    waspStatusDiv.innerHTML = `
-      <div class="info-item">
-        <span class="info-label">Structural:</span>
-        <span class="info-value">${status.structuralIntegrity}/${status.maxStructuralIntegrity}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Flight Deck:</span>
-        <span class="info-value ${getStatusClass(status.flightDeck)}">${status.flightDeck}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Well Deck:</span>
-        <span class="info-value ${getStatusClass(status.wellDeck)}">${status.wellDeck}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">C2 System:</span>
-        <span class="info-value ${getStatusClass(status.c2System)}">${status.c2System}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Defensive Ammo:</span>
-        <span class="info-value">${status.defensiveAmmo}/${status.maxDefensiveAmmo}</span>
-      </div>
-    `;
-  }
-
-  private updateWaspCapacityDisplay(): void {
-    if (!this.gameState.waspOperations) return;
-
-    const flightDeckCapacity = this.gameState.waspOperations.getFlightDeckCapacity();
-    const wellDeckCapacity = this.gameState.waspOperations.getWellDeckCapacity();
-
-    const flightDeckDisplay = document.getElementById('flight-deck-capacity');
-    const wellDeckDisplay = document.getElementById('well-deck-capacity');
-
-    if (flightDeckDisplay) {
-      flightDeckDisplay.textContent = `${flightDeckCapacity} aircraft`;
-    }
-
-    if (wellDeckDisplay) {
-      wellDeckDisplay.textContent = `${wellDeckCapacity.lcac} LCAC / ${wellDeckCapacity.aav} AAV`;
-    }
-  }
-
-  private updateWaspCargoDisplay(): void {
-    if (!this.gameState.waspOperations) return;
-
-    const aboardUnits = this.gameState.waspOperations.getAboardUnits();
-    const waspCargoDiv = document.getElementById('wasp-cargo');
-    
-    if (!waspCargoDiv) return;
-
-    if (aboardUnits.length === 0) {
-      waspCargoDiv.innerHTML = '<div class="info-item"><span class="info-label">No units aboard</span></div>';
-      return;
-    }
-
-    const unitCounts: Record<string, number> = {};
-    aboardUnits.forEach(unit => {
-      const typeName = unit.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      unitCounts[typeName] = (unitCounts[typeName] || 0) + 1;
-    });
-
-    waspCargoDiv.innerHTML = Object.entries(unitCounts).map(([type, count]) => 
-      `<div class="info-item">
-        <span class="info-label">${type}:</span>
-        <span class="info-value">${count}</span>
-      </div>`
-    ).join('');
-  }
-
-  private updateWaspLaunchButtons(): void {
-    if (!this.gameState.waspOperations) return;
-
-    const launchBtn = document.querySelector('#wasp-launch-controls button:nth-child(1)') as HTMLButtonElement;
-    const recoverBtn = document.querySelector('#wasp-launch-controls button:nth-child(2)') as HTMLButtonElement;
-
-    if (launchBtn) {
-      const aboardUnits = this.gameState.waspOperations.getAboardUnits();
-      launchBtn.disabled = aboardUnits.length === 0 || this.gameState.phase !== TurnPhase.DEPLOYMENT;
-    }
-
-    if (recoverBtn) {
-      const recoverableUnits = this.getNearbyRecoverableUnits();
-      recoverBtn.disabled = recoverableUnits.length === 0;
-    }
+    this.showMessage('USS Wasp recovery operations not yet implemented', 'info');
   }
 }
