@@ -21,6 +21,7 @@ import { Player } from '../game/Player';
 import { Unit } from '../game/Unit';
 import { PlayerSide, ActionType } from '../game/types';
 import { GameAction } from '../game/GameState';
+import { getGameLogger } from '../logging/GameLogger';
 
 /**
  * Main AI Controller that manages all AI systems
@@ -69,6 +70,14 @@ export class AIController {
     
     // Filter decisions based on current phase
     const phaseAppropriateDecisions = this.filterDecisionsForPhase(decisions, currentPhase);
+    
+    // Log AI decisions with comprehensive logging
+    const logger = getGameLogger();
+    if (logger) {
+      for (const decision of phaseAppropriateDecisions) {
+        logger.logAIDecision(decision, gameState, this.aiPlayerId);
+      }
+    }
     
     // Convert AI decisions to game actions
     const actions = this.convertDecisionsToActions(phaseAppropriateDecisions, gameState);

@@ -15,6 +15,8 @@ import {
   PlayerSide
 } from './types';
 import { AIDifficulty } from '../ai/types';
+import { GameLogger, LogCategory, LogLevel, getGameLogger } from '../logging/GameLogger';
+import { GameStateManager } from '../logging/GameStateManager';
 
 /**
  * Action result for UI feedback
@@ -39,42 +41,90 @@ export interface MovementPath {
  */
 export class GameEngine {
   private aiControllers: Map<string, AIController> = new Map();
+  private logger: GameLogger | null = null;
+  private stateManager: GameStateManager | null = null;
 
-  constructor(private gameState: GameState) {}
+  constructor(private gameState: GameState) {
+    this.logger = getGameLogger();
+    if (this.logger) {
+      this.stateManager = new GameStateManager(this.logger);
+    }
+  }
+
+  /**
+   * Set a custom logger for this engine
+   */
+  setLogger(logger: GameLogger): void {
+    this.logger = logger;
+    this.stateManager = new GameStateManager(logger);
+  }
 
   /**
    * Execute a player action
    */
   executeAction(action: GameAction): ActionResult {
+    // Log action attempt
+    this.logger?.log(
+      LogLevel.DEBUG,
+      LogCategory.UNIT_ACTION,
+      `Attempting ${action.type} for unit ${action.unitId}`,
+      this.gameState,
+      { action },
+      action.playerId,
+      action.unitId
+    );
+
     // Validate action
     const validation = this.gameState.canPerformAction(action);
     if (!validation.valid) {
-      return { success: false, message: validation.reason || 'Invalid action' };
+      const result = { success: false, message: validation.reason || 'Invalid action' };
+      this.logger?.logUnitAction(action, result, this.gameState);
+      return result;
     }
 
     // Execute based on action type
+    let result: ActionResult;
+    const unit = this.gameState.getUnit(action.unitId);
+    
     switch (action.type) {
       case ActionType.MOVE:
-        return this.executeMove(action);
+        result = this.executeMove(action);
+        break;
       case ActionType.ATTACK:
-        return this.executeAttack(action);
+        result = this.executeAttack(action);
+        break;
       case ActionType.LOAD:
-        return this.executeLoad(action);
+        result = this.executeLoad(action);
+        break;
       case ActionType.UNLOAD:
-        return this.executeUnload(action);
+        result = this.executeUnload(action);
+        break;
       case ActionType.SPECIAL_ABILITY:
-        return this.executeSpecialAbility(action);
+        result = this.executeSpecialAbility(action);
+        break;
       case ActionType.SECURE_OBJECTIVE:
-        return this.executeSecureObjective(action);
+        result = this.executeSecureObjective(action);
+        break;
       case ActionType.REVEAL:
-        return this.executeReveal(action);
+        result = this.executeReveal(action);
+        break;
       case ActionType.LAUNCH_FROM_WASP:
-        return this.executeLaunchFromWasp(action);
+        result = this.executeLaunchFromWasp(action);
+        break;
       case ActionType.RECOVER_TO_WASP:
-        return this.executeRecoverToWasp(action);
+        result = this.executeRecoverToWasp(action);
+        break;
       default:
-        return { success: false, message: 'Unknown action type' };
+        result = { success: false, message: 'Unknown action type' };
     }
+
+    // Log action result
+    this.logger?.logUnitAction(action, result, this.gameState, unit);
+
+    // Auto-snapshot if enabled
+    this.stateManager?.checkAutoSnapshot(this.gameState);
+
+    return result;
   }
 
   /**
@@ -165,10 +215,13 @@ export class GameEngine {
     // Resolve combat
     const combatResult = CombatSystem.resolveCombat(attacker, defender, this.gameState);
     
+    // Log detailed combat result
+    this.logger?.logCombat(attacker, defender, combatResult, this.gameState);
+    
     // Apply special combat effects
     CombatSystem.applySpecialCombatEffects(attacker, defender, combatResult);
 
-    // Log combat
+    // Log combat event to game state (for backward compatibility)
     this.gameState.addEvent('combat_resolved', combatResult.description, {
       attackerId: attacker.id,
       defenderId: defender.id,
