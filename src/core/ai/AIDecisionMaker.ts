@@ -681,17 +681,31 @@ export class AIDecisionMaker {
   }
 
   private getUnitRange(unit: Unit): number {
-    // Basic unit range - most ground units can attack adjacent hexes
-    if (unit.hasCategory(UnitCategory.ARTILLERY)) {
-      return 4; // Artillery has longer range
+    // Match the actual CombatSystem.isInRange() logic exactly
+    
+    // Aircraft can attack at longer range
+    if (unit.hasCategory(UnitCategory.AIRCRAFT) ||
+        unit.hasCategory(UnitCategory.HELICOPTER)) {
+      return 3;
     }
-    if (unit.hasCategory(UnitCategory.AIRCRAFT)) {
-      return 8; // Aircraft have much longer range
+
+    // Long-range artillery can attack anywhere (use large number)
+    if (unit.type === 'long_range_artillery') {
+      return 10;
     }
-    if (unit.hasCategory(UnitCategory.HELICOPTER)) {
-      return 6; // Helicopters have good range
+
+    // Mortar team has 5 hex range but can't attack adjacent
+    if (unit.type === 'mortar_team') {
+      return 5;
     }
-    return 2; // Default range for most units (slightly increased)
+
+    // USS Wasp Sea Sparrow has 5 hex range
+    if (unit.type === 'uss_wasp') {
+      return 5;
+    }
+
+    // Most units can only attack adjacent (distance 1)
+    return 1;
   }
 
   private getAdjacentPositions(center: HexCoordinate): Hex[] {
