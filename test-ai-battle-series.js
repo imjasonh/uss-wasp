@@ -31,27 +31,27 @@ function runSingleGame(gameNumber) {
         gameState.addPlayer(defenderPlayer);
         gameState.setActivePlayerBySide(PlayerSide.Assault);
 
-        // Create balanced forces positioned for adjacent combat (distance 1 max)
+        // MAXIMUM COMBAT POSITIONS - All units adjacent for guaranteed engagement
         const assaultUnits = createTestUnits([
-            { id: 'wasp', type: UnitType.USS_WASP, side: PlayerSide.Assault, position: new Hex(0, 6) }, // Offshore
-            { id: 'harrier1', type: UnitType.HARRIER, side: PlayerSide.Assault, position: new Hex(1, 5) }, // Air support
-            { id: 'harrier2', type: UnitType.HARRIER, side: PlayerSide.Assault, position: new Hex(0, 5) }, // Air support
-            { id: 'osprey', type: UnitType.OSPREY, side: PlayerSide.Assault, position: new Hex(1, 4) }, // Transport
-            { id: 'marines1', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 3) }, // Front line
-            { id: 'marines2', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 4) }, // Front line
-            { id: 'marsoc', type: UnitType.MARSOC, side: PlayerSide.Assault, position: new Hex(1, 3) }, // Assault team
-            { id: 'aav', type: UnitType.AAV_7, side: PlayerSide.Assault, position: new Hex(1, 2) } // Support
+            { id: 'wasp', type: UnitType.USS_WASP, side: PlayerSide.Assault, position: new Hex(1, 7) }, // Closer for engagement
+            { id: 'harrier1', type: UnitType.HARRIER, side: PlayerSide.Assault, position: new Hex(2, 2) }, // Adjacent to AA team
+            { id: 'harrier2', type: UnitType.HARRIER, side: PlayerSide.Assault, position: new Hex(3, 2) }, // Adjacent to SAM site
+            { id: 'osprey', type: UnitType.OSPREY, side: PlayerSide.Assault, position: new Hex(1, 2) }, // Adjacent to AA team
+            { id: 'marines1', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(1, 1) }, // Adjacent to infantry1
+            { id: 'marines2', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 1) }, // Adjacent to infantry2
+            { id: 'marsoc', type: UnitType.MARSOC, side: PlayerSide.Assault, position: new Hex(0, 1) }, // Adjacent to ATGM1
+            { id: 'aav', type: UnitType.AAV_7, side: PlayerSide.Assault, position: new Hex(1, 0) } // Adjacent to ATGM2
         ]);
 
         const defenderUnits = createTestUnits([
-            { id: 'infantry1', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(3, 3) }, // Adjacent to marines1
-            { id: 'infantry2', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(3, 4) }, // Adjacent to marines2
-            { id: 'atgm1', type: UnitType.ATGM_TEAM, side: PlayerSide.Defender, position: new Hex(2, 2) }, // Adjacent to marsoc  
-            { id: 'atgm2', type: UnitType.ATGM_TEAM, side: PlayerSide.Defender, position: new Hex(2, 1) }, // Adjacent to aav
-            { id: 'aa_team', type: UnitType.AA_TEAM, side: PlayerSide.Defender, position: new Hex(4, 3) }, // Close air defense
-            { id: 'mortar', type: UnitType.MORTAR_TEAM, side: PlayerSide.Defender, position: new Hex(5, 5) }, // Fire support  
-            { id: 'artillery', type: UnitType.ARTILLERY, side: PlayerSide.Defender, position: new Hex(6, 6) }, // Deep fires
-            { id: 'sam_site', type: UnitType.SAM_SITE, side: PlayerSide.Defender, position: new Hex(4, 4) } // Air defense
+            { id: 'infantry1', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(2, 0) }, // Adjacent to marines1
+            { id: 'infantry2', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(3, 0) }, // Adjacent to marines2
+            { id: 'atgm1', type: UnitType.ATGM_TEAM, side: PlayerSide.Defender, position: new Hex(0, 0) }, // Adjacent to marsoc
+            { id: 'atgm2', type: UnitType.ATGM_TEAM, side: PlayerSide.Defender, position: new Hex(0, 2) }, // Adjacent to aav
+            { id: 'aa_team', type: UnitType.AA_TEAM, side: PlayerSide.Defender, position: new Hex(2, 3) }, // Adjacent to harrier1/osprey
+            { id: 'mortar', type: UnitType.MORTAR_TEAM, side: PlayerSide.Defender, position: new Hex(4, 1) }, // Fire support
+            { id: 'artillery', type: UnitType.ARTILLERY, side: PlayerSide.Defender, position: new Hex(5, 1) }, // Deep fires
+            { id: 'sam_site', type: UnitType.SAM_SITE, side: PlayerSide.Defender, position: new Hex(4, 2) } // Adjacent to harrier2
         ]);
 
         assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));

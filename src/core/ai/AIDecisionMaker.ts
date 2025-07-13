@@ -597,12 +597,20 @@ export class AIDecisionMaker {
     const targets: Unit[] = [];
     
     for (const enemy of enemies) {
-      // Basic range check - for now, assume all ground units can attack adjacent hexes
+      // Basic range check
       const distance = this.calculateDistance(unit.state.position, enemy.state.position);
       const maxRange = this.getUnitRange(unit);
       
       if (distance <= maxRange && enemy.isAlive()) {
         targets.push(enemy);
+      }
+    }
+    
+    // BALANCE FIX: Prioritize air targets for AA units
+    if (unit.type === 'aa_team' || unit.type === 'sam_site') {
+      const airTargets = targets.filter(t => t.hasCategory(UnitCategory.AIRCRAFT) || t.hasCategory(UnitCategory.HELICOPTER));
+      if (airTargets.length > 0) {
+        return airTargets; // AA units ONLY target aircraft when available
       }
     }
     
@@ -672,12 +680,12 @@ export class AIDecisionMaker {
 
   // Additional helper methods for basic AI functionality
   private calculateDistance(pos1: HexCoordinate, pos2: HexCoordinate): number {
-    // Simple hex distance calculation using cube coordinates
+    // Hex distance calculation using cube coordinates - MUST MATCH Combat.ts distanceTo()
     return Math.max(
       Math.abs(pos1.q - pos2.q),
       Math.abs(pos1.r - pos2.r),
       Math.abs(pos1.s - pos2.s)
-    ) / 2;
+    );
   }
 
   private getUnitRange(unit: Unit): number {
@@ -702,6 +710,15 @@ export class AIDecisionMaker {
     // USS Wasp Sea Sparrow has 5 hex range
     if (unit.type === 'uss_wasp') {
       return 5;
+    }
+    
+    // BALANCE FIX: Give AA units extended range to counter air power
+    if (unit.type === 'aa_team') {
+      return 3; // Match aircraft range
+    }
+    
+    if (unit.type === 'sam_site') {
+      return 4; // Longer range for static SAM sites
     }
 
     // Most units can only attack adjacent (distance 1)

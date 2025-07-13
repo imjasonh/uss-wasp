@@ -306,6 +306,15 @@ export class CombatSystem {
     if (attacker.type === UnitType.USS_WASP) {
       return distance <= 5;
     }
+    
+    // BALANCE FIX: Give AA units extended range to counter air dominance
+    if (attacker.type === UnitType.AA_TEAM) {
+      return distance <= 3; // Match aircraft range
+    }
+    
+    if (attacker.type === UnitType.SAM_SITE) {
+      return distance <= 4; // Longer range for static SAM sites
+    }
 
     return false;
   }
