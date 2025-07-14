@@ -1,0 +1,15 @@
+{
+  "baseline": {
+    "waspOps": false,
+    "hiddenUnits": false,
+    "specialAbilities": false,
+    "objectives": false,
+    "transport": false,
+    "learning": true
+  },
+  "expectedImplemented": 1,
+  "expectedTotal": 6,
+  "expectedPercentage": 17,
+  "lastUpdated": "2025-01-14",
+  "notes": "Updated baseline to reflect current actual state after comprehensive testing. Only learning system is currently working. All other systems need re-implementation or fixes."
+}
