@@ -1,4 +1,4 @@
-# Contributing to USS Wasp: Operation Beachhead Inferno
+# Contributing to USS Wasp (LHD-1)
 
 Thank you for your interest in contributing to this project! This document outlines the development workflow and contribution guidelines.
 

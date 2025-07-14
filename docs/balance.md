@@ -1,6 +1,6 @@
-# Balance Analysis for "Operation: Beachhead Inferno"
+# Balance Analysis for USS Wasp (LHD-1) Wargame
 
-Balancing an asymmetric wargame like "Operation: Beachhead Inferno" is one of the most challenging aspects of game design. It's almost impossible to definitively say who will win more often without extensive playtesting, as player skill, scenario design, and even dice luck will play huge roles.
+Balancing an asymmetric wargame like the USS Wasp (LHD-1) amphibious assault simulation is one of the most challenging aspects of game design. It's almost impossible to definitively say who will win more often without extensive playtesting, as player skill, scenario design, and even dice luck will play huge roles.
 
 However, we can analyze the inherent strengths and weaknesses of each side based on the rules to identify potential balance concerns and predict typical game dynamics.
 
@@ -12,21 +12,21 @@ However, we can analyze the inherent strengths and weaknesses of each side based
 
 **Superior Mobility:** Air units can rapidly deploy troops and provide fire support anywhere on the map, bypassing ground obstacles. LCACs provide extremely fast amphibious movement for heavy equipment.
 
-**Command & Control (C2):** 3 CP per turn (vs. Defender's 2 CP) gives the Assault player more flexibility, special ability activations, and potentially more rapid deployments. The Wasp itself is a robust C2 hub.
+**Command & Control (C2):** 3 CP per turn (vs. Defender's 2 CP) gives the Assault player more flexibility, special ability activations, and potentially more rapid deployments. The USS Wasp (LHD-1) itself is a robust C2 hub.
 
-**Logistical Backbone:** The USS Wasp provides an mobile base for resupply and repairs. This means Assault units don't "run out" of ammo/fuel permanently, just need to return to base.
+**Logistical Backbone:** The USS Wasp (LHD-1) provides an mobile base for resupply and repairs. This means Assault units don't "run out" of ammo/fuel permanently, just need to return to base.
 
 **Initiative:** The Assault Force sets the pace and chooses the landing zones and initial targets, forcing the Defender to react.
 
-**Diverse Unit Pool:** The Wasp player has a wider variety of unit types, each specialized for different tasks (air support, troop transport, armored assault, recon).
+**Diverse Unit Pool:** The USS Wasp (LHD-1) player has a wider variety of unit types, each specialized for different tasks (air support, troop transport, armored assault, recon).
 
 ### Weaknesses
 
-**Deployment Bottlenecks:** While powerful, launching units from the Wasp takes time and is limited by Flight Deck and Well Deck capacity. This prevents a "tidal wave" of units in the early turns.
+**Deployment Bottlenecks:** While powerful, launching units from the USS Wasp (LHD-1) takes time and is limited by Flight Deck and Well Deck capacity. This prevents a "tidal wave" of units in the early turns.
 
 **Vulnerability of Landing Operations:** LCACs and LCUs crossing open water are high-value, slow-moving targets. A well-placed Defender anti-ship attack or artillery strike could cripple the initial wave.
 
-**The Wasp as a High-Value Target:** If the Defender focuses efforts on the Wasp with their Long-Range SAM Battery or other special attacks, it could lead to an immediate loss for the Assault. This creates a critical balancing act for the Assault player – push the attack, but don't expose the Wasp too much.
+**The USS Wasp (LHD-1) as a High-Value Target:** If the Defender focuses efforts on the USS Wasp (LHD-1) with their Long-Range SAM Battery or other special attacks, it could lead to an immediate loss for the Assault. This creates a critical balancing act for the Assault player – push the attack, but don't expose the USS Wasp (LHD-1) too much.
 
 **Terrain Disadvantage (Initial):** Ground units are initially slower and susceptible to terrain penalties, especially if the Defender has fortified landing zones.
 

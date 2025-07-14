@@ -1,4 +1,4 @@
-# USS Wasp: Operation Beachhead Inferno
+# USS Wasp (LHD-1)
 
 [![CI](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml)
 [![AI Tests](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml)
@@ -7,9 +7,9 @@ A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious
 
 ## Overview
 
-This project implements the "Operation: Beachhead Inferno" wargame as described in the rules documentation. The game features:
+This project implements the USS Wasp (LHD-1) amphibious assault wargame as described in the rules documentation. The game features:
 
-- **Assault Force**: USS Wasp LHD-1 with aircraft, landing craft, and Marine units
+- **Assault Force**: USS Wasp (LHD-1) with aircraft, landing craft, and Marine units
 - **Defender Force**: Ground-based units with hidden deployment and fortifications
 - **Hex-based gameplay** with turn-based mechanics
 - **Simulation engine** for automated balance testing

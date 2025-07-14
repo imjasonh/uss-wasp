@@ -1,5 +1,5 @@
 # AI Opponent Design Document
-## USS Wasp: Operation Beachhead Inferno
+## USS Wasp (LHD-1) Wargame
 
 ### Executive Summary
 

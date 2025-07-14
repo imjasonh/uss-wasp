@@ -1,10 +1,10 @@
-# USS Wasp Development Progress
+# USS Wasp (LHD-1) Development Progress
 
-This file tracks the development progress and key achievements in implementing the USS Wasp: Operation Beachhead Inferno wargame.
+This file tracks the development progress and key achievements in implementing the USS Wasp (LHD-1) amphibious assault wargame.
 
 ## Project Overview
 
-A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious assault gameplay between USS Wasp forces and defender units.
+A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious assault gameplay between USS Wasp (LHD-1) forces and defender units.
 
 ## Development Journey
 
@@ -14,7 +14,7 @@ A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious
 - **Phase 2**: Pixi.js-based visual interface with hex rendering
 - **Phase 3**: Complete game rules implementation with combat system
 - **Phase 4**: Hidden units, fog of war, and stealth mechanics
-- **Phase 5**: USS Wasp operations, aircraft launch/recovery, cargo transport
+- **Phase 5**: USS Wasp (LHD-1) operations, aircraft launch/recovery, cargo transport
 
 ### Phase 6: Advanced AI Implementation 🚧 IN PROGRESS
 
