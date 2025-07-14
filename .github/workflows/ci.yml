@@ -60,7 +60,7 @@ jobs:
     - name: Quick AI validation
       run: |
         echo "🤖 Running quick AI validation..."
-        timeout 120 node quick-battle-test.js || echo "AI validation completed (may have timed out)"
+        timeout 120 node quick-battle-test.js
     
     - name: Validate commit messages (PR only)
       if: github.event_name == 'pull_request'
