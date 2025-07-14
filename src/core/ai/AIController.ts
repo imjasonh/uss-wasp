@@ -230,7 +230,9 @@ export class AIController {
             decision.type === 'attack_target' ||
             decision.type === 'hide_unit' ||
             decision.type === 'reveal_unit' ||
-            decision.type === 'special_ability';
+            decision.type === 'special_ability' ||
+            decision.type === 'launch_from_wasp' ||
+            decision.type === 'recover_to_wasp';
           break;
         default:
           isAppropriate = false;
@@ -310,12 +312,12 @@ export class AIController {
         break;
 
       case 'launch_from_wasp':
-        if (decision.unitId) {
+        if (decision.unitId && decision.metadata?.unitsToLaunch) {
           return {
             type: ActionType.LAUNCH_FROM_WASP,
             playerId: this.aiPlayerId,
-            unitId: decision.metadata?.waspId || decision.unitId,
-            data: { unitIds: [decision.unitId] },
+            unitId: decision.metadata.waspId || decision.unitId,
+            data: { unitIds: decision.metadata.unitsToLaunch },
           };
         }
         break;
