@@ -5,14 +5,14 @@
  * Track why AA units aren't engaging aircraft in combat
  */
 
-const { GameState } = require('./dist/core/game/GameState');
-const { Player } = require('./dist/core/game/Player');
-const { GameMap } = require('./dist/core/game/Map');
-const { PlayerSide, UnitType, UnitCategory } = require('./dist/core/game/types');
-const { createTestUnits } = require('./dist/testing/UnitTestHelper');
-const { Hex } = require('./dist/core/hex');
-const { AIDecisionMaker } = require('./dist/core/ai/AIDecisionMaker');
-const { AIDecisionContext } = require('./dist/core/ai/types');
+const { GameState } = require('../../dist/core/game/GameState');
+const { Player } = require('../../dist/core/game/Player');
+const { GameMap } = require('../../dist/core/game/Map');
+const { PlayerSide, UnitType, UnitCategory } = require('../../dist/core/game/types');
+const { createTestUnits } = require('../../dist/testing/UnitTestHelper');
+const { Hex } = require('../../dist/core/hex');
+const { AIDecisionMaker } = require('../../dist/core/ai/AIDecisionMaker');
+const { AIDecisionContext } = require('../../dist/core/ai/types');
 
 function debugAAEngagement() {
     console.log('🎯 DEBUG AA ENGAGEMENT PROCESS');

@@ -5,11 +5,11 @@
  */
 
 // Use require directly on the compiled modules we know work
-const { GameMap } = require('./dist/core/game/Map.js');
-const { GameState } = require('./dist/core/game/GameState.js');
-const { Player } = require('./dist/core/game/Player.js');
-const { Hex, findPath } = require('./dist/core/hex/index.js');
-const { UnitType, PlayerSide } = require('./dist/core/game/types.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
+const { GameState } = require('../../dist/core/game/GameState.js');
+const { Player } = require('../../dist/core/game/Player.js');
+const { Hex, findPath } = require('../../dist/core/hex/index.js');
+const { UnitType, PlayerSide } = require('../../dist/core/game/types.js');
 
 console.log('🔍 Core Pathfinding Investigation');
 console.log('=================================\n');

@@ -4,14 +4,14 @@
  * Run a series of AI vs AI battles to see who wins
  */
 
-const { GameState } = require('./dist/core/game/GameState');
-const { GameEngine } = require('./dist/core/game/GameEngine');
-const { Player } = require('./dist/core/game/Player');
-const { GameMap } = require('./dist/core/game/Map');
-const { PlayerSide, UnitType } = require('./dist/core/game/types');
-const { AIDifficulty } = require('./dist/core/ai/types');
-const { createTestUnits } = require('./dist/testing/UnitTestHelper');
-const { Hex } = require('./dist/core/hex');
+const { GameState } = require('../../dist/core/game/GameState');
+const { GameEngine } = require('../../dist/core/game/GameEngine');
+const { Player } = require('../../dist/core/game/Player');
+const { GameMap } = require('../../dist/core/game/Map');
+const { PlayerSide, UnitType } = require('../../dist/core/game/types');
+const { AIDifficulty } = require('../../dist/core/ai/types');
+const { createTestUnits } = require('../../dist/testing/UnitTestHelper');
+const { Hex } = require('../../dist/core/hex');
 
 console.log('⚔️  AI vs AI Battle Series');
 console.log('========================\n');

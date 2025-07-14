@@ -32,22 +32,22 @@ jobs:
     - name: Run AI system gap analysis
       run: |
         echo "🤖 Running AI system gap analysis..."
-        node test-ai-system-gaps.js
+        node tests/ai/test-ai-system-gaps.js
     
     - name: Run AI battle series tests
       run: |
         echo "⚔️ Running AI battle series tests..."
-        timeout 600 node test-ai-battle-series.js || echo "AI battle tests completed (may have timed out for performance)"
+        timeout 600 node tests/ai/test-ai-battle-series.js || echo "AI battle tests completed (may have timed out for performance)"
     
     - name: Run comprehensive AI tests
       run: |
         echo "🧪 Running comprehensive AI validation..."
-        node run-comprehensive-ai-test.js || echo "Comprehensive AI test completed"
+        node tests/ai/run-comprehensive-ai-test.js || echo "Comprehensive AI test completed"
     
     - name: Performance benchmark
       run: |
         echo "📊 Running AI performance benchmarks..."
-        node quick-battle-test.js
+        node tests/simulation/quick-battle-test.js
 
   combat-validation:
     runs-on: ubuntu-latest
@@ -70,13 +70,13 @@ jobs:
     - name: Validate combat mechanics
       run: |
         echo "⚔️ Testing combat system..."
-        node test-direct-combat.js
-        node test-close-combat.js
+        node tests/combat/test-direct-combat.js
+        node tests/combat/test-close-combat.js
     
     - name: Test pathfinding core
       run: |
         echo "🗺️ Testing pathfinding..."
-        node test-pathfinding-core.js
+        node tests/core/test-pathfinding-core.js
 
   game-simulation:
     runs-on: ubuntu-latest
@@ -100,7 +100,7 @@ jobs:
     - name: Run full game simulations
       run: |
         echo "🎮 Running full game simulations..."
-        timeout 1200 node run-full-game-simulation.js || echo "Full simulation completed (may have timed out)"
+        timeout 1200 node tests/simulation/run-full-game-simulation.js || echo "Full simulation completed (may have timed out)"
     
     - name: Upload simulation results
       uses: actions/upload-artifact@v3

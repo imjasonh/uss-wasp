@@ -4,12 +4,12 @@
  * Test edge cases that might be causing AI pathfinding failures
  */
 
-const { GameMap } = require('./dist/core/game/Map.js');
-const { GameState } = require('./dist/core/game/GameState.js');
-const { Player } = require('./dist/core/game/Player.js');
-const { Hex, findPath } = require('./dist/core/hex/index.js');
-const { UnitType, PlayerSide } = require('./dist/core/game/types.js');
-const { createTestUnit } = require('./dist/testing/UnitTestHelper.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
+const { GameState } = require('../../dist/core/game/GameState.js');
+const { Player } = require('../../dist/core/game/Player.js');
+const { Hex, findPath } = require('../../dist/core/hex/index.js');
+const { UnitType, PlayerSide } = require('../../dist/core/game/types.js');
+const { createTestUnit } = require('../../dist/testing/UnitTestHelper.js');
 
 console.log('🔬 Testing Edge Cases for AI Pathfinding Failures');
 console.log('=================================================\n');

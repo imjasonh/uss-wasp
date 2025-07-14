@@ -4,7 +4,7 @@
  * Debug the coordinate system issue
  */
 
-const { Hex } = require('./dist/core/hex/index.js');
+const { Hex } = require('../../dist/core/hex/index.js');
 
 console.log('🔍 Investigating Coordinate System Issue');
 console.log('======================================\n');

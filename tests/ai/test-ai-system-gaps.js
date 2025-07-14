@@ -5,14 +5,14 @@
  * Test specific game mechanics and AI capabilities to identify missing features
  */
 
-const { GameState } = require('./dist/core/game/GameState');
-const { GameEngine } = require('./dist/core/game/GameEngine');
-const { Player } = require('./dist/core/game/Player');
-const { GameMap } = require('./dist/core/game/Map');
-const { PlayerSide, UnitType, ObjectiveType } = require('./dist/core/game/types');
-const { AIDifficulty } = require('./dist/core/ai/types');
-const { createTestUnits } = require('./dist/testing/UnitTestHelper');
-const { Hex } = require('./dist/core/hex');
+const { GameState } = require('../../dist/core/game/GameState');
+const { GameEngine } = require('../../dist/core/game/GameEngine');
+const { Player } = require('../../dist/core/game/Player');
+const { GameMap } = require('../../dist/core/game/Map');
+const { PlayerSide, UnitType, ObjectiveType } = require('../../dist/core/game/types');
+const { AIDifficulty } = require('../../dist/core/ai/types');
+const { createTestUnits } = require('../../dist/testing/UnitTestHelper');
+const { Hex } = require('../../dist/core/hex');
 
 console.log('🔍 USS WASP AI SYSTEM GAP ANALYSIS');
 console.log('==================================\n');

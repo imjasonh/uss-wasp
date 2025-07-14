@@ -4,10 +4,10 @@
  * Manually replicate GameEngine pathfinding logic to isolate the issue
  */
 
-const { GameMap } = require('./dist/core/game/Map.js');
-const { Hex, findPath } = require('./dist/core/hex/index.js');
-const { UnitType, PlayerSide, UnitCategory } = require('./dist/core/game/types.js');
-const { createTestUnit } = require('./dist/testing/UnitTestHelper.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
+const { Hex, findPath } = require('../../dist/core/hex/index.js');
+const { UnitType, PlayerSide, UnitCategory } = require('../../dist/core/game/types.js');
+const { createTestUnit } = require('../../dist/testing/UnitTestHelper.js');
 
 console.log('🔧 Manual GameEngine Pathfinding Replication');
 console.log('============================================\n');

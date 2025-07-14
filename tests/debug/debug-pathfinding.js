@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const { GameMap } = require('./dist/core/game/Map.js');
-const { GameEngine } = require('./dist/core/game/GameEngine.js');
-const { GameState } = require('./dist/core/game/GameState.js');
-const { Player } = require('./dist/core/game/Player.js');
-const { Hex, findPath } = require('./dist/core/hex');
-const { UnitType, PlayerSide } = require('./dist/core/game/types.js');
-const { createTestUnit } = require('./dist/testing/UnitTestHelper.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
+const { GameEngine } = require('../../dist/core/game/GameEngine.js');
+const { GameState } = require('../../dist/core/game/GameState.js');
+const { Player } = require('../../dist/core/game/Player.js');
+const { Hex, findPath } = require('../../dist/core/hex');
+const { UnitType, PlayerSide } = require('../../dist/core/game/types.js');
+const { createTestUnit } = require('../../dist/testing/UnitTestHelper.js');
 
 console.log('🔍 Testing AI Movement Pathfinding Issues');
 console.log('=========================================\n');

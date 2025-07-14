@@ -4,14 +4,14 @@
  * Optimized AI vs AI battle series with better unit positioning
  */
 
-const { GameState } = require('./dist/core/game/GameState');
-const { GameEngine } = require('./dist/core/game/GameEngine');
-const { Player } = require('./dist/core/game/Player');
-const { GameMap } = require('./dist/core/game/Map');
-const { PlayerSide, UnitType } = require('./dist/core/game/types');
-const { AIDifficulty } = require('./dist/core/ai/types');
-const { createTestUnits } = require('./dist/testing/UnitTestHelper');
-const { Hex } = require('./dist/core/hex');
+const { GameState } = require('../../dist/core/game/GameState');
+const { GameEngine } = require('../../dist/core/game/GameEngine');
+const { Player } = require('../../dist/core/game/Player');
+const { GameMap } = require('../../dist/core/game/Map');
+const { PlayerSide, UnitType } = require('../../dist/core/game/types');
+const { AIDifficulty } = require('../../dist/core/ai/types');
+const { createTestUnits } = require('../../dist/testing/UnitTestHelper');
+const { Hex } = require('../../dist/core/hex');
 
 console.log('🏆 Optimized AI vs AI Battle Championship');
 console.log('======================================\n');

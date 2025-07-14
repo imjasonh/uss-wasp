@@ -5,9 +5,9 @@
  * Why aren't AA units engaging aircraft?
  */
 
-const { createTestUnits } = require('./dist/testing/UnitTestHelper.js');
-const { PlayerSide, UnitType } = require('./dist/core/game/types.js');
-const { Hex } = require('./dist/core/hex/Hex.js');
+const { createTestUnits } = require('../../dist/testing/UnitTestHelper.js');
+const { PlayerSide, UnitType } = require('../../dist/core/game/types.js');
+const { Hex } = require('../../dist/core/hex/Hex.js');
 
 function debugAATargeting() {
     console.log('🎯 DEBUG AA TARGETING');

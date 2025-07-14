@@ -4,7 +4,7 @@
  * Direct runner for comprehensive AI test
  */
 
-const { ComprehensiveAITest } = require('./dist/testing/ComprehensiveAITest');
+const { ComprehensiveAITest } = require('../../dist/testing/ComprehensiveAITest');
 
 console.log('🤖 USS Wasp Comprehensive AI Test');
 console.log('==================================\n');

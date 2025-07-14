@@ -4,8 +4,8 @@
  * Debug script to understand coordinate system issues
  */
 
-const { Hex } = require('./dist/core/hex/Hex.js');
-const { GameMap } = require('./dist/core/game/Map.js');
+const { Hex } = require('../../dist/core/hex/Hex.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
 
 console.log('🔍 Coordinate System Debug Test');
 console.log('===============================\n');

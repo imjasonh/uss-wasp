@@ -4,12 +4,12 @@
  * Debug script to test pathfinding on a small 6x6 hex grid
  */
 
-const { GameMap } = require('./dist/core/game/Map.js');
-const { GameEngine } = require('./dist/core/game/GameEngine.js');
-const { Unit } = require('./dist/core/game/Unit.js');
-const { Hex } = require('./dist/core/hex/Hex.js');
-const { createTestUnit } = require('./dist/testing/UnitTestHelper.js');
-const { UnitType, PlayerSide } = require('./dist/core/game/types.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
+const { GameEngine } = require('../../dist/core/game/GameEngine.js');
+const { Unit } = require('../../dist/core/game/Unit.js');
+const { Hex } = require('../../dist/core/hex/Hex.js');
+const { createTestUnit } = require('../../dist/testing/UnitTestHelper.js');
+const { UnitType, PlayerSide } = require('../../dist/core/game/types.js');
 
 console.log('🔍 USS Wasp Pathfinding Debug Test');
 console.log('===================================\n');

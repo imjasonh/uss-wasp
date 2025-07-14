@@ -4,12 +4,12 @@
  * Debug AI movement generation to see how the pathfinding issue affects AI decisions
  */
 
-const { GameMap } = require('./dist/core/game/Map.js');
-const { GameState } = require('./dist/core/game/GameState.js');
-const { Player } = require('./dist/core/game/Player.js');
-const { Hex } = require('./dist/core/hex/index.js');
-const { UnitType, PlayerSide } = require('./dist/core/game/types.js');
-const { createTestUnit } = require('./dist/testing/UnitTestHelper.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
+const { GameState } = require('../../dist/core/game/GameState.js');
+const { Player } = require('../../dist/core/game/Player.js');
+const { Hex } = require('../../dist/core/hex/index.js');
+const { UnitType, PlayerSide } = require('../../dist/core/game/types.js');
+const { createTestUnit } = require('../../dist/testing/UnitTestHelper.js');
 
 console.log('🤖 Investigating AI Movement Generation');
 console.log('======================================\n');
@@ -82,7 +82,7 @@ try {
     console.log(`     Testing pathfinding...`);
     
     // Mock the GameEngine pathfinding logic 
-    const { findPath } = require('./dist/core/hex/index.js');
+    const { findPath } = require('../../dist/core/hex/index.js');
     
     try {
       const path = findPath(unit.state.position, target.pos, {

@@ -5,14 +5,14 @@
  * Focus on getting units close enough to actually fight
  */
 
-const { GameEngine } = require('./dist/core/game/GameEngine.js');
-const { GameState } = require('./dist/core/game/GameState.js');
-const { GameMap } = require('./dist/core/game/Map.js');
-const { Player } = require('./dist/core/game/Player.js');
-const { createTestUnits } = require('./dist/testing/UnitTestHelper.js');
-const { PlayerSide, UnitType } = require('./dist/core/game/types.js');
-const { AIDifficulty } = require('./dist/core/ai/types.js');
-const { Hex } = require('./dist/core/hex/Hex.js');
+const { GameEngine } = require('../../dist/core/game/GameEngine.js');
+const { GameState } = require('../../dist/core/game/GameState.js');
+const { GameMap } = require('../../dist/core/game/Map.js');
+const { Player } = require('../../dist/core/game/Player.js');
+const { createTestUnits } = require('../../dist/testing/UnitTestHelper.js');
+const { PlayerSide, UnitType } = require('../../dist/core/game/types.js');
+const { AIDifficulty } = require('../../dist/core/ai/types.js');
+const { Hex } = require('../../dist/core/hex/Hex.js');
 
 function createSimpleCombatTest() {
   console.log('🥊 COMBAT-FOCUSED AI TEST');

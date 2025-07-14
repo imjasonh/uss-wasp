@@ -5,16 +5,16 @@
  * Demonstrates game logging, state management, and checkpoint functionality
  */
 
-const { GameState } = require('./dist/core/game/GameState');
-const { GameEngine } = require('./dist/core/game/GameEngine');
-const { Player } = require('./dist/core/game/Player');
-const { GameMap } = require('./dist/core/game/Map');
-const { PlayerSide, UnitType, ActionType } = require('./dist/core/game/types');
-const { AIDifficulty } = require('./dist/core/ai/types');
-const { createTestUnits } = require('./dist/testing/UnitTestHelper');
-const { Hex } = require('./dist/core/hex');
-const { initializeGameLogger, LogLevel, LogCategory } = require('./dist/core/logging/GameLogger');
-const { GameStateManager } = require('./dist/core/logging/GameStateManager');
+const { GameState } = require('../../dist/core/game/GameState');
+const { GameEngine } = require('../../dist/core/game/GameEngine');
+const { Player } = require('../../dist/core/game/Player');
+const { GameMap } = require('../../dist/core/game/Map');
+const { PlayerSide, UnitType, ActionType } = require('../../dist/core/game/types');
+const { AIDifficulty } = require('../../dist/core/ai/types');
+const { createTestUnits } = require('../../dist/testing/UnitTestHelper');
+const { Hex } = require('../../dist/core/hex');
+const { initializeGameLogger, LogLevel, LogCategory } = require('../../dist/core/logging/GameLogger');
+const { GameStateManager } = require('../../dist/core/logging/GameStateManager');
 
 async function testLoggingSystem() {
     console.log('🎯 COMPREHENSIVE LOGGING SYSTEM TEST');
