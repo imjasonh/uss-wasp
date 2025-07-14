@@ -109,6 +109,9 @@ export class GameEngine {
       case ActionType.RECOVER_TO_WASP:
         result = this.executeRecoverToWasp(action);
         break;
+      case ActionType.PLAY_EVENT_CARD:
+        result = this.executePlayEventCard(action);
+        break;
       default:
         result = { success: false, message: 'Unknown action type' };
     }
@@ -786,6 +789,36 @@ export class GameEngine {
       success: result.success,
       message: result.message,
       data: { recoveredUnits: result.success ? unitsToRecover : [] },
+    };
+  }
+
+  /**
+   * Execute play event card action
+   */
+  private executePlayEventCard(action: GameAction): ActionResult {
+    if (!action.data?.cardId) {
+      return { success: false, message: 'No card ID specified' };
+    }
+
+    const cardId = action.data.cardId as string;
+    const targetData = action.data.targetData as Record<string, unknown> | undefined;
+
+    // Check if player can play the card
+    if (!this.gameState.canPlayEventCard(cardId, action.playerId)) {
+      return { success: false, message: 'Cannot play this event card' };
+    }
+
+    // Play the event card
+    const result = this.gameState.playEventCard(cardId, action.playerId, targetData);
+
+    return {
+      success: result.success,
+      message: result.message,
+      data: {
+        cardId,
+        effectsApplied: result.effectsApplied,
+        ...result.data
+      }
     };
   }
 
