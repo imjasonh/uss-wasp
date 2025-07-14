@@ -282,22 +282,44 @@ export class AIDecisionMaker {
       // Analyze potential targets
       const targets = this.findValidTargets(unit, context.enemyUnits, context);
 
-      for (const target of targets) {
-        const engagement = this.analyzeEngagement(unit, target, context);
+      if (targets.length > 0) {
+        // Unit has targets in range - attack!
+        for (const target of targets) {
+          const engagement = this.analyzeEngagement(unit, target, context);
 
-        if (engagement.shouldEngage && engagement.confidence > 0.3) {
-          // Much lower threshold for aggressive combat
-          decisions.push({
-            type: AIDecisionType.ATTACK_TARGET,
-            priority: 15, // Very high priority for actual combat
-            unitId: unit.id,
-            targetUnitId: target.id,
-            reasoning: `${unit.type} engaging ${target.type} with ${Math.round(engagement.confidence * 100)}% confidence`,
-            metadata: {
-              engagementAnalysis: engagement,
-              expectedCasualties: this.estimateCasualties(unit, target),
-            },
-          });
+          if (engagement.shouldEngage && engagement.confidence > 0.3) {
+            // Much lower threshold for aggressive combat
+            decisions.push({
+              type: AIDecisionType.ATTACK_TARGET,
+              priority: 15, // Very high priority for actual combat
+              unitId: unit.id,
+              targetUnitId: target.id,
+              reasoning: `${unit.type} engaging ${target.type} with ${Math.round(engagement.confidence * 100)}% confidence`,
+              metadata: {
+                engagementAnalysis: engagement,
+                expectedCasualties: this.estimateCasualties(unit, target),
+              },
+            });
+          }
+        }
+      } else if (!unit.state.hasMoved) {
+        // Unit has no targets in range - move toward nearest enemy!
+        const nearestEnemy = this.findNearestEnemy(unit, context.enemyUnits);
+        if (nearestEnemy) {
+          const movePosition = this.findPositionTowardsEnemy(unit, nearestEnemy, context);
+          if (movePosition) {
+            decisions.push({
+              type: AIDecisionType.MOVE_UNIT,
+              priority: 12, // High priority to get into combat
+              unitId: unit.id,
+              targetPosition: movePosition,
+              reasoning: `${unit.type} moving to engage ${nearestEnemy.type}`,
+              metadata: {
+                targetEnemyId: nearestEnemy.id,
+                combatMovement: true,
+              },
+            });
+          }
         }
       }
     }
@@ -796,6 +818,73 @@ export class AIDecisionMaker {
     }
 
     return count;
+  }
+
+  /**
+   * Find the nearest enemy unit to a given unit
+   */
+  private findNearestEnemy(unit: Unit, enemyUnits: Unit[]): Unit | null {
+    if (enemyUnits.length === 0) {
+      return null;
+    }
+
+    let nearestEnemy: Unit | null = null;
+    let shortestDistance = Infinity;
+
+    for (const enemy of enemyUnits) {
+      if (enemy.isAlive()) {
+        const distance = this.calculateDistance(unit.state.position, enemy.state.position);
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearestEnemy = enemy;
+        }
+      }
+    }
+
+    return nearestEnemy;
+  }
+
+  /**
+   * Find a position to move towards an enemy for combat
+   */
+  private findPositionTowardsEnemy(unit: Unit, enemy: Unit, context: AIDecisionContext): Hex | null {
+    const unitPos = unit.state.position;
+    const enemyPos = enemy.state.position;
+    
+    // Calculate direction vector toward enemy
+    const deltaQ = enemyPos.q - unitPos.q;
+    const deltaR = enemyPos.r - unitPos.r;
+    
+    // Try to move one hex toward the enemy
+    const moveQ = deltaQ > 0 ? 1 : deltaQ < 0 ? -1 : 0;
+    const moveR = deltaR > 0 ? 1 : deltaR < 0 ? -1 : 0;
+    const moveS = -(moveQ + moveR); // Hex coordinate constraint: q + r + s = 0
+    
+    const targetPosition = new Hex(
+      unitPos.q + moveQ,
+      unitPos.r + moveR,
+      unitPos.s + moveS
+    );
+    
+    // Check if position is valid and reachable
+    if (this.canUnitReachPosition(unit, targetPosition, context)) {
+      return targetPosition;
+    }
+    
+    // If direct movement fails, try adjacent positions toward enemy
+    const adjacentPositions = this.getAdjacentPositions(unitPos);
+    
+    for (const pos of adjacentPositions) {
+      const distanceToEnemy = this.calculateDistance(pos, enemyPos);
+      const currentDistance = this.calculateDistance(unitPos, enemyPos);
+      
+      // Only consider positions that get us closer to the enemy
+      if (distanceToEnemy < currentDistance && this.canUnitReachPosition(unit, pos, context)) {
+        return pos;
+      }
+    }
+    
+    return null; // No valid position found
   }
 
   /**
