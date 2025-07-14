@@ -8,7 +8,7 @@ Thank you for your interest in contributing to this project! This document outli
 
 ```bash
 # Clone the repository
-git clone https://github.com/username/uss-wasp.git
+git clone https://github.com/imjasonh/uss-wasp.git
 cd uss-wasp
 
 # Install dependencies
