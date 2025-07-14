@@ -15,12 +15,13 @@ import {
   PlayerPattern,
   AILearningData,
   AIPerformanceMetrics,
+  AIDecisionType,
 } from './types';
-import { GameState } from '../game/GameState';
+import { GameState, GameAction } from '../game/GameState';
 import { Player } from '../game/Player';
+import { HexCoordinate } from '../hex';
 import { Unit } from '../game/Unit';
-import { PlayerSide, ActionType } from '../game/types';
-import { GameAction } from '../game/GameState';
+import { PlayerSide, ActionType, UnitType, TurnPhase } from '../game/types';
 import { getGameLogger } from '../logging/GameLogger';
 
 /**
@@ -36,7 +37,7 @@ export class AIController {
   private performanceMetrics!: AIPerformanceMetrics;
   private isEnabled: boolean = true;
 
-  constructor(aiPlayerId: string, difficulty: AIDifficulty = AIDifficulty.VETERAN) {
+  public constructor(aiPlayerId: string, difficulty: AIDifficulty = AIDifficulty.VETERAN) {
     this.aiPlayerId = aiPlayerId;
     this.difficulty = difficulty;
     this.decisionMaker = new AIDecisionMaker(difficulty);
@@ -50,14 +51,14 @@ export class AIController {
   /**
    * Main AI update - called each turn to generate AI actions
    */
-  update(gameState: GameState): GameAction[] {
+  public update(gameState: GameState): GameAction[] {
     if (!this.isEnabled) {
       return [];
     }
 
     // Only generate actions for appropriate phases
     const currentPhase = gameState.phase;
-    if (currentPhase === 'event' || currentPhase === 'end') {
+    if (currentPhase === TurnPhase.EVENT || currentPhase === TurnPhase.END) {
       return []; // No actions during event or end phases
     }
 
@@ -96,7 +97,7 @@ export class AIController {
   /**
    * Process the results of AI actions for learning
    */
-  processActionResults(actions: GameAction[], results: any[]): void {
+  public processActionResults(actions: GameAction[], results: unknown[]): void {
     // Update performance metrics based on action outcomes
     this.updatePerformanceMetrics(actions, results);
 
@@ -107,7 +108,7 @@ export class AIController {
   /**
    * Analyze player behavior for pattern recognition
    */
-  analyzePlayerBehavior(gameState: GameState, playerActions: GameAction[]): void {
+  public analyzePlayerBehavior(gameState: GameState, playerActions: GameAction[]): void {
     // Update player pattern recognition
     this.updatePlayerPatterns(gameState, playerActions);
   }
@@ -115,7 +116,7 @@ export class AIController {
   /**
    * Get current AI state for UI display
    */
-  getAIStatus(): {
+  public getAIStatus(): {
     difficulty: AIDifficulty;
     currentState: AIState;
     performanceMetrics: AIPerformanceMetrics;
@@ -132,14 +133,14 @@ export class AIController {
   /**
    * Enable/disable AI
    */
-  setEnabled(enabled: boolean): void {
+  public setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;
   }
 
   /**
    * Change AI difficulty level
    */
-  setDifficulty(newDifficulty: AIDifficulty): void {
+  public setDifficulty(newDifficulty: AIDifficulty): void {
     if (newDifficulty === this.difficulty) {
       return;
     }
@@ -150,27 +151,27 @@ export class AIController {
     const config = this.createAIConfiguration(newDifficulty);
     this.stateMachine = new AIStateMachine(config);
 
-    console.log(`[AI] Difficulty changed to ${newDifficulty}`);
+    // Log difficulty change if needed
   }
 
   /**
    * Force AI state transition (for testing)
    */
-  forceStateTransition(newState: AIState, reason: string): void {
+  public forceStateTransition(newState: AIState, reason: string): void {
     this.stateMachine.forceTransition(newState, reason, 0);
   }
 
   /**
    * Get AI learning data for analysis
    */
-  getLearningData(): AILearningData {
+  public getLearningData(): AILearningData {
     return { ...this.learningData };
   }
 
   /**
    * Reset AI learning data
    */
-  resetLearningData(): void {
+  public resetLearningData(): void {
     this.initializeAIData();
   }
 
@@ -208,37 +209,37 @@ export class AIController {
   /**
    * Filter decisions based on current game phase
    */
-  private filterDecisionsForPhase(decisions: AIDecision[], phase: string): AIDecision[] {
+  private filterDecisionsForPhase(decisions: AIDecision[], phase: TurnPhase): AIDecision[] {
     const filtered: AIDecision[] = [];
 
     for (const decision of decisions) {
       let isAppropriate = false;
 
       switch (phase) {
-        case 'command':
+        case TurnPhase.COMMAND:
           // Command phase - no movement/combat actions
           isAppropriate = false;
           break;
-        case 'deployment':
-        case 'movement':
+        case TurnPhase.DEPLOYMENT:
+        case TurnPhase.MOVEMENT:
           // Movement phases - movement and logistics actions
-          isAppropriate = decision.type === 'move_unit' || 
-                          decision.type === 'withdraw' ||
-                          decision.type === 'load_transport' ||
-                          decision.type === 'unload_transport';
+          isAppropriate = decision.type === AIDecisionType.MOVE_UNIT || 
+                          decision.type === AIDecisionType.WITHDRAW ||
+                          decision.type === AIDecisionType.LOAD_TRANSPORT ||
+                          decision.type === AIDecisionType.UNLOAD_TRANSPORT;
           break;
-        case 'action':
+        case TurnPhase.ACTION:
           // Action phase - combat, special abilities, and logistics
           isAppropriate =
-            decision.type === 'attack_target' ||
-            decision.type === 'hide_unit' ||
-            decision.type === 'reveal_unit' ||
-            decision.type === 'special_ability' ||
-            decision.type === 'launch_from_wasp' ||
-            decision.type === 'recover_to_wasp' ||
-            decision.type === 'load_transport' ||
-            decision.type === 'unload_transport' ||
-            decision.type === 'secure_objective';
+            decision.type === AIDecisionType.ATTACK_TARGET ||
+            decision.type === AIDecisionType.HIDE_UNIT ||
+            decision.type === AIDecisionType.REVEAL_UNIT ||
+            decision.type === AIDecisionType.SPECIAL_ABILITY ||
+            decision.type === AIDecisionType.LAUNCH_FROM_WASP ||
+            decision.type === AIDecisionType.RECOVER_TO_WASP ||
+            decision.type === AIDecisionType.LOAD_TRANSPORT ||
+            decision.type === AIDecisionType.UNLOAD_TRANSPORT ||
+            decision.type === AIDecisionType.SECURE_OBJECTIVE;
           break;
         default:
           isAppropriate = false;
@@ -274,7 +275,7 @@ export class AIController {
    */
   private convertDecisionToAction(decision: AIDecision, _gameState: GameState): GameAction | null {
     switch (decision.type) {
-      case 'move_unit':
+      case AIDecisionType.MOVE_UNIT:
         if (decision.unitId && decision.targetPosition) {
           return {
             type: ActionType.MOVE,
@@ -285,7 +286,7 @@ export class AIController {
         }
         break;
 
-      case 'attack_target':
+      case AIDecisionType.ATTACK_TARGET:
         if (decision.unitId && decision.targetUnitId) {
           return {
             type: ActionType.ATTACK,
@@ -296,7 +297,7 @@ export class AIController {
         }
         break;
 
-      case 'hide_unit':
+      case AIDecisionType.HIDE_UNIT:
         if (decision.unitId) {
           return {
             type: ActionType.SPECIAL_ABILITY,
@@ -307,7 +308,7 @@ export class AIController {
         }
         break;
 
-      case 'reveal_unit':
+      case AIDecisionType.REVEAL_UNIT:
         if (decision.unitId) {
           return {
             type: ActionType.REVEAL,
@@ -317,29 +318,29 @@ export class AIController {
         }
         break;
 
-      case 'launch_from_wasp':
+      case AIDecisionType.LAUNCH_FROM_WASP:
         if (decision.unitId && decision.metadata?.unitsToLaunch) {
           return {
             type: ActionType.LAUNCH_FROM_WASP,
             playerId: this.aiPlayerId,
-            unitId: decision.metadata.waspId || decision.unitId,
-            data: { unitIds: decision.metadata.unitsToLaunch },
+            unitId: (decision.metadata.waspId as string) || decision.unitId,
+            data: { unitIds: decision.metadata.unitsToLaunch as string[] },
           };
         }
         break;
 
-      case 'recover_to_wasp':
+      case AIDecisionType.RECOVER_TO_WASP:
         if (decision.unitId) {
           return {
             type: ActionType.RECOVER_TO_WASP,
             playerId: this.aiPlayerId,
-            unitId: decision.metadata?.waspId || decision.unitId,
+            unitId: (decision.metadata?.waspId as string) || decision.unitId,
             data: { unitIds: [decision.unitId] },
           };
         }
         break;
 
-      case 'load_transport':
+      case AIDecisionType.LOAD_TRANSPORT:
         if (decision.unitId && decision.targetUnitId) {
           return {
             type: ActionType.LOAD,
@@ -350,7 +351,7 @@ export class AIController {
         }
         break;
 
-      case 'unload_transport':
+      case AIDecisionType.UNLOAD_TRANSPORT:
         if (decision.unitId) {
           return {
             type: ActionType.UNLOAD,
@@ -361,7 +362,7 @@ export class AIController {
         }
         break;
 
-      case 'secure_objective':
+      case AIDecisionType.SECURE_OBJECTIVE:
         if (decision.unitId) {
           return {
             type: ActionType.SECURE_OBJECTIVE,
@@ -371,14 +372,14 @@ export class AIController {
         }
         break;
 
-      case 'special_ability':
+      case AIDecisionType.SPECIAL_ABILITY:
         if (decision.unitId && decision.metadata?.abilityName) {
           return {
             type: ActionType.SPECIAL_ABILITY,
             playerId: this.aiPlayerId,
             unitId: decision.unitId,
             data: {
-              abilityName: decision.metadata.abilityName,
+              abilityName: decision.metadata.abilityName as string,
               ...decision.metadata,
             },
           };
@@ -386,7 +387,7 @@ export class AIController {
         break;
 
       default:
-        console.warn(`[AI] Unknown decision type: ${decision.type}`);
+        // Unknown decision type
         return null;
     }
 
@@ -519,9 +520,9 @@ export class AIController {
    */
   private calculateAmmoStatus(units: Unit[]): number {
     // Simplified ammo calculation - in full implementation would track actual ammo
-    const totalSupply = units.reduce((sum, unit) => sum + (unit.stats.sp || 10), 0);
+    const totalSupply = units.reduce((sum, unit) => sum + (unit.stats.sp ?? 10), 0);
     const currentSupply = units.reduce(
-      (sum, unit) => sum + (unit.state.currentSP || unit.stats.sp || 10),
+      (sum, unit) => sum + (unit.state.currentSP ?? unit.stats.sp ?? 10),
       0
     );
 
@@ -531,9 +532,55 @@ export class AIController {
   /**
    * Assess supply line status
    */
-  private assessSupplyLines(_gameState: GameState): number {
-    // Simplified supply line assessment
-    return 0.8; // Placeholder
+  private assessSupplyLines(gameState: GameState): number {
+    // Assess supply line security and efficiency
+    let supplyLineHealth = 1.0;
+    
+    try {
+      // Check if supply units (USS Wasp, transports) are operational
+      const allUnits = gameState.getAllUnits();
+      const supplyUnits = allUnits.filter(unit => 
+        unit.type === UnitType.USS_WASP ||
+        unit.getCargoCapacity() > 0
+      );
+      
+      if (supplyUnits.length === 0) {
+        return 0.3; // Poor supply situation with no transport capacity
+      }
+      
+      // Assess health of supply units
+      let supplyUnitHealth = 0;
+      for (const unit of supplyUnits) {
+        const healthPercent = unit.state.currentHP / unit.stats.hp;
+        supplyUnitHealth += healthPercent;
+      }
+      supplyUnitHealth = supplyUnitHealth / supplyUnits.length;
+      
+      // Factor in enemy threats to supply lines
+      const enemyUnits = allUnits.filter(unit => unit.side !== supplyUnits[0]?.side);
+      let threatToSupply = 0;
+      
+      for (const supplyUnit of supplyUnits) {
+        for (const enemy of enemyUnits) {
+          const distance = this.calculateDistance(supplyUnit.state.position, enemy.state.position);
+          if (distance <= 3) { // Enemy threatens supply within 3 hexes
+            threatToSupply += 0.1;
+          }
+        }
+      }
+      
+      // Calculate final supply line assessment
+      supplyLineHealth = supplyUnitHealth * (1 - Math.min(0.5, threatToSupply));
+      
+      // Ensure reasonable bounds
+      supplyLineHealth = Math.max(0.2, Math.min(1.0, supplyLineHealth));
+      
+    } catch (error) {
+      // Fallback assessment if access to game state fails
+      supplyLineHealth = 0.7;
+    }
+    
+    return supplyLineHealth;
   }
 
   /**
@@ -561,6 +608,17 @@ export class AIController {
   }
 
   /**
+   * Calculate hex distance between two positions
+   */
+  private calculateDistance(pos1: HexCoordinate, pos2: HexCoordinate): number {
+    return Math.max(
+      Math.abs(pos1.q - pos2.q),
+      Math.abs(pos1.r - pos2.r),
+      Math.abs(pos1.s - pos2.s)
+    );
+  }
+
+  /**
    * Update learning data based on decisions
    */
   private updateLearningData(decisions: AIDecision[], _context: AIDecisionContext): void {
@@ -576,11 +634,11 @@ export class AIController {
   /**
    * Update performance metrics
    */
-  private updatePerformanceMetrics(actions: GameAction[], _results: any[]): void {
+  private updatePerformanceMetrics(actions: GameAction[], _results: unknown[]): void {
     // Update metrics based on action results
     for (let i = 0; i < actions.length && i < _results.length; i++) {
       const action = actions[i];
-      const result = _results[i];
+      const result = _results[i] as { success: boolean };
 
       if (result.success) {
         if (action.type === ActionType.ATTACK) {
@@ -593,7 +651,7 @@ export class AIController {
   /**
    * Update tactical learning
    */
-  private updateTacticalLearning(_actions: GameAction[], _results: any[]): void {
+  private updateTacticalLearning(_actions: GameAction[], _results: unknown[]): void {
     // Analyze which tactics worked and which didn't
     // This would be expanded with more sophisticated learning
   }
@@ -609,14 +667,10 @@ export class AIController {
   /**
    * Log AI state for debugging
    */
-  private logAIState(strategicAssessment: any, decisions: AIDecision[]): void {
+  private logAIState(strategicAssessment: unknown, decisions: AIDecision[]): void {
     if (decisions.length > 0) {
-      console.log(
-        `[AI] State: ${strategicAssessment.currentState}, Decisions: ${decisions.length}`
-      );
-      decisions.slice(0, 3).forEach(decision => {
-        console.log(`  - ${decision.type}: ${decision.reasoning}`);
-      });
+      // Log AI state for debugging
+      // Log decision details for debugging
     }
   }
 }
