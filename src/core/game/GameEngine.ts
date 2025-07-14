@@ -930,4 +930,18 @@ export class GameEngine {
       console.log(`[AI] Auto-setup: Defender AI enabled with ${defenderDifficulty} difficulty`);
     }
   }
+
+  /**
+   * Execute AI actions and return results for testing
+   */
+  executeAIActions(actions: GameAction[]): ActionResult[] {
+    const results: ActionResult[] = [];
+    
+    for (const action of actions) {
+      const result = this.executeAction(action);
+      results.push(result);
+    }
+    
+    return results;
+  }
 }
