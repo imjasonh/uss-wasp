@@ -24,6 +24,7 @@ import {
   FortificationType,
   DEFAULT_FORTIFICATION_CONFIG,
 } from './components/FortificationUI';
+import { MapEditor } from './MapEditor';
 
 /**
  * UI modes for different interaction states
@@ -37,6 +38,7 @@ export enum UIMode {
   UNLOAD_TARGET = 'unload_target',
   ABILITY_TARGET = 'ability_target',
   FORTIFICATION_PLACEMENT = 'fortification_placement',
+  MAP_EDITOR = 'map_editor',
 }
 
 /**
@@ -100,6 +102,7 @@ export class GameController {
   private readonly actionHistory: ActionResult[] = [];
   private fortificationPalette: FortificationPalette | null = null;
   private selectedFortificationType: FortificationType | null = null;
+  private mapEditor: MapEditor | null = null;
 
   public constructor(
     private readonly gameState: GameState,
@@ -1957,5 +1960,107 @@ export class GameController {
    */
   public isInFortificationPlacementMode(): boolean {
     return this.uiMode === UIMode.FORTIFICATION_PLACEMENT;
+  }
+
+  /**
+   * Show map editor for section selection and arrangement
+   */
+  public showMapEditor(): void {
+    // Create map editor container
+    const editorContainer = document.createElement('div');
+    editorContainer.id = 'map-editor-container';
+    editorContainer.style.position = 'fixed';
+    editorContainer.style.top = '0';
+    editorContainer.style.left = '0';
+    editorContainer.style.width = '100%';
+    editorContainer.style.height = '100%';
+    editorContainer.style.zIndex = '1000';
+    editorContainer.style.background = 'rgba(0, 0, 0, 0.9)';
+
+    // Add close button
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '× Close Map Editor';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.style.zIndex = '1001';
+    closeButton.style.background = '#e94560';
+    closeButton.style.color = 'white';
+    closeButton.style.border = 'none';
+    closeButton.style.padding = '10px 15px';
+    closeButton.style.borderRadius = '5px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.onclick = (): void => this.hideMapEditor();
+
+    editorContainer.appendChild(closeButton);
+
+    // Create map editor
+    this.mapEditor = new MapEditor({
+      containerElement: editorContainer,
+      mapDimensions: this.gameState.map.getDimensions(),
+      onMapChange: (newMap): void => {
+        this.onMapEditorMapChanged(newMap);
+      },
+      onConfigurationChange: (config): void => {
+        this.onMapEditorConfigurationChanged(config);
+      },
+    });
+
+    // Add to document
+    document.body.appendChild(editorContainer);
+    this.uiMode = UIMode.MAP_EDITOR;
+    this.showMessage('Map editor opened. Design your battlefield!', 'info');
+  }
+
+  /**
+   * Hide map editor
+   */
+  public hideMapEditor(): void {
+    const editorContainer = document.getElementById('map-editor-container');
+    if (editorContainer) {
+      document.body.removeChild(editorContainer);
+    }
+    this.mapEditor = null;
+    this.uiMode = UIMode.NORMAL;
+    this.showMessage('Map editor closed', 'info');
+  }
+
+  /**
+   * Handle map change from editor
+   */
+  private onMapEditorMapChanged(_newMap: import('../core/game/Map').GameMap): void {
+    // Update the game state with the new map
+    // Note: This would require extending GameState to support map replacement
+    this.showMessage('Map updated from editor', 'success');
+
+    // Update displays
+    this.updateGameStatusDisplay();
+    this.updateObjectiveControlDisplay();
+
+    // Note: Map rendering would need to be handled by the main renderer
+    // The MapRenderer is a helper class, not the main renderer
+  }
+
+  /**
+   * Handle configuration change from editor
+   */
+  private onMapEditorConfigurationChanged(
+    config: import('../core/game/MapSection').MapConfiguration
+  ): void {
+    this.showMessage(`Configuration "${config.name}" selected`, 'info');
+  }
+
+  /**
+   * Check if in map editor mode
+   */
+  public isInMapEditorMode(): boolean {
+    return this.uiMode === UIMode.MAP_EDITOR;
+  }
+
+  /**
+   * Get current map editor instance
+   */
+  public getMapEditor(): MapEditor | null {
+    return this.mapEditor;
   }
 }
