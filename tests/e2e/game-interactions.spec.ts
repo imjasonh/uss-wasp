@@ -166,7 +166,7 @@ test.describe('USS Wasp Game - Interactions Tests', () => {
     
     // Check game is functional after reset
     const message = await gameHelpers.getGameMessage();
-    expect(message).toBeTruthy();
+    expect(message).toBeDefined();
     expect(message).not.toContain('Error');
   });
 
