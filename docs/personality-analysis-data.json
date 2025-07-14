@@ -1,0 +1,1047 @@
+{
+  "personalities": [
+    "berserker",
+    "strategist",
+    "conservative",
+    "balanced",
+    "rookie",
+    "veteran",
+    "specialist",
+    "adaptive"
+  ],
+  "battleMatrix": {
+    "berserker": {
+      "berserker": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 191.99,
+        "avgPower": "19.20"
+      },
+      "strategist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 187.32,
+        "avgPower": "18.73"
+      },
+      "conservative": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 187.51,
+        "avgPower": "18.75"
+      },
+      "balanced": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 187.46999999999997,
+        "avgPower": "18.75"
+      },
+      "rookie": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 190.93000000000004,
+        "avgPower": "19.09"
+      },
+      "veteran": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 191.10999999999999,
+        "avgPower": "19.11"
+      },
+      "specialist": {
+        "wins": 2,
+        "losses": 8,
+        "totalPower": 194.54,
+        "avgPower": "19.45"
+      },
+      "adaptive": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 188.91,
+        "avgPower": "18.89"
+      }
+    },
+    "strategist": {
+      "berserker": {
+        "wins": 6,
+        "losses": 4,
+        "totalPower": 206.1,
+        "avgPower": "20.61"
+      },
+      "strategist": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 201.32000000000002,
+        "avgPower": "20.13"
+      },
+      "conservative": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 197.20000000000002,
+        "avgPower": "19.72"
+      },
+      "balanced": {
+        "wins": 4,
+        "losses": 6,
+        "totalPower": 199.26999999999998,
+        "avgPower": "19.93"
+      },
+      "rookie": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 206.3,
+        "avgPower": "20.63"
+      },
+      "veteran": {
+        "wins": 5,
+        "losses": 5,
+        "totalPower": 203.93999999999997,
+        "avgPower": "20.39"
+      },
+      "specialist": {
+        "wins": 5,
+        "losses": 5,
+        "totalPower": 199.75,
+        "avgPower": "19.98"
+      },
+      "adaptive": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 202.12,
+        "avgPower": "20.21"
+      }
+    },
+    "conservative": {
+      "berserker": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 135.91000000000003,
+        "avgPower": "13.59"
+      },
+      "strategist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 130.37,
+        "avgPower": "13.04"
+      },
+      "conservative": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 135.31,
+        "avgPower": "13.53"
+      },
+      "balanced": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 133.96,
+        "avgPower": "13.40"
+      },
+      "rookie": {
+        "wins": 4,
+        "losses": 6,
+        "totalPower": 134.03000000000003,
+        "avgPower": "13.40"
+      },
+      "veteran": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 136.43,
+        "avgPower": "13.64"
+      },
+      "specialist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 135.72,
+        "avgPower": "13.57"
+      },
+      "adaptive": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 132.19000000000003,
+        "avgPower": "13.22"
+      }
+    },
+    "balanced": {
+      "berserker": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 185.80000000000004,
+        "avgPower": "18.58"
+      },
+      "strategist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 178.4,
+        "avgPower": "17.84"
+      },
+      "conservative": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 186.94000000000003,
+        "avgPower": "18.69"
+      },
+      "balanced": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 181.93,
+        "avgPower": "18.19"
+      },
+      "rookie": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 179.5,
+        "avgPower": "17.95"
+      },
+      "veteran": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 184,
+        "avgPower": "18.40"
+      },
+      "specialist": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 184.22,
+        "avgPower": "18.42"
+      },
+      "adaptive": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 183.39000000000001,
+        "avgPower": "18.34"
+      }
+    },
+    "rookie": {
+      "berserker": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 121.28,
+        "avgPower": "12.13"
+      },
+      "strategist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 118.45,
+        "avgPower": "11.85"
+      },
+      "conservative": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 126.53,
+        "avgPower": "12.65"
+      },
+      "balanced": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 132.42,
+        "avgPower": "13.24"
+      },
+      "rookie": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 124.47999999999999,
+        "avgPower": "12.45"
+      },
+      "veteran": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 125.59,
+        "avgPower": "12.56"
+      },
+      "specialist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 122.19000000000001,
+        "avgPower": "12.22"
+      },
+      "adaptive": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 132.26,
+        "avgPower": "13.23"
+      }
+    },
+    "veteran": {
+      "berserker": {
+        "wins": 2,
+        "losses": 8,
+        "totalPower": 192.29999999999998,
+        "avgPower": "19.23"
+      },
+      "strategist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 189.29,
+        "avgPower": "18.93"
+      },
+      "conservative": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 195.17,
+        "avgPower": "19.52"
+      },
+      "balanced": {
+        "wins": 2,
+        "losses": 8,
+        "totalPower": 186.50000000000006,
+        "avgPower": "18.65"
+      },
+      "rookie": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 190.6,
+        "avgPower": "19.06"
+      },
+      "veteran": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 193.92000000000002,
+        "avgPower": "19.39"
+      },
+      "specialist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 192.59999999999997,
+        "avgPower": "19.26"
+      },
+      "adaptive": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 186.73,
+        "avgPower": "18.67"
+      }
+    },
+    "specialist": {
+      "berserker": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 187.36,
+        "avgPower": "18.74"
+      },
+      "strategist": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 186.24,
+        "avgPower": "18.62"
+      },
+      "conservative": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 188.48000000000002,
+        "avgPower": "18.85"
+      },
+      "balanced": {
+        "wins": 2,
+        "losses": 8,
+        "totalPower": 183.64000000000001,
+        "avgPower": "18.36"
+      },
+      "rookie": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 189.89999999999995,
+        "avgPower": "18.99"
+      },
+      "veteran": {
+        "wins": 2,
+        "losses": 8,
+        "totalPower": 191.07000000000002,
+        "avgPower": "19.11"
+      },
+      "specialist": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 186.74,
+        "avgPower": "18.67"
+      },
+      "adaptive": {
+        "wins": 0,
+        "losses": 10,
+        "totalPower": 181.68,
+        "avgPower": "18.17"
+      }
+    },
+    "adaptive": {
+      "berserker": {
+        "wins": 3,
+        "losses": 7,
+        "totalPower": 195.73000000000002,
+        "avgPower": "19.57"
+      },
+      "strategist": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 199.17000000000004,
+        "avgPower": "19.92"
+      },
+      "conservative": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 199.71,
+        "avgPower": "19.97"
+      },
+      "balanced": {
+        "wins": 4,
+        "losses": 6,
+        "totalPower": 200.24999999999997,
+        "avgPower": "20.02"
+      },
+      "rookie": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 201.16,
+        "avgPower": "20.12"
+      },
+      "veteran": {
+        "wins": 3,
+        "losses": 7,
+        "totalPower": 201.19,
+        "avgPower": "20.12"
+      },
+      "specialist": {
+        "wins": 1,
+        "losses": 9,
+        "totalPower": 197.49,
+        "avgPower": "19.75"
+      },
+      "adaptive": {
+        "wins": 10,
+        "losses": 0,
+        "totalPower": 198.8,
+        "avgPower": "19.88"
+      }
+    }
+  },
+  "detailedResults": [
+    {
+      "attacker": "berserker",
+      "defender": "berserker",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.20",
+      "avgDefenderPower": "20.44"
+    },
+    {
+      "attacker": "berserker",
+      "defender": "strategist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.73",
+      "avgDefenderPower": "23.12"
+    },
+    {
+      "attacker": "berserker",
+      "defender": "conservative",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "18.75",
+      "avgDefenderPower": "14.80"
+    },
+    {
+      "attacker": "berserker",
+      "defender": "balanced",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.75",
+      "avgDefenderPower": "20.51"
+    },
+    {
+      "attacker": "berserker",
+      "defender": "rookie",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.09",
+      "avgDefenderPower": "14.13"
+    },
+    {
+      "attacker": "berserker",
+      "defender": "veteran",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "19.11",
+      "avgDefenderPower": "20.78"
+    },
+    {
+      "attacker": "berserker",
+      "defender": "specialist",
+      "attackerWins": 2,
+      "defenderWins": 8,
+      "winRate": "20.0",
+      "avgAttackerPower": "19.45",
+      "avgDefenderPower": "20.77"
+    },
+    {
+      "attacker": "berserker",
+      "defender": "adaptive",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "18.89",
+      "avgDefenderPower": "22.07"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "berserker",
+      "attackerWins": 6,
+      "defenderWins": 4,
+      "winRate": "60.0",
+      "avgAttackerPower": "20.61",
+      "avgDefenderPower": "20.70"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "strategist",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "20.13",
+      "avgDefenderPower": "22.15"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "conservative",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.72",
+      "avgDefenderPower": "14.77"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "balanced",
+      "attackerWins": 4,
+      "defenderWins": 6,
+      "winRate": "40.0",
+      "avgAttackerPower": "19.93",
+      "avgDefenderPower": "20.82"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "rookie",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "20.63",
+      "avgDefenderPower": "13.92"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "veteran",
+      "attackerWins": 5,
+      "defenderWins": 5,
+      "winRate": "50.0",
+      "avgAttackerPower": "20.39",
+      "avgDefenderPower": "20.73"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "specialist",
+      "attackerWins": 5,
+      "defenderWins": 5,
+      "winRate": "50.0",
+      "avgAttackerPower": "19.98",
+      "avgDefenderPower": "20.46"
+    },
+    {
+      "attacker": "strategist",
+      "defender": "adaptive",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "20.21",
+      "avgDefenderPower": "22.43"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "berserker",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.59",
+      "avgDefenderPower": "20.58"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "strategist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.04",
+      "avgDefenderPower": "23.22"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "conservative",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "13.53",
+      "avgDefenderPower": "14.29"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "balanced",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.40",
+      "avgDefenderPower": "20.66"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "rookie",
+      "attackerWins": 4,
+      "defenderWins": 6,
+      "winRate": "40.0",
+      "avgAttackerPower": "13.40",
+      "avgDefenderPower": "13.83"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "veteran",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.64",
+      "avgDefenderPower": "20.85"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "specialist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.57",
+      "avgDefenderPower": "20.79"
+    },
+    {
+      "attacker": "conservative",
+      "defender": "adaptive",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.22",
+      "avgDefenderPower": "21.84"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "berserker",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "18.58",
+      "avgDefenderPower": "20.99"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "strategist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "17.84",
+      "avgDefenderPower": "22.29"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "conservative",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "18.69",
+      "avgDefenderPower": "14.33"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "balanced",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "18.19",
+      "avgDefenderPower": "20.17"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "rookie",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "17.95",
+      "avgDefenderPower": "13.55"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "veteran",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.40",
+      "avgDefenderPower": "21.02"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "specialist",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "18.42",
+      "avgDefenderPower": "20.60"
+    },
+    {
+      "attacker": "balanced",
+      "defender": "adaptive",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.34",
+      "avgDefenderPower": "22.10"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "berserker",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "12.13",
+      "avgDefenderPower": "20.25"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "strategist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "11.85",
+      "avgDefenderPower": "22.82"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "conservative",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "12.65",
+      "avgDefenderPower": "14.43"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "balanced",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.24",
+      "avgDefenderPower": "19.77"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "rookie",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "12.45",
+      "avgDefenderPower": "13.39"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "veteran",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "12.56",
+      "avgDefenderPower": "20.41"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "specialist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "12.22",
+      "avgDefenderPower": "21.17"
+    },
+    {
+      "attacker": "rookie",
+      "defender": "adaptive",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "13.23",
+      "avgDefenderPower": "21.82"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "berserker",
+      "attackerWins": 2,
+      "defenderWins": 8,
+      "winRate": "20.0",
+      "avgAttackerPower": "19.23",
+      "avgDefenderPower": "20.68"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "strategist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.93",
+      "avgDefenderPower": "23.06"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "conservative",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.52",
+      "avgDefenderPower": "14.07"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "balanced",
+      "attackerWins": 2,
+      "defenderWins": 8,
+      "winRate": "20.0",
+      "avgAttackerPower": "18.65",
+      "avgDefenderPower": "20.22"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "rookie",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.06",
+      "avgDefenderPower": "14.22"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "veteran",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.39",
+      "avgDefenderPower": "20.20"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "specialist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "19.26",
+      "avgDefenderPower": "20.88"
+    },
+    {
+      "attacker": "veteran",
+      "defender": "adaptive",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.67",
+      "avgDefenderPower": "22.01"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "berserker",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "18.74",
+      "avgDefenderPower": "21.36"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "strategist",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.62",
+      "avgDefenderPower": "22.49"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "conservative",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "18.85",
+      "avgDefenderPower": "14.21"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "balanced",
+      "attackerWins": 2,
+      "defenderWins": 8,
+      "winRate": "20.0",
+      "avgAttackerPower": "18.36",
+      "avgDefenderPower": "19.58"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "rookie",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "18.99",
+      "avgDefenderPower": "13.11"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "veteran",
+      "attackerWins": 2,
+      "defenderWins": 8,
+      "winRate": "20.0",
+      "avgAttackerPower": "19.11",
+      "avgDefenderPower": "20.99"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "specialist",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "18.67",
+      "avgDefenderPower": "20.57"
+    },
+    {
+      "attacker": "specialist",
+      "defender": "adaptive",
+      "attackerWins": 0,
+      "defenderWins": 10,
+      "winRate": "0.0",
+      "avgAttackerPower": "18.17",
+      "avgDefenderPower": "21.28"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "berserker",
+      "attackerWins": 3,
+      "defenderWins": 7,
+      "winRate": "30.0",
+      "avgAttackerPower": "19.57",
+      "avgDefenderPower": "20.98"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "strategist",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "19.92",
+      "avgDefenderPower": "22.86"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "conservative",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.97",
+      "avgDefenderPower": "14.77"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "balanced",
+      "attackerWins": 4,
+      "defenderWins": 6,
+      "winRate": "40.0",
+      "avgAttackerPower": "20.02",
+      "avgDefenderPower": "20.29"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "rookie",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "20.12",
+      "avgDefenderPower": "13.88"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "veteran",
+      "attackerWins": 3,
+      "defenderWins": 7,
+      "winRate": "30.0",
+      "avgAttackerPower": "20.12",
+      "avgDefenderPower": "21.30"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "specialist",
+      "attackerWins": 1,
+      "defenderWins": 9,
+      "winRate": "10.0",
+      "avgAttackerPower": "19.75",
+      "avgDefenderPower": "21.32"
+    },
+    {
+      "attacker": "adaptive",
+      "defender": "adaptive",
+      "attackerWins": 10,
+      "defenderWins": 0,
+      "winRate": "100.0",
+      "avgAttackerPower": "19.88",
+      "avgDefenderPower": "21.58"
+    }
+  ],
+  "personalityStats": {
+    "berserker": {
+      "wins": 34,
+      "losses": 46,
+      "winRate": "42.5",
+      "avgPower": "19.00"
+    },
+    "strategist": {
+      "wins": 51,
+      "losses": 29,
+      "winRate": "63.7",
+      "avgPower": "20.20"
+    },
+    "conservative": {
+      "wins": 14,
+      "losses": 66,
+      "winRate": "17.5",
+      "avgPower": "13.42"
+    },
+    "balanced": {
+      "wins": 32,
+      "losses": 48,
+      "winRate": "40.0",
+      "avgPower": "18.30"
+    },
+    "rookie": {
+      "wins": 11,
+      "losses": 69,
+      "winRate": "13.8",
+      "avgPower": "12.54"
+    },
+    "veteran": {
+      "wins": 34,
+      "losses": 46,
+      "winRate": "42.5",
+      "avgPower": "19.09"
+    },
+    "specialist": {
+      "wins": 35,
+      "losses": 45,
+      "winRate": "43.8",
+      "avgPower": "18.69"
+    },
+    "adaptive": {
+      "wins": 42,
+      "losses": 38,
+      "winRate": "52.5",
+      "avgPower": "19.92"
+    }
+  },
+  "metadata": {
+    "simulationsPerMatchup": 10,
+    "totalBattles": 640,
+    "generatedAt": "2025-07-14T19:54:10.542Z"
+  }
+}
