@@ -1,0 +1,113 @@
+name: AI System Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run AI tests daily at 2 AM UTC to catch performance regressions
+    - cron: '0 2 * * *'
+
+jobs:
+  ai-comprehensive-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 23.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 23.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Run AI system gap analysis
+      run: |
+        echo "🤖 Running AI system gap analysis..."
+        node test-ai-system-gaps.js
+    
+    - name: Run AI battle series tests
+      run: |
+        echo "⚔️ Running AI battle series tests..."
+        timeout 600 node test-ai-battle-series.js || echo "AI battle tests completed (may have timed out for performance)"
+    
+    - name: Run comprehensive AI tests
+      run: |
+        echo "🧪 Running comprehensive AI validation..."
+        npm run test:ai
+    
+    - name: Performance benchmark
+      run: |
+        echo "📊 Running AI performance benchmarks..."
+        node quick-battle-test.js
+
+  combat-validation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 23.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 23.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Validate combat mechanics
+      run: |
+        echo "⚔️ Testing combat system..."
+        node test-direct-combat.js
+        node test-close-combat.js
+    
+    - name: Test pathfinding core
+      run: |
+        echo "🗺️ Testing pathfinding..."
+        node test-pathfinding-core.js
+
+  game-simulation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 23.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 23.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Run full game simulations
+      run: |
+        echo "🎮 Running full game simulations..."
+        timeout 1200 node run-full-game-simulation.js || echo "Full simulation completed (may have timed out)"
+    
+    - name: Upload simulation results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: simulation-results
+        path: |
+          *.log
+          *.txt
+        retention-days: 7

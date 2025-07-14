@@ -1,5 +1,8 @@
 # USS Wasp: Operation Beachhead Inferno
 
+[![CI](https://github.com/username/uss-wasp/actions/workflows/ci.yml/badge.svg)](https://github.com/username/uss-wasp/actions/workflows/ci.yml)
+[![AI Tests](https://github.com/username/uss-wasp/actions/workflows/ai-tests.yml/badge.svg)](https://github.com/username/uss-wasp/actions/workflows/ai-tests.yml)
+
 A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious assault gameplay.
 
 ## Overview
@@ -43,6 +46,33 @@ This project follows a 6-phase development plan:
 - 10-game battle validation with performance analytics  
 - Advanced pathfinding and tactical movement systems
 - Complete rule enforcement and automated victory detection
+
+## CI/CD & Development Workflow
+
+This project uses GitHub Actions for continuous integration and automated testing:
+
+- **CI Pipeline**: Comprehensive checks including linting, type checking, tests, builds, security audits, and AI validation
+- **AI System Tests**: Extended AI validation and battle simulations (daily scheduled runs)
+- **Pre-commit Hooks**: Automatic code formatting and linting before commits
+
+### Development Commands
+
+```bash
+# Code quality
+npm run lint          # Run ESLint
+npm run lint:fix      # Fix linting issues
+npm run format        # Format code with Prettier
+npm run typecheck     # TypeScript type checking
+
+# Testing
+npm test              # Run unit tests
+npm test:watch        # Run tests in watch mode
+npm test:ai           # Run AI system tests
+
+# Build
+npm run build         # Build TypeScript
+npm run build:web     # Build web bundle
+```
 
 ## Getting Started
 

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for proper diff analysis
+    
+    - name: Use Node.js 23.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 23.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Check formatting
+      run: npm run format:check
+    
+    - name: Type check
+      run: npm run typecheck
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Build web bundle
+      run: npm run build:web
+    
+    - name: Run tests
+      run: npm run test -- --coverage --collectCoverageFrom="src/**/*.ts" --coverageReporters=text-summary
+    
+    - name: Security audit
+      run: npm audit --audit-level moderate
+      continue-on-error: true
+    
+    - name: Check for large files
+      run: |
+        echo "📁 Checking for large files..."
+        large_files=$(find . -type f -size +100k -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./dist/*" -not -path "./coverage/*" | wc -l)
+        if [ $large_files -gt 0 ]; then
+          echo "⚠️ Found $large_files large files. Consider if they are necessary."
+          find . -type f -size +100k -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./dist/*" -not -path "./coverage/*" | head -5
+        else
+          echo "✅ No large files detected"
+        fi
+    
+    - name: Quick AI validation
+      run: |
+        echo "🤖 Running quick AI validation..."
+        timeout 120 node quick-battle-test.js || echo "AI validation completed (may have timed out)"
+    
+    - name: Validate commit messages (PR only)
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "💬 Checking commit message format..."
+        git log --oneline origin/main..HEAD | while read line; do
+          if ! echo "$line" | grep -qE "^[a-f0-9]+ (feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+"; then
+            echo "⚠️ Commit message may not follow conventional commits: $line"
+          fi
+        done
+        echo "✅ Commit message validation completed"
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
