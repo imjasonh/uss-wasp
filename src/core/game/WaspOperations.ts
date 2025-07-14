@@ -15,7 +15,7 @@ export enum WaspOperationalLevel {
   DEGRADED = 'degraded',
   LIMITED = 'limited',
   DAMAGED = 'damaged',
-  OFFLINE = 'offline'
+  OFFLINE = 'offline',
 }
 
 /**
@@ -45,9 +45,9 @@ export interface LaunchResult {
  * USS Wasp operations manager
  */
 export class WaspOperations {
-  private wasp: Unit;
-  private systemStatus: WaspOperationalStatus;
-  private currentTurnLaunches: {
+  private readonly wasp: Unit;
+  private readonly systemStatus: WaspOperationalStatus;
+  private readonly currentTurnLaunches: {
     flightDeckLaunches: number;
     wellDeckLaunches: number;
   };
@@ -61,11 +61,11 @@ export class WaspOperations {
       structuralIntegrity: waspUnit.stats.hp,
       maxStructuralIntegrity: waspUnit.stats.hp,
       defensiveAmmo: 6, // Limited defensive ammunition
-      maxDefensiveAmmo: 6
+      maxDefensiveAmmo: 6,
     };
     this.currentTurnLaunches = {
       flightDeckLaunches: 0,
-      wellDeckLaunches: 0
+      wellDeckLaunches: 0,
     };
   }
 
@@ -101,7 +101,7 @@ export class WaspOperations {
   getWellDeckCapacity(): { lcac: number; aav: number } {
     const baseCapacity = this.getWellDeckBaseCapacity();
     const usedCapacity = this.currentTurnLaunches.wellDeckLaunches;
-    
+
     if (baseCapacity.lcac > 0 && usedCapacity === 0) {
       // Can launch 1 LCAC (takes full capacity)
       return { lcac: 1, aav: 0 };
@@ -109,7 +109,7 @@ export class WaspOperations {
       // Can launch AAVs
       return { lcac: 0, aav: Math.max(0, baseCapacity.aav - usedCapacity) };
     }
-    
+
     return { lcac: 0, aav: 0 };
   }
 
@@ -133,13 +133,13 @@ export class WaspOperations {
    */
   launchAircraft(aircraft: Unit[], gameState: GameState): LaunchResult {
     const capacity = this.getFlightDeckCapacity();
-    
+
     if (aircraft.length === 0) {
       return {
         success: false,
         message: 'No aircraft specified for launch',
         launchedUnits: [],
-        remainingCapacity: capacity
+        remainingCapacity: capacity,
       };
     }
 
@@ -148,7 +148,7 @@ export class WaspOperations {
         success: false,
         message: `Flight deck can only launch ${capacity} aircraft this turn`,
         launchedUnits: [],
-        remainingCapacity: capacity
+        remainingCapacity: capacity,
       };
     }
 
@@ -159,7 +159,7 @@ export class WaspOperations {
           success: false,
           message: `${unit.type} is not an aircraft`,
           launchedUnits: [],
-          remainingCapacity: capacity
+          remainingCapacity: capacity,
         };
       }
     }
@@ -182,7 +182,7 @@ export class WaspOperations {
       success: true,
       message: `Launched ${aircraft.length} aircraft from flight deck`,
       launchedUnits,
-      remainingCapacity: this.getFlightDeckCapacity()
+      remainingCapacity: this.getFlightDeckCapacity(),
     };
   }
 
@@ -191,27 +191,29 @@ export class WaspOperations {
    */
   launchAmphibiousCraft(craft: Unit[], gameState: GameState): LaunchResult {
     const capacity = this.getWellDeckCapacity();
-    
+
     if (craft.length === 0) {
       return {
         success: false,
         message: 'No craft specified for launch',
         launchedUnits: [],
-        remainingCapacity: capacity.lcac + capacity.aav
+        remainingCapacity: capacity.lcac + capacity.aav,
       };
     }
 
     // Check if launching LCAC
     const lcacUnits = craft.filter(unit => unit.type === UnitType.LCAC);
     const aavUnits = craft.filter(unit => unit.type === UnitType.AAV_7);
-    const otherUnits = craft.filter(unit => unit.type !== UnitType.LCAC && unit.type !== UnitType.AAV_7);
+    const otherUnits = craft.filter(
+      unit => unit.type !== UnitType.LCAC && unit.type !== UnitType.AAV_7
+    );
 
     if (otherUnits.length > 0) {
       return {
         success: false,
         message: 'Well deck can only launch LCACs and AAVs',
         launchedUnits: [],
-        remainingCapacity: capacity.lcac + capacity.aav
+        remainingCapacity: capacity.lcac + capacity.aav,
       };
     }
 
@@ -220,7 +222,7 @@ export class WaspOperations {
         success: false,
         message: `Well deck can only launch ${capacity.lcac} LCAC this turn`,
         launchedUnits: [],
-        remainingCapacity: capacity.lcac + capacity.aav
+        remainingCapacity: capacity.lcac + capacity.aav,
       };
     }
 
@@ -229,7 +231,7 @@ export class WaspOperations {
         success: false,
         message: `Well deck can only launch ${capacity.aav} AAVs this turn`,
         launchedUnits: [],
-        remainingCapacity: capacity.lcac + capacity.aav
+        remainingCapacity: capacity.lcac + capacity.aav,
       };
     }
 
@@ -238,7 +240,7 @@ export class WaspOperations {
         success: false,
         message: 'Cannot launch both LCAC and AAVs in same turn',
         launchedUnits: [],
-        remainingCapacity: capacity.lcac + capacity.aav
+        remainingCapacity: capacity.lcac + capacity.aav,
       };
     }
 
@@ -259,7 +261,7 @@ export class WaspOperations {
       success: true,
       message: `Launched ${craft.length} units from well deck`,
       launchedUnits,
-      remainingCapacity: this.getWellDeckCapacity().lcac + this.getWellDeckCapacity().aav
+      remainingCapacity: this.getWellDeckCapacity().lcac + this.getWellDeckCapacity().aav,
     };
   }
 
@@ -267,14 +269,20 @@ export class WaspOperations {
    * Recover aircraft to flight deck
    */
   recoverAircraft(aircraft: Unit): boolean {
-    if (!aircraft.hasCategory(UnitCategory.AIRCRAFT) && !aircraft.hasCategory(UnitCategory.HELICOPTER)) {
+    if (
+      !aircraft.hasCategory(UnitCategory.AIRCRAFT) &&
+      !aircraft.hasCategory(UnitCategory.HELICOPTER)
+    ) {
       return false;
     }
 
     // Check if aircraft is adjacent to Wasp
-    const distance = new Hex(aircraft.state.position.q, aircraft.state.position.r, aircraft.state.position.s)
-      .distanceTo(this.wasp.state.position);
-    
+    const distance = new Hex(
+      aircraft.state.position.q,
+      aircraft.state.position.r,
+      aircraft.state.position.s
+    ).distanceTo(this.wasp.state.position);
+
     if (distance > 1) {
       return false;
     }
@@ -297,9 +305,12 @@ export class WaspOperations {
     }
 
     // Check if craft is adjacent to Wasp
-    const distance = new Hex(craft.state.position.q, craft.state.position.r, craft.state.position.s)
-      .distanceTo(this.wasp.state.position);
-    
+    const distance = new Hex(
+      craft.state.position.q,
+      craft.state.position.r,
+      craft.state.position.s
+    ).distanceTo(this.wasp.state.position);
+
     if (distance > 1) {
       return false;
     }
@@ -316,9 +327,13 @@ export class WaspOperations {
    * Get adjacent offshore position for launches
    */
   private getAdjacentOffshorePosition(gameState: GameState): { q: number; r: number; s: number } {
-    const waspHex = new Hex(this.wasp.state.position.q, this.wasp.state.position.r, this.wasp.state.position.s);
+    const waspHex = new Hex(
+      this.wasp.state.position.q,
+      this.wasp.state.position.r,
+      this.wasp.state.position.s
+    );
     const neighbors = waspHex.neighbors();
-    
+
     // Find first offshore neighbor
     for (const neighbor of neighbors) {
       const mapHex = gameState.map.getHex({ q: neighbor.q, r: neighbor.r, s: neighbor.s });
@@ -330,7 +345,7 @@ export class WaspOperations {
         }
       }
     }
-    
+
     // Fallback to Wasp's position if no clear adjacent water
     return this.wasp.state.position;
   }
@@ -357,12 +372,16 @@ export class WaspOperations {
    * Apply damage to Wasp and update system status
    */
   applyDamage(damage: number): { systemDamage: string[]; destroyed: boolean } {
-    this.systemStatus.structuralIntegrity = Math.max(0, this.systemStatus.structuralIntegrity - damage);
+    this.systemStatus.structuralIntegrity = Math.max(
+      0,
+      this.systemStatus.structuralIntegrity - damage
+    );
     this.wasp.state.currentHP = this.systemStatus.structuralIntegrity;
-    
+
     const systemDamage: string[] = [];
-    const integrityRatio = this.systemStatus.structuralIntegrity / this.systemStatus.maxStructuralIntegrity;
-    
+    const integrityRatio =
+      this.systemStatus.structuralIntegrity / this.systemStatus.maxStructuralIntegrity;
+
     // Update system status based on damage
     if (integrityRatio <= 0) {
       this.systemStatus.flightDeck = WaspOperationalLevel.OFFLINE;
@@ -402,7 +421,7 @@ export class WaspOperations {
         systemDamage.push('Minor C2 system damage');
       }
     }
-    
+
     return { systemDamage, destroyed: false };
   }
 
@@ -425,10 +444,10 @@ export class WaspOperations {
 
     // Limit to actual attack hits
     hitsNegated = Math.min(hitsNegated, attackDice);
-    
+
     // Consume ammo
     this.systemStatus.defensiveAmmo--;
-    
+
     return { hitsNegated, ammoUsed: true };
   }
 
@@ -441,15 +460,21 @@ export class WaspOperations {
     }
 
     // Check range (5 hexes)
-    const distance = new Hex(this.wasp.state.position.q, this.wasp.state.position.r, this.wasp.state.position.s)
-      .distanceTo(target.state.position);
-    
+    const distance = new Hex(
+      this.wasp.state.position.q,
+      this.wasp.state.position.r,
+      this.wasp.state.position.s
+    ).distanceTo(target.state.position);
+
     if (distance > 5) {
       return { hit: false, damage: 0, ammoUsed: false };
     }
 
     // Check if target is aircraft
-    if (!target.hasCategory(UnitCategory.AIRCRAFT) && !target.hasCategory(UnitCategory.HELICOPTER)) {
+    if (
+      !target.hasCategory(UnitCategory.AIRCRAFT) &&
+      !target.hasCategory(UnitCategory.HELICOPTER)
+    ) {
       return { hit: false, damage: 0, ammoUsed: false };
     }
 

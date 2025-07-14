@@ -13,7 +13,7 @@ import { PlayerSide } from '../core/game/types';
 /**
  * Test basic AI framework functionality
  */
-export async function runMinimalAITest(): Promise<void> {
+export function runMinimalAITest(): void {
   console.log('🧪 Running Minimal AI Framework Test...\n');
 
   try {
@@ -111,7 +111,7 @@ export async function runMinimalAITest(): Promise<void> {
     gameEngine.setAIEnabled(assaultPlayer.id, true);
     const enabledStatus = gameEngine.getAIStatus(assaultPlayer.id);
 
-    if (enabledStatus && enabledStatus.isEnabled) {
+    if (enabledStatus?.isEnabled) {
       console.log('✅ AI successfully re-enabled');
     } else {
       console.log('❌ Failed to re-enable AI');
@@ -129,5 +129,9 @@ export async function runMinimalAITest(): Promise<void> {
  * Run the test if this file is executed directly
  */
 if (require.main === module) {
-  runMinimalAITest().catch(console.error);
+  try {
+    runMinimalAITest();
+  } catch (error) {
+    console.error(error);
+  }
 }

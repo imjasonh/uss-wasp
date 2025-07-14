@@ -5,15 +5,13 @@
 
 import { GameController, UIMode } from '../ui/GameController';
 import { GameState } from '../core/game/GameState';
-import { GameEngine } from '../core/game/GameEngine';
 import { PixiRenderer } from '../ui/renderer/PixiRenderer';
 import { MapRenderer } from '../ui/renderer/MapRenderer';
 import { GameMap } from '../core/game/Map';
-import { TerrainType } from '../core/game/types';
 import { Player } from '../core/game/Player';
 import { Unit } from '../core/game/Unit';
 import { Hex } from '../core/hex';
-import { PlayerSide, UnitType, TurnPhase, ActionType, UnitCategory } from '../core/game/types';
+import { PlayerSide, UnitType, TurnPhase, ActionType, TerrainType } from '../core/game/types';
 import { UNIT_DEFINITIONS } from '../core/units/UnitDefinitions';
 
 // Mock DOM elements
@@ -56,7 +54,7 @@ const mockPixiApp = {
 jest.mock('../ui/renderer/PixiRenderer', () => {
   return {
     PixiRenderer: jest.fn().mockImplementation(() => ({
-      getApp: () => mockPixiApp,
+      getApp: (): typeof mockPixiApp => mockPixiApp,
       renderHexGrid: jest.fn(),
       renderUnits: jest.fn(),
       highlightHexes: jest.fn(),
@@ -71,9 +69,16 @@ jest.mock('../ui/renderer/PixiRenderer', () => {
 jest.mock('../ui/renderer/MapRenderer', () => {
   return {
     MapRenderer: jest.fn().mockImplementation(() => ({
-      getAllHexes: () => [new Hex(0, 0, 0), new Hex(1, 0, -1)],
-      getTerrainColor: () => 0x00ff00,
-      getHexInfo: () => ({
+      getAllHexes: (): Hex[] => [new Hex(0, 0, 0), new Hex(1, 0, -1)],
+      getTerrainColor: (): number => 0x00ff00,
+      getHexInfo: (): {
+        coordinate: string;
+        terrain: string;
+        movementCost: number;
+        defenseBonus: number;
+        blocksLOS: boolean;
+        isOffshore: boolean;
+      } => ({
         coordinate: '(0, 0)',
         terrain: 'Clear',
         movementCost: 1,
@@ -239,7 +244,7 @@ describe('GameController', () => {
     });
 
     it('should handle end turn correctly', () => {
-      const initialTurn = gameState.turn;
+      const _initialTurn = gameState.turn;
       gameController.endTurn();
       // Turn should advance through all phases
       expect(gameState.phase).toBe(TurnPhase.EVENT);

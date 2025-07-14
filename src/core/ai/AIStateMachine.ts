@@ -4,13 +4,13 @@
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { 
-  AIState, 
-  AIDecisionContext, 
+import {
+  AIState,
+  AIDecisionContext,
   StrategicAssessment,
   StateTransitionTrigger,
   TacticalPriority,
-  AIConfiguration
+  AIConfiguration,
 } from './types';
 import { Unit } from '../game/Unit';
 
@@ -19,7 +19,7 @@ import { Unit } from '../game/Unit';
  */
 export class AIStateMachine {
   private currentState: AIState;
-  private stateHistory: { state: AIState; turn: number; reason: string }[] = [];
+  private readonly stateHistory: { state: AIState; turn: number; reason: string }[] = [];
   private transitionTriggers!: StateTransitionTrigger[];
 
   constructor(_config: AIConfiguration) {
@@ -33,10 +33,10 @@ export class AIStateMachine {
   update(context: AIDecisionContext): StrategicAssessment {
     // Analyze current strategic situation
     const assessment = this.analyzeStrategicSituation(context);
-    
+
     // Check for state transitions
     const shouldTransition = this.checkStateTransitions(context);
-    
+
     if (shouldTransition) {
       this.transitionToState(shouldTransition.newState, shouldTransition.condition, context.turn);
     }
@@ -47,7 +47,7 @@ export class AIStateMachine {
       stateConfidence: assessment.stateConfidence,
       keyFactors: assessment.keyFactors,
       timeToTransition: assessment.timeToTransition,
-      strategicPriorities: this.getStrategicPriorities()
+      strategicPriorities: this.getStrategicPriorities(),
     };
   }
 
@@ -74,30 +74,30 @@ export class AIStateMachine {
         return [
           TacticalPriority.GATHER_INTELLIGENCE,
           TacticalPriority.DENY_TERRAIN,
-          TacticalPriority.PRESERVE_FORCE
+          TacticalPriority.PRESERVE_FORCE,
         ];
-      
+
       case AIState.ACTIVE_DEFENSE:
         return [
           TacticalPriority.DEFEND_OBJECTIVES,
           TacticalPriority.INFLICT_CASUALTIES,
-          TacticalPriority.DENY_TERRAIN
+          TacticalPriority.DENY_TERRAIN,
         ];
-      
+
       case AIState.GUERRILLA_WARFARE:
         return [
           TacticalPriority.INFLICT_CASUALTIES,
           TacticalPriority.PRESERVE_FORCE,
-          TacticalPriority.GATHER_INTELLIGENCE
+          TacticalPriority.GATHER_INTELLIGENCE,
         ];
-      
+
       case AIState.FINAL_STAND:
         return [
           TacticalPriority.DEFEND_OBJECTIVES,
           TacticalPriority.INFLICT_CASUALTIES,
-          TacticalPriority.PRESERVE_FORCE
+          TacticalPriority.PRESERVE_FORCE,
         ];
-      
+
       default:
         return [TacticalPriority.PRESERVE_FORCE];
     }
@@ -121,7 +121,10 @@ export class AIStateMachine {
     const forceRatio = this.calculateForceRatio(context);
     if (forceRatio < 0.3) {
       factors.push(`Low force ratio: ${Math.round(forceRatio * 100)}%`);
-      if (this.currentState !== AIState.GUERRILLA_WARFARE && this.currentState !== AIState.FINAL_STAND) {
+      if (
+        this.currentState !== AIState.GUERRILLA_WARFARE &&
+        this.currentState !== AIState.FINAL_STAND
+      ) {
         recommendedState = AIState.GUERRILLA_WARFARE;
         confidence = 0.8;
         timeToTransition = 1;
@@ -132,7 +135,10 @@ export class AIStateMachine {
     const territoryControl = context.resourceStatus.territoryControl;
     if (territoryControl < 0.4) {
       factors.push(`Low territory control: ${Math.round(territoryControl * 100)}%`);
-      if (this.currentState === AIState.PREPARATION || this.currentState === AIState.ACTIVE_DEFENSE) {
+      if (
+        this.currentState === AIState.PREPARATION ||
+        this.currentState === AIState.ACTIVE_DEFENSE
+      ) {
         recommendedState = AIState.GUERRILLA_WARFARE;
         confidence = 0.7;
         timeToTransition = 2;
@@ -173,16 +179,14 @@ export class AIStateMachine {
       recommendedState,
       stateConfidence: confidence,
       keyFactors: factors,
-      timeToTransition
+      timeToTransition,
     };
   }
 
   /**
    * Check if any state transition triggers are met
    */
-  private checkStateTransitions(
-    context: AIDecisionContext
-  ): StateTransitionTrigger | null {
+  private checkStateTransitions(context: AIDecisionContext): StateTransitionTrigger | null {
     for (const trigger of this.transitionTriggers) {
       if (this.evaluateTriggerCondition(trigger, context)) {
         return trigger;
@@ -195,31 +199,31 @@ export class AIStateMachine {
    * Evaluate if a specific trigger condition is met
    */
   private evaluateTriggerCondition(
-    trigger: StateTransitionTrigger, 
+    trigger: StateTransitionTrigger,
     context: AIDecisionContext
   ): boolean {
     switch (trigger.condition) {
       case 'force_ratio_low':
         return this.calculateForceRatio(context) < trigger.threshold;
-      
+
       case 'territory_lost':
         return context.resourceStatus.territoryControl < trigger.threshold;
-      
+
       case 'objective_threatened':
         return this.assessObjectiveThreats(context) > trigger.threshold;
-      
+
       case 'enemy_landed':
         return this.hasEnemyLanded(context);
-      
+
       case 'turn_threshold':
         return context.turn >= trigger.threshold;
-      
+
       case 'casualties_heavy':
         return this.calculateCasualtyRate(context) > trigger.threshold;
-      
+
       case 'supplies_low':
         return context.resourceStatus.ammunition < trigger.threshold;
-      
+
       default:
         return false;
     }
@@ -229,13 +233,15 @@ export class AIStateMachine {
    * Transition to new state
    */
   private transitionToState(newState: AIState, reason: string, turn: number): void {
-    if (newState === this.currentState) return;
+    if (newState === this.currentState) {
+      return;
+    }
 
     // Record state transition
     this.stateHistory.push({
       state: this.currentState,
       turn,
-      reason: `Transitioning from ${this.currentState} to ${newState}: ${reason}`
+      reason: `Transitioning from ${this.currentState} to ${newState}: ${reason}`,
     });
 
     console.log(`[AI] State transition: ${this.currentState} -> ${newState} (${reason})`);
@@ -252,44 +258,44 @@ export class AIStateMachine {
         condition: 'enemy_landed',
         threshold: 1,
         newState: AIState.ACTIVE_DEFENSE,
-        priority: 8
+        priority: 8,
       },
-      
+
       // Active Defense -> Guerrilla Warfare
       {
         condition: 'force_ratio_low',
         threshold: 0.4,
         newState: AIState.GUERRILLA_WARFARE,
-        priority: 7
+        priority: 7,
       },
       {
         condition: 'territory_lost',
         threshold: 0.5,
         newState: AIState.GUERRILLA_WARFARE,
-        priority: 6
+        priority: 6,
       },
-      
+
       // Any state -> Final Stand
       {
         condition: 'objective_threatened',
         threshold: 0.8,
         newState: AIState.FINAL_STAND,
-        priority: 9
+        priority: 9,
       },
       {
         condition: 'turn_threshold',
         threshold: 12, // Late game
         newState: AIState.FINAL_STAND,
-        priority: 5
+        priority: 5,
       },
-      
+
       // Guerrilla -> Final Stand
       {
         condition: 'force_ratio_low',
         threshold: 0.2,
         newState: AIState.FINAL_STAND,
-        priority: 8
-      }
+        priority: 8,
+      },
     ];
 
     // Sort triggers by priority
@@ -302,8 +308,10 @@ export class AIStateMachine {
   private calculateForceRatio(context: AIDecisionContext): number {
     const friendlyStrength = this.calculateForceStrength(context.availableUnits);
     const enemyStrength = this.calculateForceStrength(context.enemyUnits);
-    
-    if (enemyStrength === 0) return 1; // No enemies
+
+    if (enemyStrength === 0) {
+      return 1;
+    } // No enemies
     return friendlyStrength / (friendlyStrength + enemyStrength);
   }
 
@@ -314,7 +322,7 @@ export class AIStateMachine {
     return units.reduce((strength, unit) => {
       const healthRatio = unit.state.currentHP / unit.stats.hp;
       const baseStrength = unit.getEffectiveAttack() + unit.stats.def;
-      return strength + (baseStrength * healthRatio);
+      return strength + baseStrength * healthRatio;
     }, 0);
   }
 
@@ -326,9 +334,11 @@ export class AIStateMachine {
     // For now, return a placeholder value
     const enemyCount = context.enemyUnits.length;
     const friendlyCount = context.availableUnits.length;
-    
-    if (friendlyCount === 0) return 1.0;
-    
+
+    if (friendlyCount === 0) {
+      return 1.0;
+    }
+
     // Simple threat assessment based on unit ratio and positions
     const threatRatio = enemyCount / (enemyCount + friendlyCount);
     return Math.min(1.0, threatRatio * 1.5); // Scale up threat perception
@@ -350,10 +360,10 @@ export class AIStateMachine {
    */
   private calculateCasualtyRate(context: AIDecisionContext): number {
     const currentUnits = context.availableUnits.length;
-    const totalHealthRatio = context.availableUnits.reduce((sum, unit) => 
-      sum + (unit.state.currentHP / unit.stats.hp), 0
-    ) / Math.max(1, currentUnits);
-    
+    const totalHealthRatio =
+      context.availableUnits.reduce((sum, unit) => sum + unit.state.currentHP / unit.stats.hp, 0) /
+      Math.max(1, currentUnits);
+
     // Casualty rate is inverse of health ratio
     return 1 - totalHealthRatio;
   }
@@ -380,39 +390,39 @@ export class AIStateMachine {
           aggressiveness: 0.2,
           riskTolerance: 0.8,
           coordinationEmphasis: 0.6,
-          resourceConservation: 0.9
+          resourceConservation: 0.9,
         };
-      
+
       case AIState.ACTIVE_DEFENSE:
         return {
           aggressiveness: 0.6,
           riskTolerance: 0.5,
           coordinationEmphasis: 0.8,
-          resourceConservation: 0.7
+          resourceConservation: 0.7,
         };
-      
+
       case AIState.GUERRILLA_WARFARE:
         return {
           aggressiveness: 0.8,
           riskTolerance: 0.3,
           coordinationEmphasis: 0.4,
-          resourceConservation: 0.9
+          resourceConservation: 0.9,
         };
-      
+
       case AIState.FINAL_STAND:
         return {
           aggressiveness: 1.0,
           riskTolerance: 0.1,
           coordinationEmphasis: 0.9,
-          resourceConservation: 0.2
+          resourceConservation: 0.2,
         };
-      
+
       default:
         return {
           aggressiveness: 0.5,
           riskTolerance: 0.5,
           coordinationEmphasis: 0.5,
-          resourceConservation: 0.5
+          resourceConservation: 0.5,
         };
     }
   }

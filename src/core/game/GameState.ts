@@ -7,14 +7,14 @@ import { Unit } from './Unit';
 import { Player } from './Player';
 import { GameMap } from './Map';
 import { FogOfWar } from './FogOfWar';
-import { WaspOperations } from './WaspOperations';
-import { 
-  PlayerSide, 
-  TurnPhase, 
+import { WaspOperations, WaspOperationalStatus } from './WaspOperations';
+import {
+  PlayerSide,
+  TurnPhase,
   VictoryCondition,
   ActionType,
   UnitType,
-  UnitCategory
+  UnitCategory,
 } from './types';
 
 /**
@@ -71,7 +71,7 @@ export class GameState {
     this.isGameOver = false;
     this.events = [];
     this.lastActionTime = Date.now();
-    
+
     // Initialize fog of war system
     this.fogOfWar = new FogOfWar(this);
   }
@@ -81,7 +81,7 @@ export class GameState {
    */
   addPlayer(player: Player): void {
     this.players.set(player.id, player);
-    
+
     // Set first player as active
     if (this.players.size === 1) {
       this.activePlayerId = player.id;
@@ -165,7 +165,7 @@ export class GameState {
    * Get units at specific position
    */
   getUnitsAt(position: Hex): Unit[] {
-    return this.getAllUnits().filter(unit => 
+    return this.getAllUnits().filter(unit =>
       new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s).equals(position)
     );
   }
@@ -209,10 +209,10 @@ export class GameState {
         this.nextTurn();
         break;
     }
-    
+
     // Update fog of war visibility
     this.fogOfWar.updateVisibility();
-    
+
     this.addEvent('phase_change', `Advanced to ${this.phase} phase`);
   }
 
@@ -222,24 +222,24 @@ export class GameState {
   private nextTurn(): void {
     this.turn++;
     this.phase = TurnPhase.EVENT;
-    
+
     // Reset turn state for all players
     for (const player of this.players.values()) {
       player.resetTurnState();
       player.processSuppressionRemoval();
       player.clearCommandPoints();
     }
-    
+
     // Reset Wasp operations for new turn
     if (this.waspOperations) {
       this.waspOperations.resetTurnLaunches();
     }
-    
+
     // Update fog of war at start of turn
     this.fogOfWar.updateVisibility();
-    
+
     this.addEvent('turn_start', `Turn ${this.turn} begins`);
-    
+
     // Check if game should end due to turn limit
     if (this.turn > this.maxTurns) {
       this.checkVictoryConditions();
@@ -252,24 +252,26 @@ export class GameState {
   checkVictoryConditions(): boolean {
     for (const player of this.players.values()) {
       const enemy = this.getEnemyPlayer(player.id);
-      if (!enemy) continue;
-      
+      if (!enemy) {
+        continue;
+      }
+
       const conditions = player.checkVictoryConditions(this.turn, this.maxTurns, enemy);
-      
+
       if (conditions.length > 0) {
         this.isGameOver = true;
         this.winner = player.id;
         this.victoryCondition = conditions[0]; // Use first condition found
-        
+
         this.addEvent('game_end', `${player.side} wins by ${this.victoryCondition}`, {
           winner: player.id,
           condition: this.victoryCondition,
         });
-        
+
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -278,12 +280,12 @@ export class GameState {
    */
   private getEnemyPlayer(playerId: string): Player | undefined {
     const player = this.getPlayer(playerId);
-    if (!player) return undefined;
-    
-    const enemySide = player.side === PlayerSide.Assault 
-      ? PlayerSide.Defender 
-      : PlayerSide.Assault;
-      
+    if (!player) {
+      return undefined;
+    }
+
+    const enemySide = player.side === PlayerSide.Assault ? PlayerSide.Defender : PlayerSide.Assault;
+
     return this.getPlayerBySide(enemySide);
   }
 
@@ -302,7 +304,7 @@ export class GameState {
           player.generateCommandPoints();
         }
       }
-      
+
       if (!this.waspOperations) {
         this.addEvent('command_generation', 'Command points generated');
       }
@@ -314,8 +316,10 @@ export class GameState {
    */
   switchActivePlayer(): void {
     const currentPlayer = this.getActivePlayer();
-    if (!currentPlayer) return;
-    
+    if (!currentPlayer) {
+      return;
+    }
+
     // Find the other player
     for (const player of this.players.values()) {
       if (player.id !== this.activePlayerId) {
@@ -344,34 +348,34 @@ export class GameState {
     if (this.isGameOver) {
       return { valid: false, reason: 'Game is over' };
     }
-    
+
     // Check if it's the correct phase for this action
     if (!this.isValidActionForPhase(action.type)) {
       return { valid: false, reason: `Action ${action.type} not valid in ${this.phase} phase` };
     }
-    
+
     // Check if it's the player's turn (for actions that require it)
     if (this.requiresPlayerTurn(action.type) && action.playerId !== this.activePlayerId) {
       return { valid: false, reason: 'Not your turn' };
     }
-    
+
     // Check if player exists
     const player = this.getPlayer(action.playerId);
     if (!player) {
       return { valid: false, reason: 'Player not found' };
     }
-    
+
     // Check if unit exists and belongs to player
     const unit = player.getUnit(action.unitId);
     if (!unit) {
       return { valid: false, reason: 'Unit not found' };
     }
-    
+
     // Check if unit can act
     if (this.requiresUnitAction(action.type) && !unit.canAct()) {
       return { valid: false, reason: 'Unit cannot act' };
     }
-    
+
     return { valid: true };
   }
 
@@ -391,7 +395,7 @@ export class GameState {
           ActionType.UNLOAD,
           ActionType.SPECIAL_ABILITY,
           ActionType.SECURE_OBJECTIVE,
-          ActionType.REVEAL
+          ActionType.REVEAL,
         ].includes(actionType);
       default:
         return false;
@@ -409,7 +413,7 @@ export class GameState {
       ActionType.UNLOAD,
       ActionType.SPECIAL_ABILITY,
       ActionType.SECURE_OBJECTIVE,
-      ActionType.REVEAL
+      ActionType.REVEAL,
     ].includes(actionType);
   }
 
@@ -423,7 +427,7 @@ export class GameState {
       ActionType.UNLOAD,
       ActionType.SPECIAL_ABILITY,
       ActionType.SECURE_OBJECTIVE,
-      ActionType.REVEAL
+      ActionType.REVEAL,
     ].includes(actionType);
   }
 
@@ -457,40 +461,44 @@ export class GameState {
    */
   clone(): GameState {
     const clone = new GameState(this.gameId, this.map, this.maxTurns);
-    
+
     // Clone players
     for (const player of this.players.values()) {
       const playerClone = new Player(player.id, player.side);
       playerClone.commandPoints = player.commandPoints;
-      
+
       // Clone units
       for (const unit of player.units.values()) {
         playerClone.addUnit(unit.clone());
       }
-      
+
       // Clone objectives
       for (const objective of player.objectives.values()) {
         playerClone.addObjective({ ...objective });
       }
-      
+
       // Clone Wasp status
       if (player.waspStatus) {
         playerClone.waspStatus = { ...player.waspStatus };
       }
-      
+
       clone.addPlayer(playerClone);
     }
-    
+
     // Copy other state
     clone.turn = this.turn;
     clone.phase = this.phase;
     clone.activePlayerId = this.activePlayerId;
     clone.isGameOver = this.isGameOver;
-    if (this.winner) clone.winner = this.winner;
-    if (this.victoryCondition) clone.victoryCondition = this.victoryCondition;
+    if (this.winner) {
+      clone.winner = this.winner;
+    }
+    if (this.victoryCondition) {
+      clone.victoryCondition = this.victoryCondition;
+    }
     clone.events = [...this.events];
     clone.lastActionTime = this.lastActionTime;
-    
+
     return clone;
   }
 
@@ -500,11 +508,11 @@ export class GameState {
   getVisibleUnitsForPlayer(playerId: string): Unit[] {
     const visibleUnitIds = this.fogOfWar.getVisibleUnitsForPlayer(playerId);
     const allUnits: Unit[] = [];
-    
+
     for (const player of this.players.values()) {
       allUnits.push(...player.getLivingUnits());
     }
-    
+
     return allUnits.filter(unit => visibleUnitIds.has(unit.id));
   }
 
@@ -527,14 +535,16 @@ export class GameState {
    */
   deployHiddenUnits(): void {
     const defender = this.getPlayerBySide(PlayerSide.Defender);
-    if (!defender) return;
+    if (!defender) {
+      return;
+    }
 
     for (const unit of defender.getLivingUnits()) {
       if (unit.canBeHidden()) {
         this.fogOfWar.deployHiddenUnit(unit);
       }
     }
-    
+
     this.fogOfWar.updateVisibility();
   }
 
@@ -557,11 +567,11 @@ export class GameState {
     }
 
     // Separate aircraft and amphibious craft
-    const aircraft = units.filter(unit => 
-      unit.hasCategory(UnitCategory.AIRCRAFT) || unit.hasCategory(UnitCategory.HELICOPTER)
+    const aircraft = units.filter(
+      unit => unit.hasCategory(UnitCategory.AIRCRAFT) || unit.hasCategory(UnitCategory.HELICOPTER)
     );
-    const amphibiousCraft = units.filter(unit => 
-      unit.type === UnitType.LCAC || unit.type === UnitType.AAV_7
+    const amphibiousCraft = units.filter(
+      unit => unit.type === UnitType.LCAC || unit.type === UnitType.AAV_7
     );
 
     const results: string[] = [];
@@ -571,8 +581,8 @@ export class GameState {
       const launchResult = this.waspOperations.launchAircraft(aircraft, this);
       if (launchResult.success) {
         results.push(launchResult.message);
-        this.addEvent('wasp_launch', launchResult.message, { 
-          units: launchResult.launchedUnits.map(u => u.id) 
+        this.addEvent('wasp_launch', launchResult.message, {
+          units: launchResult.launchedUnits.map(u => u.id),
         });
       } else {
         return { success: false, message: launchResult.message };
@@ -584,8 +594,8 @@ export class GameState {
       const launchResult = this.waspOperations.launchAmphibiousCraft(amphibiousCraft, this);
       if (launchResult.success) {
         results.push(launchResult.message);
-        this.addEvent('wasp_launch', launchResult.message, { 
-          units: launchResult.launchedUnits.map(u => u.id) 
+        this.addEvent('wasp_launch', launchResult.message, {
+          units: launchResult.launchedUnits.map(u => u.id),
         });
       } else {
         return { success: false, message: launchResult.message };
@@ -608,7 +618,7 @@ export class GameState {
 
     for (const unit of units) {
       let recovered = false;
-      
+
       if (unit.hasCategory(UnitCategory.AIRCRAFT) || unit.hasCategory(UnitCategory.HELICOPTER)) {
         recovered = this.waspOperations.recoverAircraft(unit);
       } else if (unit.type === UnitType.LCAC || unit.type === UnitType.AAV_7) {
@@ -630,7 +640,7 @@ export class GameState {
   /**
    * Get USS Wasp status summary
    */
-  getWaspStatus(): any {
+  getWaspStatus(): WaspOperationalStatus | null {
     return this.waspOperations?.getStatusSummary() || null;
   }
 
@@ -643,12 +653,12 @@ export class GameState {
     }
 
     const result = this.waspOperations.applyDamage(damage);
-    
+
     if (result.systemDamage.length > 0) {
       this.addEvent('wasp_damage', `USS Wasp damaged: ${result.systemDamage.join(', ')}`, {
         damage,
         systemDamage: result.systemDamage,
-        destroyed: result.destroyed
+        destroyed: result.destroyed,
       });
     }
 

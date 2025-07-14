@@ -3,23 +3,18 @@
  */
 
 import { HexCoordinate } from '../hex';
-import { 
-  UnitType, 
-  UnitCategory, 
-  PlayerSide, 
-  StatusEffect
-} from './types';
+import { UnitType, UnitCategory, PlayerSide, StatusEffect } from './types';
 
 /**
  * Unit statistics as defined in the rules
  */
 export interface UnitStats {
-  readonly mv: number;          // Movement Allowance
-  readonly atk: number;         // Attack Dice
-  readonly def: number;         // Defense Value (lower is better)
-  readonly hp: number;          // Hit Points
-  readonly sp?: number;         // Supply Points (optional)
-  readonly pointCost: number;   // Points cost for force selection
+  readonly mv: number; // Movement Allowance
+  readonly atk: number; // Attack Dice
+  readonly def: number; // Defense Value (lower is better)
+  readonly hp: number; // Hit Points
+  readonly sp?: number; // Supply Points (optional)
+  readonly pointCost: number; // Points cost for force selection
 }
 
 /**
@@ -28,7 +23,7 @@ export interface UnitStats {
 export interface SpecialAbility {
   readonly name: string;
   readonly description: string;
-  readonly cpCost?: number;     // Command Point cost to activate
+  readonly cpCost?: number; // Command Point cost to activate
   readonly usesPerTurn?: number; // Limited uses per turn
 }
 
@@ -74,7 +69,7 @@ export class Unit {
     this.stats = stats;
     this.categories = new Set(categories);
     this.specialAbilities = specialAbilities;
-    
+
     this.state = {
       position: initialPosition,
       currentHP: stats.hp,
@@ -106,18 +101,18 @@ export class Unit {
    * Check if unit can act this turn
    */
   canAct(): boolean {
-    return this.isAlive() && 
-           !this.state.hasActed && 
-           !this.state.statusEffects.has(StatusEffect.PINNED);
+    return (
+      this.isAlive() && !this.state.hasActed && !this.state.statusEffects.has(StatusEffect.PINNED)
+    );
   }
 
   /**
    * Check if unit can move this turn
    */
   canMove(): boolean {
-    return this.isAlive() && 
-           !this.state.hasMoved && 
-           !this.state.statusEffects.has(StatusEffect.PINNED);
+    return (
+      this.isAlive() && !this.state.hasMoved && !this.state.statusEffects.has(StatusEffect.PINNED)
+    );
   }
 
   /**
@@ -174,14 +169,16 @@ export class Unit {
    * Take damage and apply suppression
    */
   takeDamage(damage: number): void {
-    if (damage <= 0) return;
-    
+    if (damage <= 0) {
+      return;
+    }
+
     this.state.currentHP = Math.max(0, this.state.currentHP - damage);
-    
+
     // Add suppression if unit survives
     if (this.state.currentHP > 0) {
       this.state.suppressionTokens = Math.min(2, this.state.suppressionTokens + 1);
-      
+
       // Update status effects
       if (this.state.suppressionTokens === 1) {
         this.state.statusEffects.add(StatusEffect.SUPPRESSED);
@@ -197,7 +194,7 @@ export class Unit {
    */
   removeSuppression(amount: number = 1): void {
     this.state.suppressionTokens = Math.max(0, this.state.suppressionTokens - amount);
-    
+
     // Update status effects
     if (this.state.suppressionTokens === 0) {
       this.state.statusEffects.delete(StatusEffect.SUPPRESSED);
@@ -235,8 +232,7 @@ export class Unit {
    */
   canBeHidden(): boolean {
     // Only certain unit types can be hidden initially
-    return this.side === PlayerSide.Defender && 
-           this.hasCategory(UnitCategory.INFANTRY);
+    return this.side === PlayerSide.Defender && this.hasCategory(UnitCategory.INFANTRY);
   }
 
   /**
@@ -271,9 +267,8 @@ export class Unit {
    */
   resupply(amount?: number): void {
     const maxSP = this.stats.sp || 0;
-    this.state.currentSP = amount !== undefined 
-      ? Math.min(maxSP, this.state.currentSP + amount)
-      : maxSP;
+    this.state.currentSP =
+      amount !== undefined ? Math.min(maxSP, this.state.currentSP + amount) : maxSP;
   }
 
   /**
@@ -285,7 +280,7 @@ export class Unit {
     if (maxCargo === 0 || this.state.cargo.length >= maxCargo) {
       return false;
     }
-    
+
     this.state.cargo.push(unit);
     return true;
   }
@@ -357,13 +352,13 @@ export class Unit {
       [...this.specialAbilities],
       this.state.position
     );
-    
+
     clone.state = {
       ...this.state,
       statusEffects: new Set(this.state.statusEffects),
       cargo: this.state.cargo.map(unit => unit.clone()),
     };
-    
+
     return clone;
   }
 

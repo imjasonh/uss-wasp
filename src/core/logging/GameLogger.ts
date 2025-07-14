@@ -15,7 +15,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  CRITICAL = 4
+  CRITICAL = 4,
 }
 
 export enum LogCategory {
@@ -26,7 +26,7 @@ export enum LogCategory {
   MOVEMENT = 'movement',
   PHASE_CHANGE = 'phase_change',
   VICTORY = 'victory',
-  ERROR = 'error'
+  ERROR = 'error',
 }
 
 export interface LogEntry {
@@ -61,10 +61,10 @@ export class GameLogger {
   private snapshots: GameSnapshot[] = [];
   private logIdCounter = 0;
   private snapshotIdCounter = 0;
-  
+
   constructor(
-    private gameId: string,
-    private minLogLevel: LogLevel = LogLevel.DEBUG
+    private readonly gameId: string,
+    private readonly minLogLevel: LogLevel = LogLevel.DEBUG
   ) {}
 
   /**
@@ -79,7 +79,9 @@ export class GameLogger {
     playerId?: string,
     unitId?: string
   ): void {
-    if (level < this.minLogLevel) return;
+    if (level < this.minLogLevel) {
+      return;
+    }
 
     const entry: LogEntry = {
       id: `log_${++this.logIdCounter}`,
@@ -92,11 +94,11 @@ export class GameLogger {
       message,
       data,
       playerId,
-      unitId
+      unitId,
     };
 
     this.logs.push(entry);
-    
+
     // Console output for immediate feedback
     const levelName = LogLevel[level];
     const categoryName = category.toUpperCase();
@@ -109,15 +111,10 @@ export class GameLogger {
   /**
    * Log unit action
    */
-  logUnitAction(
-    action: GameAction,
-    result: ActionResult,
-    gameState: GameState,
-    unit?: Unit
-  ): void {
+  logUnitAction(action: GameAction, result: ActionResult, gameState: GameState, unit?: Unit): void {
     const success = result.success ? '✅' : '❌';
     const message = `${success} ${action.type}: ${action.unitId} - ${result.message}`;
-    
+
     this.log(
       result.success ? LogLevel.INFO : LogLevel.WARN,
       LogCategory.UNIT_ACTION,
@@ -132,13 +129,9 @@ export class GameLogger {
   /**
    * Log AI decision
    */
-  logAIDecision(
-    decision: AIDecision,
-    gameState: GameState,
-    playerId: string
-  ): void {
+  logAIDecision(decision: AIDecision, gameState: GameState, playerId: string): void {
     const message = `AI Decision: ${decision.type} (priority ${decision.priority}) - ${decision.reasoning}`;
-    
+
     this.log(
       LogLevel.INFO,
       LogCategory.AI_DECISION,
@@ -153,16 +146,11 @@ export class GameLogger {
   /**
    * Log combat result with detailed information
    */
-  logCombat(
-    attacker: Unit,
-    defender: Unit,
-    result: any,
-    gameState: GameState
-  ): void {
+  logCombat(attacker: Unit, defender: Unit, result: any, gameState: GameState): void {
     const damage = result.damage || 0;
     const destroyed = result.defenderDestroyed ? ' - TARGET DESTROYED' : '';
     const message = `Combat: ${attacker.type} vs ${defender.type} - ${damage} damage${destroyed}`;
-    
+
     this.log(
       LogLevel.INFO,
       LogCategory.COMBAT,
@@ -171,7 +159,7 @@ export class GameLogger {
       {
         attacker: { id: attacker.id, type: attacker.type, hp: attacker.state.currentHP },
         defender: { id: defender.id, type: defender.type, hp: defender.state.currentHP },
-        result: result
+        result: result,
       },
       undefined,
       attacker.id
@@ -181,20 +169,10 @@ export class GameLogger {
   /**
    * Log phase change
    */
-  logPhaseChange(
-    oldPhase: string,
-    newPhase: string,
-    gameState: GameState
-  ): void {
+  logPhaseChange(oldPhase: string, newPhase: string, gameState: GameState): void {
     const message = `Phase transition: ${oldPhase} → ${newPhase}`;
-    
-    this.log(
-      LogLevel.INFO,
-      LogCategory.PHASE_CHANGE,
-      message,
-      gameState,
-      { oldPhase, newPhase }
-    );
+
+    this.log(LogLevel.INFO, LogCategory.PHASE_CHANGE, message, gameState, { oldPhase, newPhase });
   }
 
   /**
@@ -205,10 +183,10 @@ export class GameLogger {
     description: string = `Turn ${gameState.turn} - ${gameState.phase}`
   ): string {
     const snapshotId = `snapshot_${++this.snapshotIdCounter}`;
-    
+
     // Serialize the game state
     const serializedState = this.serializeGameState(gameState);
-    
+
     const snapshot: GameSnapshot = {
       snapshotId,
       timestamp: Date.now(),
@@ -216,11 +194,11 @@ export class GameLogger {
       turn: gameState.turn,
       phase: gameState.phase,
       gameState: serializedState,
-      description
+      description,
     };
 
     this.snapshots.push(snapshot);
-    
+
     this.log(
       LogLevel.INFO,
       LogCategory.GAME_STATE,
@@ -259,14 +237,14 @@ export class GameLogger {
           suppressionTokens: unit.state.suppressionTokens,
           isHidden: unit.isHidden(),
           statusEffects: Array.from(unit.state.statusEffects),
-          cargo: unit.state.cargo
-        }))
+          cargo: unit.state.cargo,
+        })),
       })),
       // Map state would go here if we had terrain/objectives
       metadata: {
         serializedAt: Date.now(),
-        snapshotVersion: '1.0'
-      }
+        snapshotVersion: '1.0',
+      },
     };
   }
 
@@ -280,10 +258,18 @@ export class GameLogger {
     toTurn?: number
   ): LogEntry[] {
     return this.logs.filter(log => {
-      if (category && log.category !== category) return false;
-      if (minLevel !== undefined && log.level < minLevel) return false;
-      if (fromTurn !== undefined && log.turn < fromTurn) return false;
-      if (toTurn !== undefined && log.turn > toTurn) return false;
+      if (category && log.category !== category) {
+        return false;
+      }
+      if (minLevel !== undefined && log.level < minLevel) {
+        return false;
+      }
+      if (fromTurn !== undefined && log.turn < fromTurn) {
+        return false;
+      }
+      if (toTurn !== undefined && log.turn > toTurn) {
+        return false;
+      }
       return true;
     });
   }
@@ -307,10 +293,13 @@ export class GameLogger {
    */
   getGameSummary(): any {
     const totalLogs = this.logs.length;
-    const logsByCategory = this.logs.reduce((acc, log) => {
-      acc[log.category] = (acc[log.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const logsByCategory = this.logs.reduce(
+      (acc, log) => {
+        acc[log.category] = (acc[log.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     const combatLogs = this.getLogs(LogCategory.COMBAT);
     const unitActionLogs = this.getLogs(LogCategory.UNIT_ACTION);
@@ -326,7 +315,7 @@ export class GameLogger {
       aiDecisions: aiDecisionLogs.length,
       gameStartTime: this.logs[0]?.timestamp,
       gameEndTime: this.logs[this.logs.length - 1]?.timestamp,
-      finalTurn: Math.max(...this.logs.map(l => l.turn), 0)
+      finalTurn: Math.max(...this.logs.map(l => l.turn), 0),
     };
   }
 
@@ -334,12 +323,16 @@ export class GameLogger {
    * Export logs to JSON
    */
   exportLogs(): string {
-    return JSON.stringify({
-      gameId: this.gameId,
-      logs: this.logs,
-      snapshots: this.snapshots,
-      summary: this.getGameSummary()
-    }, null, 2);
+    return JSON.stringify(
+      {
+        gameId: this.gameId,
+        logs: this.logs,
+        snapshots: this.snapshots,
+        summary: this.getGameSummary(),
+      },
+      null,
+      2
+    );
   }
 
   /**
@@ -361,7 +354,10 @@ let globalLogger: GameLogger | null = null;
 /**
  * Initialize global logger
  */
-export function initializeGameLogger(gameId: string, minLogLevel: LogLevel = LogLevel.DEBUG): GameLogger {
+export function initializeGameLogger(
+  gameId: string,
+  minLogLevel: LogLevel = LogLevel.DEBUG
+): GameLogger {
   globalLogger = new GameLogger(gameId, minLogLevel);
   return globalLogger;
 }
@@ -376,14 +372,29 @@ export function getGameLogger(): GameLogger | null {
 /**
  * Convenience logging functions
  */
-export function logInfo(category: LogCategory, message: string, gameState: GameState, data?: any): void {
+export function logInfo(
+  category: LogCategory,
+  message: string,
+  gameState: GameState,
+  data?: any
+): void {
   globalLogger?.log(LogLevel.INFO, category, message, gameState, data);
 }
 
-export function logWarn(category: LogCategory, message: string, gameState: GameState, data?: any): void {
+export function logWarn(
+  category: LogCategory,
+  message: string,
+  gameState: GameState,
+  data?: any
+): void {
   globalLogger?.log(LogLevel.WARN, category, message, gameState, data);
 }
 
-export function logError(category: LogCategory, message: string, gameState: GameState, data?: any): void {
+export function logError(
+  category: LogCategory,
+  message: string,
+  gameState: GameState,
+  data?: any
+): void {
   globalLogger?.log(LogLevel.ERROR, category, message, gameState, data);
 }

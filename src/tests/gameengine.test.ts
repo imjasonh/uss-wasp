@@ -8,9 +8,8 @@ import { GameState } from '../core/game/GameState';
 import { Player } from '../core/game/Player';
 import { Unit } from '../core/game/Unit';
 import { GameMap } from '../core/game/Map';
-import { TerrainType } from '../core/game/types';
 import { Hex } from '../core/hex';
-import { PlayerSide, UnitType, ActionType, TurnPhase } from '../core/game/types';
+import { PlayerSide, UnitType, ActionType, TurnPhase, TerrainType } from '../core/game/types';
 import { UNIT_DEFINITIONS } from '../core/units/UnitDefinitions';
 
 describe('GameEngine', () => {
@@ -148,7 +147,7 @@ describe('GameEngine', () => {
     });
 
     it('should execute valid movement', () => {
-      const originalPosition = new Hex(
+      const _originalPosition = new Hex(
         marineUnit.state.position.q,
         marineUnit.state.position.r,
         marineUnit.state.position.s
@@ -180,7 +179,7 @@ describe('GameEngine', () => {
     });
 
     it('should execute attack actions', () => {
-      const originalHP = enemyUnit.state.currentHP;
+      const _originalHP = enemyUnit.state.currentHP;
 
       const attackAction = {
         type: ActionType.ATTACK,
@@ -412,8 +411,8 @@ describe('GameEngine', () => {
 
   describe('State Consistency', () => {
     it('should maintain unit state after actions', () => {
-      const originalHP = marineUnit.state.currentHP;
-      const originalPos = new Hex(
+      const _originalHP = marineUnit.state.currentHP;
+      const _originalPos = new Hex(
         marineUnit.state.position.q,
         marineUnit.state.position.r,
         marineUnit.state.position.s
@@ -429,7 +428,7 @@ describe('GameEngine', () => {
       gameEngine.executeAction(moveAction);
 
       // HP should not change from movement
-      expect(marineUnit.state.currentHP).toBe(originalHP);
+      expect(marineUnit.state.currentHP).toBe(_originalHP);
       // Position should change if successful, or stay same if failed
       expect(marineUnit.state.position).toBeDefined();
     });

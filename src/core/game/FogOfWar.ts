@@ -20,9 +20,9 @@ export interface VisibilityInfo {
  * Fog of War manager
  */
 export class FogOfWar {
-  private visibilityCache = new Map<string, VisibilityInfo>();
-  
-  constructor(private gameState: GameState) {
+  private readonly visibilityCache = new Map<string, VisibilityInfo>();
+
+  constructor(private readonly gameState: GameState) {
     this.initializeVisibility();
   }
 
@@ -53,21 +53,25 @@ export class FogOfWar {
    */
   private updatePlayerVisibility(playerId: string): void {
     const player = this.gameState.getPlayer(playerId);
-    if (!player) return;
+    if (!player) {
+      return;
+    }
 
     const visibility = this.visibilityCache.get(playerId);
-    if (!visibility) return;
+    if (!visibility) {
+      return;
+    }
 
     // Clear current visibility
     visibility.visibleUnits.clear();
 
     // Get all friendly units for this player
     const friendlyUnits = player.getLivingUnits();
-    
+
     // Get all enemy units
     const allPlayers = this.gameState.getAllPlayers();
     const enemyUnits: Unit[] = [];
-    
+
     for (const otherPlayer of allPlayers) {
       if (otherPlayer.id !== playerId) {
         enemyUnits.push(...otherPlayer.getLivingUnits());
@@ -78,7 +82,7 @@ export class FogOfWar {
     for (const observer of friendlyUnits) {
       // Always see your own units
       visibility.visibleUnits.add(observer.id);
-      
+
       // Mark observer's hex as explored
       const observerPos = observer.state.position;
       visibility.exploredHexes.add(`${observerPos.q},${observerPos.r}`);
@@ -91,28 +95,24 @@ export class FogOfWar {
   /**
    * Update what a specific unit can see
    */
-  private updateUnitVisibility(
-    observer: Unit, 
-    targets: Unit[], 
-    visibility: VisibilityInfo
-  ): void {
+  private updateUnitVisibility(observer: Unit, targets: Unit[], visibility: VisibilityInfo): void {
     const observerPos = observer.state.position;
     const observerHex = new Hex(observerPos.q, observerPos.r, observerPos.s);
 
     for (const target of targets) {
       if (this.canUnitSeeTarget(observer, target)) {
         visibility.visibleUnits.add(target.id);
-        
+
         // Update last known position
         const targetPos = new Hex(
           target.state.position.q,
           target.state.position.r,
           target.state.position.s
         );
-        
+
         visibility.lastKnownPositions.set(target.id, {
           position: targetPos,
-          turn: this.gameState.turn
+          turn: this.gameState.turn,
         });
       }
     }
@@ -143,7 +143,7 @@ export class FogOfWar {
     // Check range
     const distance = this.getDistanceBetweenUnits(observer, target);
     const sightRange = this.getUnitSightRange(observer);
-    
+
     if (distance > sightRange) {
       return false;
     }
@@ -156,7 +156,7 @@ export class FogOfWar {
    */
   private canDetectHiddenUnit(observer: Unit, target: Unit): boolean {
     const distance = this.getDistanceBetweenUnits(observer, target);
-    
+
     // MARSOC recon specialists can detect hidden units within 2 hexes
     if (observer.type === 'marsoc' && distance <= 2) {
       return true;
@@ -177,8 +177,7 @@ export class FogOfWar {
     let baseRange = 4; // Default sight range
 
     // Aircraft have extended sight range
-    if (unit.hasCategory(UnitCategory.AIRCRAFT) || 
-        unit.hasCategory(UnitCategory.HELICOPTER)) {
+    if (unit.hasCategory(UnitCategory.AIRCRAFT) || unit.hasCategory(UnitCategory.HELICOPTER)) {
       baseRange = 8;
     }
 
@@ -199,7 +198,7 @@ export class FogOfWar {
    * Check line of sight between two units
    */
   private hasLineOfSightBetweenUnits(observer: Unit, target: Unit): boolean {
-    return hasLineOfSight(observer.state.position, target.state.position, (hex) => {
+    return hasLineOfSight(observer.state.position, target.state.position, hex => {
       return this.isHexBlockedByCoordinate(hex);
     });
   }
@@ -209,8 +208,8 @@ export class FogOfWar {
    */
   private hasLineOfSightToHex(observer: Unit, targetHex: Hex): boolean {
     const targetCoord = { q: targetHex.q, r: targetHex.r, s: targetHex.s };
-    
-    return hasLineOfSight(observer.state.position, targetCoord, (hex) => {
+
+    return hasLineOfSight(observer.state.position, targetCoord, hex => {
       return this.isHexBlockedByCoordinate(hex);
     });
   }
@@ -220,7 +219,9 @@ export class FogOfWar {
    */
   private isHexBlockedByCoordinate(hex: { q: number; r: number; s: number }): boolean {
     const mapHex = this.gameState.map.getHex(hex);
-    if (!mapHex) return false;
+    if (!mapHex) {
+      return false;
+    }
 
     // Dense terrain blocks line of sight
     const blockingTerrain = ['woods', 'jungle', 'urban', 'hills'];
@@ -304,7 +305,7 @@ export class FogOfWar {
       [],
       { q: position.q, r: position.r, s: position.s }
     );
-    
+
     dummyUnit.makeDummy();
     return dummyUnit;
   }

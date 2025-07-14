@@ -6,23 +6,18 @@ import { Hex, hasLineOfSight } from '../hex';
 import { Unit } from './Unit';
 import { GameMap } from './Map';
 import { GameState } from './GameState';
-import { 
-  DiceRoll, 
-  UnitCategory, 
-  StatusEffect,
-  UnitType 
-} from './types';
+import { DiceRoll, UnitCategory, StatusEffect, UnitType } from './types';
 
 /**
  * Combat modifiers that can be applied
  */
 export interface CombatModifiers {
-  terrainCover: number;        // DEF bonus from terrain
-  flankAttack: number;         // ATK bonus for flanking
-  suppressionPenalty: number;  // ATK penalty for suppression
-  ambushBonus: number;         // ATK bonus for ambush (defender only)
+  terrainCover: number; // DEF bonus from terrain
+  flankAttack: number; // ATK bonus for flanking
+  suppressionPenalty: number; // ATK penalty for suppression
+  ambushBonus: number; // ATK bonus for ambush (defender only)
   specialAbilityBonus: number; // ATK bonus from special abilities
-  other: number;               // Other modifiers
+  other: number; // Other modifiers
 }
 
 /**
@@ -53,12 +48,7 @@ export class CombatSystem {
     ambushBonus: boolean = false
   ): CombatResult {
     // Calculate modifiers
-    const modifiers = this.calculateModifiers(
-      attacker, 
-      defender, 
-      gameState.map, 
-      ambushBonus
-    );
+    const modifiers = this.calculateModifiers(attacker, defender, gameState.map, ambushBonus);
 
     // Calculate effective attack dice
     let attackDice = attacker.getEffectiveAttack();
@@ -74,11 +64,11 @@ export class CombatSystem {
 
     // Roll dice
     const attackRoll = this.rollDice(attackDice, defenseValue);
-    
+
     // Apply damage
     const damage = attackRoll.total;
     const wasDestroyed = defender.state.currentHP <= damage;
-    
+
     if (damage > 0) {
       defender.takeDamage(damage);
     }
@@ -93,10 +83,10 @@ export class CombatSystem {
 
     // Generate description
     const description = this.generateCombatDescription(
-      attacker, 
-      defender, 
-      attackRoll, 
-      damage, 
+      attacker,
+      defender,
+      attackRoll,
+      damage,
       wasDestroyed,
       modifiers
     );
@@ -143,8 +133,8 @@ export class CombatSystem {
 
     // Check range (most units can only attack adjacent or visible units)
     const distance = new Hex(
-      attacker.state.position.q, 
-      attacker.state.position.r, 
+      attacker.state.position.q,
+      attacker.state.position.r,
       attacker.state.position.s
     ).distanceTo(defender.state.position);
 
@@ -169,12 +159,12 @@ export class CombatSystem {
     map: GameMap,
     ambushBonus: boolean
   ): CombatModifiers {
-    let terrainCover = map.getDefenseBonus(defender.state.position);
+    const terrainCover = map.getDefenseBonus(defender.state.position);
     let flankAttack = 0;
-    let suppressionPenalty = attacker.isSuppressed() ? -1 : 0;
-    let ambushBonusValue = ambushBonus ? 1 : 0;
+    const suppressionPenalty = attacker.isSuppressed() ? -1 : 0;
+    const ambushBonusValue = ambushBonus ? 1 : 0;
     let specialAbilityBonus = 0;
-    let other = 0;
+    const other = 0;
 
     // Check for flanking (simplified - adjacent hex counts as flank)
     const distance = new Hex(
@@ -182,7 +172,7 @@ export class CombatSystem {
       attacker.state.position.r,
       attacker.state.position.s
     ).distanceTo(defender.state.position);
-    
+
     if (distance === 1) {
       flankAttack = 1; // Adjacent attack bonus
     }
@@ -203,11 +193,7 @@ export class CombatSystem {
   /**
    * Get special ability attack bonuses
    */
-  private static getSpecialAbilityBonus(
-    attacker: Unit,
-    defender: Unit,
-    map: GameMap
-  ): number {
+  private static getSpecialAbilityBonus(attacker: Unit, defender: Unit, map: GameMap): number {
     let bonus = 0;
 
     // Marine Squad urban specialist
@@ -219,8 +205,7 @@ export class CombatSystem {
     }
 
     // ATGM Team anti-vehicle specialist
-    if (attacker.type === UnitType.ATGM_TEAM && 
-        defender.hasCategory(UnitCategory.VEHICLE)) {
+    if (attacker.type === UnitType.ATGM_TEAM && defender.hasCategory(UnitCategory.VEHICLE)) {
       bonus += 2;
     }
 
@@ -235,23 +220,27 @@ export class CombatSystem {
     }
 
     // Harrier close air support
-    if (attacker.type === UnitType.HARRIER &&
-        attacker.state.hasMoved &&
-        defender.hasCategory(UnitCategory.GROUND)) {
+    if (
+      attacker.type === UnitType.HARRIER &&
+      attacker.state.hasMoved &&
+      defender.hasCategory(UnitCategory.GROUND)
+    ) {
       const distance = new Hex(
         attacker.state.position.q,
         attacker.state.position.r,
         attacker.state.position.s
       ).distanceTo(defender.state.position);
-      
+
       if (distance === 1) {
         bonus += 1;
       }
     }
 
     // MARSOC recon specialist vs recently revealed units
-    if (attacker.type === UnitType.MARSOC &&
-        defender.state.statusEffects.has(StatusEffect.HIDDEN)) {
+    if (
+      attacker.type === UnitType.MARSOC &&
+      defender.state.statusEffects.has(StatusEffect.HIDDEN)
+    ) {
       bonus += 1;
     }
 
@@ -261,34 +250,26 @@ export class CombatSystem {
   /**
    * Check if attacker has line of sight to defender
    */
-  private static hasLineOfSight(
-    attacker: Unit,
-    defender: Unit,
-    map: GameMap
-  ): boolean {
-    return hasLineOfSight(
-      attacker.state.position,
-      defender.state.position,
-      (hex) => map.blocksLOS(hex)
+  private static hasLineOfSight(attacker: Unit, defender: Unit, map: GameMap): boolean {
+    return hasLineOfSight(attacker.state.position, defender.state.position, hex =>
+      map.blocksLOS(hex)
     );
   }
 
   /**
    * Check if target is in range
    */
-  private static isInRange(
-    attacker: Unit,
-    _defender: Unit,
-    distance: number
-  ): boolean {
+  private static isInRange(attacker: Unit, _defender: Unit, distance: number): boolean {
     // Most units can attack adjacent (distance 1)
     if (distance <= 1) {
       return true;
     }
 
     // Aircraft can attack at longer range
-    if (attacker.hasCategory(UnitCategory.AIRCRAFT) ||
-        attacker.hasCategory(UnitCategory.HELICOPTER)) {
+    if (
+      attacker.hasCategory(UnitCategory.AIRCRAFT) ||
+      attacker.hasCategory(UnitCategory.HELICOPTER)
+    ) {
       return distance <= 3;
     }
 
@@ -306,12 +287,12 @@ export class CombatSystem {
     if (attacker.type === UnitType.USS_WASP) {
       return distance <= 5;
     }
-    
+
     // BALANCE FIX: Give AA units extended range to counter air dominance
     if (attacker.type === UnitType.AA_TEAM) {
       return distance <= 3; // Match aircraft range
     }
-    
+
     if (attacker.type === UnitType.SAM_SITE) {
       return distance <= 4; // Longer range for static SAM sites
     }
@@ -322,14 +303,12 @@ export class CombatSystem {
   /**
    * Check if attacker can target this unit type
    */
-  private static canTargetUnitType(
-    attacker: Unit,
-    defender: Unit
-  ): boolean {
+  private static canTargetUnitType(attacker: Unit, defender: Unit): boolean {
     // AA units can only target aircraft
     if (attacker.type === UnitType.AA_TEAM) {
-      return defender.hasCategory(UnitCategory.AIRCRAFT) ||
-             defender.hasCategory(UnitCategory.HELICOPTER);
+      return (
+        defender.hasCategory(UnitCategory.AIRCRAFT) || defender.hasCategory(UnitCategory.HELICOPTER)
+      );
     }
 
     // All other units can target any enemy unit
@@ -346,7 +325,7 @@ export class CombatSystem {
     for (let i = 0; i < numberOfDice; i++) {
       const roll = Math.floor(Math.random() * 6) + 1;
       dice.push(roll);
-      
+
       if (roll >= targetNumber) {
         hits++;
       }
@@ -372,11 +351,11 @@ export class CombatSystem {
     modifiers: CombatModifiers
   ): string {
     let description = `${attacker.type} attacks ${defender.type}`;
-    
+
     if (roll.dice.length > 0) {
       description += ` (rolled ${roll.dice.join(', ')})`;
     }
-    
+
     if (damage > 0) {
       description += ` for ${damage} damage`;
       if (destroyed) {
@@ -411,18 +390,11 @@ export class CombatSystem {
   /**
    * Handle special combat effects (like mortar suppression)
    */
-  static applySpecialCombatEffects(
-    attacker: Unit,
-    _defender: Unit,
-    _result: CombatResult
-  ): void {
+  static applySpecialCombatEffects(attacker: Unit, _defender: Unit, _result: CombatResult): void {
     // Mortar team always applies suppression
     if (attacker.type === UnitType.MORTAR_TEAM) {
       if (_defender.isAlive()) {
-        _defender.state.suppressionTokens = Math.min(
-          2, 
-          _defender.state.suppressionTokens + 1
-        );
+        _defender.state.suppressionTokens = Math.min(2, _defender.state.suppressionTokens + 1);
       }
     }
 

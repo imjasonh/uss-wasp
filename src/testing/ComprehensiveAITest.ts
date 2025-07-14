@@ -13,15 +13,14 @@
  * - Proper tactical reasoning in decision logs
  */
 
-import { AIController } from '../core/ai/AIController';
 import { AIDifficulty } from '../core/ai/types';
 import { GameState } from '../core/game/GameState';
 import { GameEngine } from '../core/game/GameEngine';
 import { Player } from '../core/game/Player';
 import { GameMap } from '../core/game/Map';
-import { PlayerSide, UnitType, TurnPhase } from '../core/game/types';
+import { PlayerSide, UnitType } from '../core/game/types';
 import { createTestUnit, createTestUnits } from './UnitTestHelper';
-import { HexCoordinate, Hex } from '../core/hex';
+import { Hex } from '../core/hex';
 
 /**
  * Test results tracking
@@ -44,32 +43,32 @@ interface TestResults {
  * Comprehensive AI vs AI testing suite
  */
 export class ComprehensiveAITest {
-  private testResults: TestResults[] = [];
+  private readonly testResults: TestResults[] = [];
 
   /**
    * Run all AI vs AI test scenarios
    */
-  public async runAllTests(): Promise<TestResults[]> {
+  public runAllTests(): TestResults[] {
     console.log('🤖 Comprehensive AI vs AI Testing Suite');
     console.log('==========================================\n');
 
     // Test 1: Basic Unit Combat
-    await this.runBasicCombatTest();
+    this.runBasicCombatTest();
 
     // Test 2: Amphibious Assault Scenario
-    await this.runAmphibiousAssaultTest();
+    this.runAmphibiousAssaultTest();
 
     // Test 3: USS Wasp Operations Test
-    await this.runUSSWaspOperationsTest();
+    this.runUSSWaspOperationsTest();
 
     // Test 4: Hidden Unit Deployment Test
-    await this.runHiddenUnitTest();
+    this.runHiddenUnitTest();
 
     // Test 5: Multi-difficulty AI Battle
-    await this.runMultiDifficultyTest();
+    this.runMultiDifficultyTest();
 
     // Test 6: Resource Management Test
-    await this.runResourceManagementTest();
+    this.runResourceManagementTest();
 
     // Report summary
     this.reportTestSummary();
@@ -80,7 +79,7 @@ export class ComprehensiveAITest {
   /**
    * Test 1: Basic Unit Combat Scenario
    */
-  private async runBasicCombatTest(): Promise<void> {
+  private runBasicCombatTest(): void {
     const testResult: TestResults = {
       testName: 'Basic Unit Combat',
       success: false,
@@ -270,7 +269,7 @@ export class ComprehensiveAITest {
   /**
    * Test 2: Amphibious Assault Scenario
    */
-  private async runAmphibiousAssaultTest(): Promise<void> {
+  private runAmphibiousAssaultTest(): void {
     const testResult: TestResults = {
       testName: 'Amphibious Assault',
       success: false,
@@ -459,7 +458,7 @@ export class ComprehensiveAITest {
   /**
    * Test 3: USS Wasp Operations Test
    */
-  private async runUSSWaspOperationsTest(): Promise<void> {
+  private runUSSWaspOperationsTest(): void {
     const testResult: TestResults = {
       testName: 'USS Wasp Operations',
       success: false,
@@ -551,7 +550,7 @@ export class ComprehensiveAITest {
   /**
    * Test 4: Hidden Unit Deployment Test
    */
-  private async runHiddenUnitTest(): Promise<void> {
+  private runHiddenUnitTest(): void {
     const testResult: TestResults = {
       testName: 'Hidden Unit Deployment',
       success: false,
@@ -588,7 +587,7 @@ export class ComprehensiveAITest {
   /**
    * Test 5: Multi-difficulty AI Battle
    */
-  private async runMultiDifficultyTest(): Promise<void> {
+  private runMultiDifficultyTest(): void {
     const testResult: TestResults = {
       testName: 'Multi-difficulty AI Battle',
       success: false,
@@ -716,7 +715,7 @@ export class ComprehensiveAITest {
   /**
    * Test 6: Resource Management Test
    */
-  private async runResourceManagementTest(): Promise<void> {
+  private runResourceManagementTest(): void {
     const testResult: TestResults = {
       testName: 'Resource Management',
       success: false,
@@ -781,7 +780,7 @@ export class ComprehensiveAITest {
     testResult.gameEngineGaps.push('GameEngine.getPlayers() method needed for AI analysis');
   }
 
-  private analyzeAmphibiousAIDecisions(aiActions: any[], testResult: TestResults): void {
+  private analyzeAmphibiousAIDecisions(aiActions: unknown[], testResult: TestResults): void {
     // Check if AI is making amphibious-appropriate decisions
     if (aiActions.length === 0) {
       testResult.aiProgrammingGaps.push('No amphibious assault tactics detected in AI decisions');
@@ -840,5 +839,9 @@ export class ComprehensiveAITest {
  */
 if (require.main === module) {
   const testSuite = new ComprehensiveAITest();
-  testSuite.runAllTests().catch(console.error);
+  try {
+    testSuite.runAllTests();
+  } catch (error) {
+    console.error(error);
+  }
 }

@@ -20,7 +20,7 @@ class GameUI {
   private gameState!: GameState;
   private gameController!: GameController;
 
-  async initialize(): Promise<void> {
+  public initialize(): void {
     console.log('🎮 Initializing USS Wasp Game UI...');
 
     // Initialize game state
@@ -42,7 +42,10 @@ class GameUI {
     this.updateObjectivesDisplay();
 
     // Make game controller globally available for button clicks
-    (window as any).gameController = this.gameController;
+    interface WindowWithGameController extends Window {
+      gameController?: GameController;
+    }
+    (window as unknown as WindowWithGameController).gameController = this.gameController;
 
     console.log('✅ Game UI initialized successfully!');
   }
@@ -207,7 +210,10 @@ class GameUI {
 
     // Reinitialize game controller
     this.gameController = new GameController(this.gameState, this.renderer, this.mapRenderer);
-    (window as any).gameController = this.gameController;
+    interface WindowWithGameController extends Window {
+      gameController?: GameController;
+    }
+    (window as unknown as WindowWithGameController).gameController = this.gameController;
 
     this.render();
     this.updateObjectivesDisplay();
@@ -217,20 +223,22 @@ class GameUI {
     // Render map
     const hexes = this.mapRenderer.getAllHexes();
     console.log('🗺 Rendering', hexes.length, 'hexes');
-    this.renderer.renderHexGrid(hexes, hex => this.mapRenderer.getTerrainColor(hex));
+    this.renderer.renderHexGrid(hexes, (hex: Hex): number => this.mapRenderer.getTerrainColor(hex));
 
     // Render units
     const assaultUnits =
-      this.gameState.getPlayerBySide(PlayerSide.Assault)?.getLivingUnits().length || 0;
+      this.gameState.getPlayerBySide(PlayerSide.Assault)?.getLivingUnits().length ?? 0;
     const defenderUnits =
-      this.gameState.getPlayerBySide(PlayerSide.Defender)?.getLivingUnits().length || 0;
+      this.gameState.getPlayerBySide(PlayerSide.Defender)?.getLivingUnits().length ?? 0;
     console.log('🎮 Rendering units:', assaultUnits, 'assault,', defenderUnits, 'defender');
     this.renderer.renderUnits(this.gameState);
   }
 
   private updateObjectivesDisplay(): void {
     const objectivesDiv = document.getElementById('objectives-list');
-    if (!objectivesDiv) return;
+    if (!objectivesDiv) {
+      return;
+    }
 
     const objectives = this.mapRenderer.getAllObjectives();
 
@@ -242,7 +250,7 @@ class GameUI {
 
     objectivesDiv.innerHTML = objectives
       .map(
-        obj =>
+        (obj: { type: string; coordinate: string }): string =>
           `<div class="info-item">
          <span class="info-label">${obj.type}:</span>
          <span class="info-value">${obj.coordinate}</span>
@@ -253,11 +261,11 @@ class GameUI {
 }
 
 // Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', (): void => {
   const gameUI = new GameUI();
 
   try {
-    await gameUI.initialize();
+    gameUI.initialize();
   } catch (error) {
     console.error('Failed to initialize game UI:', error);
 
@@ -266,7 +274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (appElement) {
       appElement.innerHTML = `
         <div class="loading">
-          ❌ Failed to initialize game: ${error}
+          ❌ Failed to initialize game: ${String(error)}
         </div>
       `;
     }

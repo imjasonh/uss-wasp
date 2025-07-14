@@ -19,26 +19,26 @@ export interface GameStateRestoreResult {
 }
 
 export interface GameStateManagerOptions {
-  autoSnapshot: boolean;          // Automatically create snapshots at turn boundaries
-  maxSnapshots: number;           // Maximum number of snapshots to keep
-  snapshotInterval: number;       // Create snapshot every N turns
+  autoSnapshot: boolean; // Automatically create snapshots at turn boundaries
+  maxSnapshots: number; // Maximum number of snapshots to keep
+  snapshotInterval: number; // Create snapshot every N turns
 }
 
 /**
  * Manages game state persistence and restoration
  */
 export class GameStateManager {
-  private options: GameStateManagerOptions;
+  private readonly options: GameStateManagerOptions;
 
   constructor(
-    private logger: GameLogger,
+    private readonly logger: GameLogger,
     options?: Partial<GameStateManagerOptions>
   ) {
     this.options = {
       autoSnapshot: true,
       maxSnapshots: 50,
       snapshotInterval: 1,
-      ...options
+      ...options,
     };
   }
 
@@ -46,24 +46,32 @@ export class GameStateManager {
    * Create an automatic snapshot if conditions are met
    */
   checkAutoSnapshot(gameState: GameState): string | null {
-    if (!this.options.autoSnapshot) return null;
-    
+    if (!this.options.autoSnapshot) {
+      return null;
+    }
+
     const shouldSnapshot = gameState.turn % this.options.snapshotInterval === 0;
-    if (!shouldSnapshot) return null;
+    if (!shouldSnapshot) {
+      return null;
+    }
 
     const description = `Auto-snapshot T${gameState.turn}:${gameState.phase}`;
     const snapshotId = this.logger.createSnapshot(gameState, description);
-    
+
     // Clean up old snapshots if we have too many
     this.cleanupOldSnapshots();
-    
+
     return snapshotId;
   }
 
   /**
    * Restore game state from a snapshot
    */
-  restoreFromSnapshot(snapshotId: string, mapWidth: number = 8, mapHeight: number = 8): GameStateRestoreResult {
+  restoreFromSnapshot(
+    snapshotId: string,
+    mapWidth: number = 8,
+    mapHeight: number = 8
+  ): GameStateRestoreResult {
     const snapshot = this.logger.getSnapshot(snapshotId);
     if (!snapshot) {
       return { success: false, error: `Snapshot ${snapshotId} not found` };
@@ -73,9 +81,9 @@ export class GameStateManager {
       const gameState = this.deserializeGameState(snapshot.gameState, mapWidth, mapHeight);
       return { success: true, gameState };
     } catch (error) {
-      return { 
-        success: false, 
-        error: `Failed to restore snapshot: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      return {
+        success: false,
+        error: `Failed to restore snapshot: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -83,16 +91,16 @@ export class GameStateManager {
   /**
    * Deserialize a saved game state
    */
-  private deserializeGameState(serializedState: any, mapWidth: number, mapHeight: number): GameState {
+  private deserializeGameState(
+    serializedState: any,
+    mapWidth: number,
+    mapHeight: number
+  ): GameState {
     // Create new game map (we don't serialize terrain yet)
     const map = new GameMap(mapWidth, mapHeight);
-    
+
     // Create new game state
-    const gameState = new GameState(
-      serializedState.gameId,
-      map,
-      serializedState.maxTurns
-    );
+    const gameState = new GameState(serializedState.gameId, map, serializedState.maxTurns);
 
     // Restore basic game state
     gameState.turn = serializedState.turn;
@@ -124,10 +132,10 @@ export class GameStateManager {
   private deserializeUnit(unitData: any): Unit {
     // Get unit template
     const template = getUnitTemplate(unitData.type as UnitType);
-    
+
     // Create position hex
     const position = new Hex(unitData.position.q, unitData.position.r, unitData.position.s);
-    
+
     // Create unit
     const unit = new Unit(
       unitData.id,
@@ -148,7 +156,7 @@ export class GameStateManager {
     if (unitData.isHidden) {
       unit.hide();
     }
-    
+
     // Restore status effects
     unit.state.statusEffects.clear();
     if (unitData.statusEffects) {
@@ -170,13 +178,19 @@ export class GameStateManager {
    */
   exportSnapshot(snapshotId: string): string | null {
     const snapshot = this.logger.getSnapshot(snapshotId);
-    if (!snapshot) return null;
+    if (!snapshot) {
+      return null;
+    }
 
-    return JSON.stringify({
-      ...snapshot,
-      exportedAt: new Date().toISOString(),
-      version: '1.0'
-    }, null, 2);
+    return JSON.stringify(
+      {
+        ...snapshot,
+        exportedAt: new Date().toISOString(),
+        version: '1.0',
+      },
+      null,
+      2
+    );
   }
 
   /**
@@ -185,7 +199,7 @@ export class GameStateManager {
   importSnapshot(exportedData: string): string | null {
     try {
       const data = JSON.parse(exportedData);
-      
+
       // Validate the data structure
       if (!data.snapshotId || !data.gameState) {
         throw new Error('Invalid snapshot data format');
@@ -199,12 +213,12 @@ export class GameStateManager {
         turn: data.turn,
         phase: data.phase,
         gameState: data.gameState,
-        description: data.description + ' (imported)'
+        description: `${data.description} (imported)`,
       };
 
       // Add to logger's snapshots
       (this.logger as any).snapshots.push(snapshot);
-      
+
       return snapshot.snapshotId;
     } catch (error) {
       console.error('Failed to import snapshot:', error);
@@ -218,7 +232,7 @@ export class GameStateManager {
   getSnapshotDiff(fromSnapshotId: string, toSnapshotId: string): any {
     const fromSnapshot = this.logger.getSnapshot(fromSnapshotId);
     const toSnapshot = this.logger.getSnapshot(toSnapshotId);
-    
+
     if (!fromSnapshot || !toSnapshot) {
       return null;
     }
@@ -228,7 +242,7 @@ export class GameStateManager {
       phaseDiff: `${fromSnapshot.phase} → ${toSnapshot.phase}`,
       timeDiff: toSnapshot.timestamp - fromSnapshot.timestamp,
       playerChanges: this.comparePlayerStates(fromSnapshot.gameState, toSnapshot.gameState),
-      summary: `${fromSnapshot.description} → ${toSnapshot.description}`
+      summary: `${fromSnapshot.description} → ${toSnapshot.description}`,
     };
 
     return diff;
@@ -239,19 +253,21 @@ export class GameStateManager {
    */
   private comparePlayerStates(fromState: any, toState: any): any {
     const changes: any = {};
-    
+
     for (const fromPlayer of fromState.players) {
       const toPlayer = toState.players.find((p: any) => p.id === fromPlayer.id);
-      if (!toPlayer) continue;
+      if (!toPlayer) {
+        continue;
+      }
 
       const playerChanges: any = {};
-      
+
       // Compare command points
       if (fromPlayer.commandPoints !== toPlayer.commandPoints) {
         playerChanges.commandPoints = {
           from: fromPlayer.commandPoints,
           to: toPlayer.commandPoints,
-          diff: toPlayer.commandPoints - fromPlayer.commandPoints
+          diff: toPlayer.commandPoints - fromPlayer.commandPoints,
         };
       }
 
@@ -260,7 +276,7 @@ export class GameStateManager {
         playerChanges.unitCount = {
           from: fromPlayer.units.length,
           to: toPlayer.units.length,
-          diff: toPlayer.units.length - fromPlayer.units.length
+          diff: toPlayer.units.length - fromPlayer.units.length,
         };
       }
 
@@ -274,7 +290,7 @@ export class GameStateManager {
           unitChanges[fromUnit.id] = {
             status: 'damaged',
             type: fromUnit.type,
-            hpChange: toUnit.currentHP - fromUnit.currentHP
+            hpChange: toUnit.currentHP - fromUnit.currentHP,
           };
         }
       }
@@ -296,7 +312,9 @@ export class GameStateManager {
    */
   private cleanupOldSnapshots(): void {
     const snapshots = this.logger.getSnapshots();
-    if (snapshots.length <= this.options.maxSnapshots) return;
+    if (snapshots.length <= this.options.maxSnapshots) {
+      return;
+    }
 
     // Remove oldest snapshots
     const toRemove = snapshots.length - this.options.maxSnapshots;
@@ -321,7 +339,7 @@ export class GameStateManager {
       turn: snapshot.turn,
       phase: snapshot.phase,
       timestamp: snapshot.timestamp,
-      timeSince: this.formatTimeSince(now - snapshot.timestamp)
+      timeSince: this.formatTimeSince(now - snapshot.timestamp),
     }));
   }
 
@@ -333,8 +351,12 @@ export class GameStateManager {
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
 
-    if (hours > 0) return `${hours}h ${minutes % 60}m ago`;
-    if (minutes > 0) return `${minutes}m ${seconds % 60}s ago`;
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m ago`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s ago`;
+    }
     return `${seconds}s ago`;
   }
 }
@@ -349,10 +371,10 @@ export function createTestScenarioWithLogging(gameId: string): {
 } {
   const map = new GameMap(8, 8);
   const gameState = new GameState(gameId, map, 20);
-  
+
   // Initialize logging
   const logger = new GameLogger(gameId);
   const stateManager = new GameStateManager(logger);
-  
+
   return { gameState, logger, stateManager };
 }

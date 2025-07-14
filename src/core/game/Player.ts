@@ -43,7 +43,7 @@ export class Player {
     this.commandPoints = 0;
     this.units = new Map();
     this.objectives = new Map();
-    
+
     // Initialize USS Wasp status for Assault player
     if (side === PlayerSide.Assault) {
       this.waspStatus = {
@@ -116,11 +116,9 @@ export class Player {
    * Check if all primary objectives are complete
    */
   hasPrimaryObjectivesComplete(): boolean {
-    const primaryObjectives = Array.from(this.objectives.values())
-      .filter(obj => obj.isPrimary);
-    
-    return primaryObjectives.length > 0 && 
-           primaryObjectives.every(obj => obj.completed);
+    const primaryObjectives = Array.from(this.objectives.values()).filter(obj => obj.isPrimary);
+
+    return primaryObjectives.length > 0 && primaryObjectives.every(obj => obj.completed);
   }
 
   /**
@@ -144,7 +142,7 @@ export class Player {
         this.commandPoints += 3;
         return;
       }
-      
+
       switch (this.waspStatus.c2Status) {
         case WaspSystemStatus.OPERATIONAL:
           this.commandPoints += 3;
@@ -185,20 +183,21 @@ export class Player {
    * Damage USS Wasp (Assault player only)
    */
   damageWasp(damage: number): void {
-    if (!this.waspStatus) return;
-    
-    this.waspStatus.structuralIntegrity = Math.max(
-      0, 
-      this.waspStatus.structuralIntegrity - damage
-    );
+    if (!this.waspStatus) {
+      return;
+    }
+
+    this.waspStatus.structuralIntegrity = Math.max(0, this.waspStatus.structuralIntegrity - damage);
   }
 
   /**
    * Damage Wasp system
    */
   damageWaspSystem(system: keyof WaspStatus, newStatus: WaspSystemStatus): void {
-    if (!this.waspStatus) return;
-    
+    if (!this.waspStatus) {
+      return;
+    }
+
     if (system in this.waspStatus && system !== 'structuralIntegrity') {
       (this.waspStatus as any)[system] = newStatus;
     }
@@ -215,8 +214,10 @@ export class Player {
    * Get Wasp flight deck capacity
    */
   getWaspFlightDeckCapacity(): number {
-    if (!this.waspStatus) return 0;
-    
+    if (!this.waspStatus) {
+      return 0;
+    }
+
     switch (this.waspStatus.flightDeckStatus) {
       case WaspSystemStatus.OPERATIONAL:
         return 2;
@@ -232,8 +233,10 @@ export class Player {
    * Get Wasp well deck capacity
    */
   getWaspWellDeckCapacity(): number {
-    if (!this.waspStatus) return 0;
-    
+    if (!this.waspStatus) {
+      return 0;
+    }
+
     switch (this.waspStatus.wellDeckStatus) {
       case WaspSystemStatus.OPERATIONAL:
         return 2; // 1 LCAC or 2 AAVs
@@ -277,13 +280,13 @@ export class Player {
    */
   checkVictoryConditions(turn: number, maxTurns: number, enemy: Player): VictoryCondition[] {
     const conditions: VictoryCondition[] = [];
-    
+
     if (this.side === PlayerSide.Assault) {
       // Assault victory conditions
       if (this.hasPrimaryObjectivesComplete()) {
         conditions.push(VictoryCondition.PRIMARY_OBJECTIVES);
       }
-      
+
       if (enemy.getActiveUnitCount() === 0) {
         conditions.push(VictoryCondition.DEFENDER_COLLAPSE);
       }
@@ -292,16 +295,16 @@ export class Player {
       if (turn >= maxTurns && !enemy.hasPrimaryObjectivesComplete()) {
         conditions.push(VictoryCondition.ASSAULT_STALLED);
       }
-      
+
       if (!enemy.isWaspOperational()) {
         conditions.push(VictoryCondition.WASP_DISABLED);
       }
-      
+
       if (enemy.getActiveUnitCount() < 3) {
         conditions.push(VictoryCondition.ASSAULT_ANNIHILATION);
       }
     }
-    
+
     return conditions;
   }
 
@@ -310,18 +313,18 @@ export class Player {
    */
   calculateVictoryPoints(): number {
     let points = 0;
-    
+
     const objectiveCounts = this.getCompletedObjectivesCount();
     points += objectiveCounts.primary * 10;
     points += objectiveCounts.secondary * 5;
-    
+
     // Points for eliminating enemy units would be calculated elsewhere
     // Points for holding objectives would be calculated based on current map state
-    
+
     if (this.side === PlayerSide.Assault && this.waspStatus) {
       points += this.waspStatus.structuralIntegrity; // 1 VP per remaining Wasp HP
     }
-    
+
     return points;
   }
 

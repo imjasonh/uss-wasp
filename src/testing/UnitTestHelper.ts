@@ -124,7 +124,7 @@ export function createTestUnit(
     : DEFAULT_UNIT_STATS[type];
 
   const categories = DEFAULT_UNIT_CATEGORIES[type];
-  const abilities = customAbilities || DEFAULT_SPECIAL_ABILITIES[type];
+  const abilities = customAbilities ?? DEFAULT_SPECIAL_ABILITIES[type];
 
   return new Unit(id, type, side, stats, categories, abilities, position);
 }

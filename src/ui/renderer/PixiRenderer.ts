@@ -18,11 +18,11 @@ export interface RendererConfig {
  * Main renderer class using Pixi.js
  */
 export class PixiRenderer {
-  private app: PIXI.Application;
-  private hexLayout: HexLayout;
-  private mapContainer: PIXI.Container;
-  private unitContainer: PIXI.Container;
-  private uiContainer: PIXI.Container;
+  private readonly app: PIXI.Application;
+  private readonly hexLayout: HexLayout;
+  private readonly mapContainer: PIXI.Container;
+  private readonly unitContainer: PIXI.Container;
+  private readonly uiContainer: PIXI.Container;
   private selectedHex?: Hex;
 
   constructor(container: HTMLElement, config: RendererConfig) {
@@ -192,7 +192,9 @@ export class PixiRenderer {
       this.uiContainer.removeChild(existingHighlight);
     }
 
-    if (!this.selectedHex) return;
+    if (!this.selectedHex) {
+      return;
+    }
 
     // Create new highlight
     const highlight = new PIXI.Graphics();

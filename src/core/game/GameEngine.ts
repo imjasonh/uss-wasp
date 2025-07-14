@@ -8,13 +8,8 @@ import { GameState, GameAction } from './GameState';
 import { CombatSystem } from './Combat';
 import { AIController } from '../ai/AIController';
 import { Player } from './Player';
-import { 
-  ActionType, 
-  UnitType,
-  UnitCategory,
-  PlayerSide
-} from './types';
-import { AIDifficulty } from '../ai/types';
+import { ActionType, UnitType, UnitCategory, PlayerSide } from './types';
+import { AIDifficulty, AIState, AIPerformanceMetrics } from '../ai/types';
 import { GameLogger, LogCategory, LogLevel, getGameLogger } from '../logging/GameLogger';
 import { GameStateManager } from '../logging/GameStateManager';
 
@@ -40,11 +35,11 @@ export interface MovementPath {
  * Game engine that processes all player actions
  */
 export class GameEngine {
-  private aiControllers: Map<string, AIController> = new Map();
+  private readonly aiControllers: Map<string, AIController> = new Map();
   private logger: GameLogger | null = null;
   private stateManager: GameStateManager | null = null;
 
-  constructor(private gameState: GameState) {
+  constructor(private readonly gameState: GameState) {
     this.logger = getGameLogger();
     if (this.logger) {
       this.stateManager = new GameStateManager(this.logger);
@@ -85,7 +80,7 @@ export class GameEngine {
     // Execute based on action type
     let result: ActionResult;
     const unit = this.gameState.getUnit(action.unitId);
-    
+
     switch (action.type) {
       case ActionType.MOVE:
         result = this.executeMove(action);
@@ -141,7 +136,11 @@ export class GameEngine {
       return { success: false, message: 'Unit cannot move this turn' };
     }
 
-    const targetHex = new Hex(action.targetPosition.q, action.targetPosition.r, action.targetPosition.s);
+    const targetHex = new Hex(
+      action.targetPosition.q,
+      action.targetPosition.r,
+      action.targetPosition.s
+    );
 
     // Calculate path
     const path = this.calculateMovementPath(unit, targetHex);
@@ -151,7 +150,10 @@ export class GameEngine {
 
     // Check movement allowance
     if (path.totalCost > unit.getEffectiveMovement()) {
-      return { success: false, message: `Insufficient movement (need ${path.totalCost}, have ${unit.getEffectiveMovement()})` };
+      return {
+        success: false,
+        message: `Insufficient movement (need ${path.totalCost}, have ${unit.getEffectiveMovement()})`,
+      };
     }
 
     // Check terrain restrictions
@@ -162,21 +164,22 @@ export class GameEngine {
 
     // Execute move
     unit.moveTo(targetHex);
-    
+
     // Force reveal if moving unit is hidden (moving reveals position)
     if (unit.isHidden()) {
       this.gameState.forceRevealUnit(unit.id);
     }
-    
-    this.gameState.addEvent('unit_moved', 
+
+    this.gameState.addEvent(
+      'unit_moved',
       `${unit.type} moved to (${targetHex.q}, ${targetHex.r})`,
       { unitId: unit.id, from: unit.state.position, to: targetHex, cost: path.totalCost }
     );
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: `${unit.type} moved to (${targetHex.q}, ${targetHex.r})`,
-      data: { path, unit }
+      data: { path, unit },
     };
   }
 
@@ -214,10 +217,10 @@ export class GameEngine {
 
     // Resolve combat
     const combatResult = CombatSystem.resolveCombat(attacker, defender, this.gameState);
-    
+
     // Log detailed combat result
     this.logger?.logCombat(attacker, defender, combatResult, this.gameState);
-    
+
     // Apply special combat effects
     CombatSystem.applySpecialCombatEffects(attacker, defender, combatResult);
 
@@ -226,13 +229,13 @@ export class GameEngine {
       attackerId: attacker.id,
       defenderId: defender.id,
       damage: combatResult.damage,
-      destroyed: combatResult.defenderDestroyed
+      destroyed: combatResult.defenderDestroyed,
     });
 
     return {
       success: true,
       message: combatResult.description,
-      data: combatResult
+      data: combatResult,
     };
   }
 
@@ -258,9 +261,12 @@ export class GameEngine {
     }
 
     // Check if units are adjacent or on same hex
-    const distance = new Hex(transport.state.position.q, transport.state.position.r, transport.state.position.s)
-      .distanceTo(cargo.state.position);
-    
+    const distance = new Hex(
+      transport.state.position.q,
+      transport.state.position.r,
+      transport.state.position.s
+    ).distanceTo(cargo.state.position);
+
     if (distance > 1) {
       return { success: false, message: 'Units must be adjacent to load' };
     }
@@ -273,15 +279,15 @@ export class GameEngine {
 
     // Execute load
     if (transport.loadCargo(cargo)) {
-      this.gameState.addEvent('unit_loaded', 
-        `${cargo.type} loaded into ${transport.type}`,
-        { transportId: transport.id, cargoId: cargo.id }
-      );
+      this.gameState.addEvent('unit_loaded', `${cargo.type} loaded into ${transport.type}`, {
+        transportId: transport.id,
+        cargoId: cargo.id,
+      });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: `${cargo.type} loaded into ${transport.type}`,
-        data: { transport, cargo }
+        data: { transport, cargo },
       };
     }
 
@@ -303,7 +309,7 @@ export class GameEngine {
     }
 
     // Place cargo on transport's hex or adjacent hex
-    const targetHex = action.targetPosition 
+    const targetHex = action.targetPosition
       ? new Hex(action.targetPosition.q, action.targetPosition.r, action.targetPosition.s)
       : new Hex(transport.state.position.q, transport.state.position.r, transport.state.position.s);
 
@@ -315,15 +321,16 @@ export class GameEngine {
 
     cargo.moveTo(targetHex);
 
-    this.gameState.addEvent('unit_unloaded',
-      `${cargo.type} unloaded from ${transport.type}`,
-      { transportId: transport.id, cargoId: cargo.id, position: targetHex }
-    );
+    this.gameState.addEvent('unit_unloaded', `${cargo.type} unloaded from ${transport.type}`, {
+      transportId: transport.id,
+      cargoId: cargo.id,
+      position: targetHex,
+    });
 
     return {
       success: true,
       message: `${cargo.type} unloaded at (${targetHex.q}, ${targetHex.r})`,
-      data: { transport, cargo, position: targetHex }
+      data: { transport, cargo, position: targetHex },
     };
   }
 
@@ -338,7 +345,7 @@ export class GameEngine {
 
     const abilityName = action.data.abilityName as string;
     const ability = unit.specialAbilities.find(a => a.name === abilityName);
-    
+
     if (!ability) {
       return { success: false, message: 'Unit does not have this ability' };
     }
@@ -386,7 +393,8 @@ export class GameEngine {
 
     unit.reveal();
 
-    this.gameState.addEvent('unit_revealed',
+    this.gameState.addEvent(
+      'unit_revealed',
       `${unit.type} revealed at (${unit.state.position.q}, ${unit.state.position.r})`,
       { unitId: unit.id, position: unit.state.position }
     );
@@ -394,7 +402,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} revealed`,
-      data: { unit }
+      data: { unit },
     };
   }
 
@@ -420,18 +428,19 @@ export class GameEngine {
     // Mark objective as controlled
     const updatedObjective = {
       ...mapHex.objective,
-      controlledBy: action.playerId
+      controlledBy: action.playerId,
     };
 
-    this.gameState.addEvent('objective_secured',
-      `${unit.type} secured ${mapHex.objective.type}`,
-      { unitId: unit.id, objectiveId: mapHex.objective.id, playerId: action.playerId }
-    );
+    this.gameState.addEvent('objective_secured', `${unit.type} secured ${mapHex.objective.type}`, {
+      unitId: unit.id,
+      objectiveId: mapHex.objective.id,
+      playerId: action.playerId,
+    });
 
     return {
       success: true,
       message: `Objective ${mapHex.objective.type} secured`,
-      data: { objective: updatedObjective, unit }
+      data: { objective: updatedObjective, unit },
     };
   }
 
@@ -441,17 +450,17 @@ export class GameEngine {
   calculateMovementPath(unit: Unit, target: Hex): MovementPath {
     const start = unit.state.position;
     const targetCoord = { q: target.q, r: target.r, s: target.s };
-    
+
     const path = findPath(start, targetCoord, {
       getCost: (from, to) => {
         const cost = this.gameState.map.getMovementCost(to);
-        
+
         // Apply unit-specific movement rules
         const fromHex = new Hex(from.q, from.r, from.s);
         const toHex = new Hex(to.q, to.r, to.s);
         return this.getUnitMovementCost(unit, fromHex, toHex, cost);
       },
-      maxDistance: unit.getEffectiveMovement() + 2
+      maxDistance: unit.getEffectiveMovement() + 2,
     });
 
     if (path.length === 0) {
@@ -462,13 +471,13 @@ export class GameEngine {
     let totalCost = 0;
     for (let i = 1; i < path.length; i++) {
       const cost = this.gameState.map.getMovementCost({ q: path[i].q, r: path[i].r, s: path[i].s });
-      totalCost += this.getUnitMovementCost(unit, path[i-1], path[i], cost);
+      totalCost += this.getUnitMovementCost(unit, path[i - 1], path[i], cost);
     }
 
     return {
       hexes: path,
       totalCost,
-      valid: totalCost <= unit.getEffectiveMovement()
+      valid: totalCost <= unit.getEffectiveMovement(),
     };
   }
 
@@ -487,8 +496,12 @@ export class GameEngine {
     // AAV amphibious movement
     if (unit.type === UnitType.AAV_7) {
       const toHex = this.gameState.map.getHex(to);
-      if (toHex?.terrain === 'shallow_water') return 1;
-      if (toHex?.terrain === 'deep_water') return 2;
+      if (toHex?.terrain === 'shallow_water') {
+        return 1;
+      }
+      if (toHex?.terrain === 'deep_water') {
+        return 2;
+      }
     }
 
     // Aircraft ignore terrain
@@ -514,16 +527,17 @@ export class GameEngine {
     }
 
     // Ground units cannot move into deep water
-    if (targetHex.terrain === 'deep_water' && 
-        !unit.hasCategory(UnitCategory.AMPHIBIOUS) && 
-        !unit.hasCategory(UnitCategory.AIRCRAFT) &&
-        !unit.hasCategory(UnitCategory.SHIP)) {
+    if (
+      targetHex.terrain === 'deep_water' &&
+      !unit.hasCategory(UnitCategory.AMPHIBIOUS) &&
+      !unit.hasCategory(UnitCategory.AIRCRAFT) &&
+      !unit.hasCategory(UnitCategory.SHIP)
+    ) {
       return { valid: false, reason: 'Ground units cannot enter deep water' };
     }
 
     // Super Stallion requires clear LZ
-    if (unit.type === UnitType.SUPER_STALLION && 
-        !['clear', 'beach'].includes(targetHex.terrain)) {
+    if (unit.type === UnitType.SUPER_STALLION && !['clear', 'beach'].includes(targetHex.terrain)) {
       return { valid: false, reason: 'Super Stallion requires clear landing zone' };
     }
 
@@ -536,8 +550,11 @@ export class GameEngine {
   private canTargetHiddenUnit(attacker: Unit, defender: Unit): boolean {
     // MARSOC recon specialists can detect hidden units
     if (attacker.type === UnitType.MARSOC) {
-      const distance = new Hex(attacker.state.position.q, attacker.state.position.r, attacker.state.position.s)
-        .distanceTo(defender.state.position);
+      const distance = new Hex(
+        attacker.state.position.q,
+        attacker.state.position.r,
+        attacker.state.position.s
+      ).distanceTo(defender.state.position);
       return distance <= 2;
     }
 
@@ -548,7 +565,10 @@ export class GameEngine {
   /**
    * Validate cargo compatibility
    */
-  private validateCargoCompatibility(transport: Unit, cargo: Unit): { valid: boolean; reason?: string } {
+  private validateCargoCompatibility(
+    transport: Unit,
+    cargo: Unit
+  ): { valid: boolean; reason?: string } {
     // Same side only
     if (transport.side !== cargo.side) {
       return { valid: false, reason: 'Cannot load enemy units' };
@@ -575,11 +595,18 @@ export class GameEngine {
   /**
    * Validate unload position
    */
-  private validateUnloadPosition(transport: Unit, cargo: Unit, position: Hex): { valid: boolean; reason?: string } {
+  private validateUnloadPosition(
+    transport: Unit,
+    cargo: Unit,
+    position: Hex
+  ): { valid: boolean; reason?: string } {
     // Check distance from transport
-    const distance = new Hex(transport.state.position.q, transport.state.position.r, transport.state.position.s)
-      .distanceTo(position);
-    
+    const distance = new Hex(
+      transport.state.position.q,
+      transport.state.position.r,
+      transport.state.position.s
+    ).distanceTo(position);
+
     if (distance > 1) {
       return { valid: false, reason: 'Can only unload to adjacent hex' };
     }
@@ -611,7 +638,7 @@ export class GameEngine {
     for (const hexData of data.targetHexes) {
       const hex = new Hex(hexData.q, hexData.r, hexData.s);
       const targets = this.gameState.getUnitsAt(hex);
-      
+
       for (const target of targets) {
         // Simulate artillery attack (2 ATK dice vs DEF 5)
         const damage = Math.floor(Math.random() * 3); // 0-2 damage
@@ -619,7 +646,7 @@ export class GameEngine {
           target.takeDamage(damage);
           results.push(`${target.type} hit for ${damage} damage`);
         }
-        
+
         // Always apply suppression
         target.state.suppressionTokens = Math.min(2, target.state.suppressionTokens + 1);
       }
@@ -628,7 +655,7 @@ export class GameEngine {
     return {
       success: true,
       message: `Artillery barrage completed: ${results.join(', ')}`,
-      data: { results }
+      data: { results },
     };
   }
 
@@ -638,14 +665,16 @@ export class GameEngine {
   private executeSAMStrike(_unit: Unit, data: any): ActionResult {
     const targetId = data.targetId;
     const target = this.gameState.getUnit(targetId);
-    
+
     if (!target) {
       return { success: false, message: 'Target not found' };
     }
 
-    if (!target.hasCategory(UnitCategory.AIRCRAFT) && 
-        !target.hasCategory(UnitCategory.HELICOPTER) &&
-        target.type !== UnitType.USS_WASP) {
+    if (
+      !target.hasCategory(UnitCategory.AIRCRAFT) &&
+      !target.hasCategory(UnitCategory.HELICOPTER) &&
+      target.type !== UnitType.USS_WASP
+    ) {
       return { success: false, message: 'Can only target aircraft or USS Wasp' };
     }
 
@@ -658,7 +687,7 @@ export class GameEngine {
     return {
       success: true,
       message: `SAM strike on ${target.type}: ${damage} damage`,
-      data: { target, damage }
+      data: { target, damage },
     };
   }
 
@@ -679,8 +708,11 @@ export class GameEngine {
     }
 
     const targetHex = new Hex(data.targetHex.q, data.targetHex.r, data.targetHex.s);
-    const distance = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s)
-      .distanceTo(targetHex);
+    const distance = new Hex(
+      unit.state.position.q,
+      unit.state.position.r,
+      unit.state.position.s
+    ).distanceTo(targetHex);
 
     if (distance > 1) {
       return { success: false, message: 'Target must be adjacent' };
@@ -697,7 +729,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${fortification.type} destroyed`,
-      data: { fortification }
+      data: { fortification },
     };
   }
 
@@ -721,11 +753,11 @@ export class GameEngine {
 
     // Execute launch through game state
     const result = this.gameState.launchUnitsFromWasp(unitsToLaunch);
-    
+
     return {
       success: result.success,
       message: result.message,
-      data: { launchedUnits: result.success ? unitsToLaunch : [] }
+      data: { launchedUnits: result.success ? unitsToLaunch : [] },
     };
   }
 
@@ -749,11 +781,11 @@ export class GameEngine {
 
     // Execute recovery through game state
     const result = this.gameState.recoverUnitsToWasp(unitsToRecover);
-    
+
     return {
       success: result.success,
       message: result.message,
-      data: { recoveredUnits: result.success ? unitsToRecover : [] }
+      data: { recoveredUnits: result.success ? unitsToRecover : [] },
     };
   }
 
@@ -787,26 +819,26 @@ export class GameEngine {
   updateAI(): GameAction[] {
     const activePlayerId = this.gameState.activePlayerId;
     const aiController = this.aiControllers.get(activePlayerId);
-    
+
     if (!aiController) {
       return []; // No AI for this player
     }
 
     // Generate AI actions
     const aiActions = aiController.update(this.gameState);
-    
+
     // Debug logging for AI actions
     if (aiActions.length > 0) {
       console.log(`[AI] Executing ${aiActions.length} actions for player ${activePlayerId}`);
     }
-    
+
     // Execute AI actions and provide feedback
     const results: ActionResult[] = [];
     for (const action of aiActions) {
       console.log(`[AI] Attempting action: ${action.type} for unit ${action.unitId}`);
       const result = this.executeAction(action);
       results.push(result);
-      
+
       if (result.success) {
         console.log(`[AI] ✅ Action succeeded: ${result.message}`);
       } else {
@@ -850,7 +882,12 @@ export class GameEngine {
   /**
    * Get AI status for UI display
    */
-  getAIStatus(playerId: string): any {
+  getAIStatus(playerId: string): {
+    difficulty: AIDifficulty;
+    currentState: AIState;
+    performanceMetrics: AIPerformanceMetrics;
+    isEnabled: boolean;
+  } | null {
     const aiController = this.aiControllers.get(playerId);
     return aiController ? aiController.getAIStatus() : null;
   }

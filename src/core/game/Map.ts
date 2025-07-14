@@ -36,8 +36,8 @@ export interface Fortification {
  * Game map with terrain and objectives
  */
 export class GameMap {
-  private hexes: Map<string, MapHex>;
-  private fortifications: Map<string, Fortification>;
+  private readonly hexes: Map<string, MapHex>;
+  private readonly fortifications: Map<string, Fortification>;
   private readonly width: number;
   private readonly height: number;
   private readonly offshoreZone: Set<string>; // Hex keys for offshore zone
@@ -48,7 +48,7 @@ export class GameMap {
     this.hexes = new Map();
     this.fortifications = new Map();
     this.offshoreZone = new Set();
-    
+
     this.initializeMap();
   }
 
@@ -68,7 +68,7 @@ export class GameMap {
         this.hexes.set(hex.toKey(), mapHex);
       }
     }
-    
+
     // Mark bottom row as offshore zone (where USS Wasp starts)
     for (let q = 0; q < this.width; q++) {
       const hex = Hex.fromOffset(q, this.height - 1);
@@ -184,16 +184,18 @@ export class GameMap {
    */
   getMovementCost(coordinate: HexCoordinate): number {
     const hex = this.getHex(coordinate);
-    if (!hex) return Infinity;
-    
+    if (!hex) {
+      return Infinity;
+    }
+
     let cost = this.getTerrainProperties(hex.terrain).movementCost;
-    
+
     // Add fortification penalties
     const fortification = this.getFortificationAt(coordinate);
     if (fortification) {
       cost += fortification.movementPenalty;
     }
-    
+
     return cost;
   }
 
@@ -202,16 +204,18 @@ export class GameMap {
    */
   getDefenseBonus(coordinate: HexCoordinate): number {
     const hex = this.getHex(coordinate);
-    if (!hex) return 0;
-    
+    if (!hex) {
+      return 0;
+    }
+
     let bonus = this.getTerrainProperties(hex.terrain).coverBonus;
-    
+
     // Add fortification bonuses
     const fortification = this.getFortificationAt(coordinate);
     if (fortification) {
       bonus += fortification.defenseBonus;
     }
-    
+
     return bonus;
   }
 
@@ -220,12 +224,14 @@ export class GameMap {
    */
   blocksLOS(coordinate: HexCoordinate): boolean {
     const hex = this.getHex(coordinate);
-    if (!hex) return true;
-    
+    if (!hex) {
+      return true;
+    }
+
     if (this.getTerrainProperties(hex.terrain).blocksLOS) {
       return true;
     }
-    
+
     // Check fortifications
     const fortification = this.getFortificationAt(coordinate);
     return fortification?.blocksLOS || false;
@@ -251,7 +257,7 @@ export class GameMap {
   getHexesInRange(center: HexCoordinate, range: number): MapHex[] {
     const centerHex = new Hex(center.q, center.r, center.s);
     const hexesInRange = centerHex.range(range);
-    
+
     return hexesInRange
       .map(hex => this.getHex(hex))
       .filter((hex): hex is MapHex => hex !== undefined);
@@ -262,7 +268,8 @@ export class GameMap {
    */
   getNeighbors(coordinate: HexCoordinate): MapHex[] {
     const hex = new Hex(coordinate.q, coordinate.r, coordinate.s);
-    return hex.neighbors()
+    return hex
+      .neighbors()
       .map(neighbor => this.getHex(neighbor))
       .filter((hex): hex is MapHex => hex !== undefined);
   }
@@ -286,7 +293,7 @@ export class GameMap {
    */
   static createTestMap(): GameMap {
     const map = new GameMap(8, 6);
-    
+
     // Add some varied terrain
     map.setTerrain(Hex.fromOffset(2, 2), TerrainType.URBAN);
     map.setTerrain(Hex.fromOffset(3, 2), TerrainType.URBAN);
@@ -294,12 +301,12 @@ export class GameMap {
     map.setTerrain(Hex.fromOffset(6, 1), TerrainType.HEAVY_WOODS);
     map.setTerrain(Hex.fromOffset(1, 4), TerrainType.SHALLOW_WATER);
     map.setTerrain(Hex.fromOffset(2, 4), TerrainType.BEACH);
-    
+
     // Add objectives
     map.addObjective(Hex.fromOffset(2, 2), ObjectiveType.PORT, 'port_1');
     map.addObjective(Hex.fromOffset(5, 1), ObjectiveType.AIRFIELD, 'airfield_1');
     map.addObjective(Hex.fromOffset(3, 2), ObjectiveType.COMMS_HUB, 'comms_1');
-    
+
     return map;
   }
 }

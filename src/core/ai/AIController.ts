@@ -6,15 +6,15 @@
 
 import { AIDecisionMaker } from './AIDecisionMaker';
 import { AIStateMachine } from './AIStateMachine';
-import { 
-  AIDifficulty, 
-  AIDecisionContext, 
-  AIDecision, 
+import {
+  AIDifficulty,
+  AIDecisionContext,
+  AIDecision,
   AIConfiguration,
   AIState,
   PlayerPattern,
   AILearningData,
-  AIPerformanceMetrics
+  AIPerformanceMetrics,
 } from './types';
 import { GameState } from '../game/GameState';
 import { Player } from '../game/Player';
@@ -29,7 +29,7 @@ import { getGameLogger } from '../logging/GameLogger';
 export class AIController {
   private decisionMaker: AIDecisionMaker;
   private stateMachine: AIStateMachine;
-  private aiPlayerId: string;
+  private readonly aiPlayerId: string;
   private difficulty: AIDifficulty;
   private playerPattern!: PlayerPattern;
   private learningData!: AILearningData;
@@ -40,10 +40,10 @@ export class AIController {
     this.aiPlayerId = aiPlayerId;
     this.difficulty = difficulty;
     this.decisionMaker = new AIDecisionMaker(difficulty);
-    
+
     const config = this.createAIConfiguration(difficulty);
     this.stateMachine = new AIStateMachine(config);
-    
+
     this.initializeAIData();
   }
 
@@ -51,7 +51,9 @@ export class AIController {
    * Main AI update - called each turn to generate AI actions
    */
   update(gameState: GameState): GameAction[] {
-    if (!this.isEnabled) return [];
+    if (!this.isEnabled) {
+      return [];
+    }
 
     // Only generate actions for appropriate phases
     const currentPhase = gameState.phase;
@@ -61,16 +63,16 @@ export class AIController {
 
     // Create decision context
     const context = this.createDecisionContext(gameState);
-    
+
     // Update strategic state machine
     const strategicAssessment = this.stateMachine.update(context);
-    
+
     // Generate tactical decisions appropriate for current phase
     const decisions = this.decisionMaker.makeDecisions(context);
-    
+
     // Filter decisions based on current phase
     const phaseAppropriateDecisions = this.filterDecisionsForPhase(decisions, currentPhase);
-    
+
     // Log AI decisions with comprehensive logging
     const logger = getGameLogger();
     if (logger) {
@@ -78,16 +80,16 @@ export class AIController {
         logger.logAIDecision(decision, gameState, this.aiPlayerId);
       }
     }
-    
+
     // Convert AI decisions to game actions
     const actions = this.convertDecisionsToActions(phaseAppropriateDecisions, gameState);
-    
+
     // Update learning data
     this.updateLearningData(phaseAppropriateDecisions, context);
-    
+
     // Log AI state for debugging
     this.logAIState(strategicAssessment, phaseAppropriateDecisions);
-    
+
     return actions;
   }
 
@@ -97,7 +99,7 @@ export class AIController {
   processActionResults(actions: GameAction[], results: any[]): void {
     // Update performance metrics based on action outcomes
     this.updatePerformanceMetrics(actions, results);
-    
+
     // Learn from successful/failed tactics
     this.updateTacticalLearning(actions, results);
   }
@@ -123,7 +125,7 @@ export class AIController {
       difficulty: this.difficulty,
       currentState: this.stateMachine.getCurrentState(),
       performanceMetrics: this.performanceMetrics,
-      isEnabled: this.isEnabled
+      isEnabled: this.isEnabled,
     };
   }
 
@@ -138,14 +140,16 @@ export class AIController {
    * Change AI difficulty level
    */
   setDifficulty(newDifficulty: AIDifficulty): void {
-    if (newDifficulty === this.difficulty) return;
-    
+    if (newDifficulty === this.difficulty) {
+      return;
+    }
+
     this.difficulty = newDifficulty;
     this.decisionMaker = new AIDecisionMaker(newDifficulty);
-    
+
     const config = this.createAIConfiguration(newDifficulty);
     this.stateMachine = new AIStateMachine(config);
-    
+
     console.log(`[AI] Difficulty changed to ${newDifficulty}`);
   }
 
@@ -196,8 +200,8 @@ export class AIController {
         ammunition: this.calculateAmmoStatus(availableUnits),
         supplyLines: this.assessSupplyLines(gameState),
         unitCondition: this.calculateUnitCondition(availableUnits),
-        territoryControl: this.calculateTerritoryControl(gameState, aiPlayer)
-      }
+        territoryControl: this.calculateTerritoryControl(gameState, aiPlayer),
+      },
     };
   }
 
@@ -206,10 +210,10 @@ export class AIController {
    */
   private filterDecisionsForPhase(decisions: AIDecision[], phase: string): AIDecision[] {
     const filtered: AIDecision[] = [];
-    
+
     for (const decision of decisions) {
       let isAppropriate = false;
-      
+
       switch (phase) {
         case 'command':
           // Command phase - no movement/combat actions
@@ -218,24 +222,25 @@ export class AIController {
         case 'deployment':
         case 'movement':
           // Movement phases - only movement actions
-          isAppropriate = (decision.type === 'move_unit' || decision.type === 'withdraw');
+          isAppropriate = decision.type === 'move_unit' || decision.type === 'withdraw';
           break;
         case 'action':
           // Action phase - combat and special abilities
-          isAppropriate = (decision.type === 'attack_target' || 
-                          decision.type === 'hide_unit' ||
-                          decision.type === 'reveal_unit' ||
-                          decision.type === 'special_ability');
+          isAppropriate =
+            decision.type === 'attack_target' ||
+            decision.type === 'hide_unit' ||
+            decision.type === 'reveal_unit' ||
+            decision.type === 'special_ability';
           break;
         default:
           isAppropriate = false;
       }
-      
+
       if (isAppropriate) {
         filtered.push(decision);
       }
     }
-    
+
     return filtered;
   }
 
@@ -245,7 +250,8 @@ export class AIController {
   private convertDecisionsToActions(decisions: AIDecision[], gameState: GameState): GameAction[] {
     const actions: GameAction[] = [];
 
-    for (const decision of decisions.slice(0, 5)) { // Limit actions per turn
+    for (const decision of decisions.slice(0, 5)) {
+      // Limit actions per turn
       const action = this.convertDecisionToAction(decision, gameState);
       if (action) {
         actions.push(action);
@@ -266,7 +272,7 @@ export class AIController {
             type: ActionType.MOVE,
             playerId: this.aiPlayerId,
             unitId: decision.unitId,
-            targetPosition: decision.targetPosition
+            targetPosition: decision.targetPosition,
           };
         }
         break;
@@ -277,7 +283,7 @@ export class AIController {
             type: ActionType.ATTACK,
             playerId: this.aiPlayerId,
             unitId: decision.unitId,
-            targetId: decision.targetUnitId
+            targetId: decision.targetUnitId,
           };
         }
         break;
@@ -288,7 +294,7 @@ export class AIController {
             type: ActionType.SPECIAL_ABILITY,
             playerId: this.aiPlayerId,
             unitId: decision.unitId,
-            data: { abilityName: 'hide' }
+            data: { abilityName: 'hide' },
           };
         }
         break;
@@ -298,7 +304,7 @@ export class AIController {
           return {
             type: ActionType.REVEAL,
             playerId: this.aiPlayerId,
-            unitId: decision.unitId
+            unitId: decision.unitId,
           };
         }
         break;
@@ -309,7 +315,7 @@ export class AIController {
             type: ActionType.LAUNCH_FROM_WASP,
             playerId: this.aiPlayerId,
             unitId: decision.metadata?.waspId || decision.unitId,
-            data: { unitIds: [decision.unitId] }
+            data: { unitIds: [decision.unitId] },
           };
         }
         break;
@@ -320,7 +326,7 @@ export class AIController {
             type: ActionType.RECOVER_TO_WASP,
             playerId: this.aiPlayerId,
             unitId: decision.metadata?.waspId || decision.unitId,
-            data: { unitIds: [decision.unitId] }
+            data: { unitIds: [decision.unitId] },
           };
         }
         break;
@@ -331,7 +337,7 @@ export class AIController {
             type: ActionType.LOAD,
             playerId: this.aiPlayerId,
             unitId: decision.unitId,
-            targetId: decision.targetUnitId
+            targetId: decision.targetUnitId,
           };
         }
         break;
@@ -342,7 +348,7 @@ export class AIController {
             type: ActionType.UNLOAD,
             playerId: this.aiPlayerId,
             unitId: decision.unitId,
-            ...(decision.targetPosition && { targetPosition: decision.targetPosition })
+            ...(decision.targetPosition && { targetPosition: decision.targetPosition }),
           };
         }
         break;
@@ -352,7 +358,7 @@ export class AIController {
           return {
             type: ActionType.SECURE_OBJECTIVE,
             playerId: this.aiPlayerId,
-            unitId: decision.unitId
+            unitId: decision.unitId,
           };
         }
         break;
@@ -363,10 +369,10 @@ export class AIController {
             type: ActionType.SPECIAL_ABILITY,
             playerId: this.aiPlayerId,
             unitId: decision.unitId,
-            data: { 
+            data: {
               abilityName: decision.metadata.abilityName,
-              ...decision.metadata 
-            }
+              ...decision.metadata,
+            },
           };
         }
         break;
@@ -389,7 +395,7 @@ export class AIController {
       targetPriorities: [],
       riskTolerance: 0.5,
       adaptationRate: 0.5,
-      predictability: 0.5
+      predictability: 0.5,
     };
 
     this.learningData = {
@@ -397,7 +403,7 @@ export class AIController {
       successfulTactics: [],
       failedTactics: [],
       performanceHistory: [],
-      adaptationTriggers: []
+      adaptationTriggers: [],
     };
 
     this.performanceMetrics = {
@@ -407,7 +413,7 @@ export class AIController {
       successfulAmbushes: 0,
       unitsPreserved: 0,
       resourceEfficiency: 0,
-      playerSurprises: 0
+      playerSurprises: 0,
     };
   }
 
@@ -426,9 +432,9 @@ export class AIController {
           resourceOptimization: 0.4,
           tacticalComplexity: 0.5,
           mistakeFrequency: 0.3,
-          cheatingLevel: 0
+          cheatingLevel: 0,
         };
-      
+
       case AIDifficulty.VETERAN:
         return {
           difficulty,
@@ -438,9 +444,9 @@ export class AIController {
           resourceOptimization: 0.7,
           tacticalComplexity: 0.8,
           mistakeFrequency: 0.1,
-          cheatingLevel: 0
+          cheatingLevel: 0,
         };
-      
+
       case AIDifficulty.ELITE:
         return {
           difficulty,
@@ -450,9 +456,9 @@ export class AIController {
           resourceOptimization: 0.9,
           tacticalComplexity: 1.0,
           mistakeFrequency: 0.02,
-          cheatingLevel: 0
+          cheatingLevel: 0,
         };
-      
+
       case AIDifficulty.ADAPTIVE:
         return {
           difficulty,
@@ -462,9 +468,9 @@ export class AIController {
           resourceOptimization: 0.8,
           tacticalComplexity: 0.9,
           mistakeFrequency: 0.05,
-          cheatingLevel: 0
+          cheatingLevel: 0,
         };
-      
+
       default:
         return this.createAIConfiguration(AIDifficulty.VETERAN);
     }
@@ -475,12 +481,13 @@ export class AIController {
    */
   private getEnemyPlayer(gameState: GameState): Player | undefined {
     const aiPlayer = gameState.getPlayer(this.aiPlayerId);
-    if (!aiPlayer) return undefined;
+    if (!aiPlayer) {
+      return undefined;
+    }
 
-    const enemySide = aiPlayer.side === PlayerSide.Assault 
-      ? PlayerSide.Defender 
-      : PlayerSide.Assault;
-      
+    const enemySide =
+      aiPlayer.side === PlayerSide.Assault ? PlayerSide.Defender : PlayerSide.Assault;
+
     return gameState.getPlayerBySide(enemySide);
   }
 
@@ -488,15 +495,13 @@ export class AIController {
    * Calculate overall threat level
    */
   private calculateOverallThreatLevel(friendlyUnits: Unit[], enemyUnits: Unit[]): number {
-    if (enemyUnits.length === 0) return 0;
-    
-    const enemyStrength = enemyUnits.reduce((sum, unit) => 
-      sum + unit.getEffectiveAttack(), 0
-    );
-    const friendlyStrength = friendlyUnits.reduce((sum, unit) => 
-      sum + unit.stats.def, 0
-    );
-    
+    if (enemyUnits.length === 0) {
+      return 0;
+    }
+
+    const enemyStrength = enemyUnits.reduce((sum, unit) => sum + unit.getEffectiveAttack(), 0);
+    const friendlyStrength = friendlyUnits.reduce((sum, unit) => sum + unit.stats.def, 0);
+
     const threatRatio = enemyStrength / Math.max(1, friendlyStrength);
     return Math.min(1, threatRatio);
   }
@@ -507,8 +512,11 @@ export class AIController {
   private calculateAmmoStatus(units: Unit[]): number {
     // Simplified ammo calculation - in full implementation would track actual ammo
     const totalSupply = units.reduce((sum, unit) => sum + (unit.stats.sp || 10), 0);
-    const currentSupply = units.reduce((sum, unit) => sum + (unit.state.currentSP || unit.stats.sp || 10), 0);
-    
+    const currentSupply = units.reduce(
+      (sum, unit) => sum + (unit.state.currentSP || unit.stats.sp || 10),
+      0
+    );
+
     return totalSupply > 0 ? currentSupply / totalSupply : 1;
   }
 
@@ -524,12 +532,12 @@ export class AIController {
    * Calculate overall unit condition
    */
   private calculateUnitCondition(units: Unit[]): number {
-    if (units.length === 0) return 0;
-    
-    const totalHealth = units.reduce((sum, unit) => 
-      sum + (unit.state.currentHP / unit.stats.hp), 0
-    );
-    
+    if (units.length === 0) {
+      return 0;
+    }
+
+    const totalHealth = units.reduce((sum, unit) => sum + unit.state.currentHP / unit.stats.hp, 0);
+
     return totalHealth / units.length;
   }
 
@@ -539,9 +547,8 @@ export class AIController {
   private calculateTerritoryControl(_gameState: GameState, player: Player): number {
     // Simplified territory calculation based on objectives held
     const totalObjectives = player.objectives.size;
-    const heldObjectives = Array.from(player.objectives.values())
-      .filter(_obj => true).length; // Simplified for now
-    
+    const heldObjectives = Array.from(player.objectives.values()).filter(_obj => true).length; // Simplified for now
+
     return totalObjectives > 0 ? heldObjectives / totalObjectives : 0.5;
   }
 
@@ -551,7 +558,7 @@ export class AIController {
   private updateLearningData(decisions: AIDecision[], _context: AIDecisionContext): void {
     // Store decisions for later analysis
     this.learningData.successfulTactics.push(...decisions);
-    
+
     // Keep learning data within reasonable bounds
     if (this.learningData.successfulTactics.length > 100) {
       this.learningData.successfulTactics = this.learningData.successfulTactics.slice(-50);
@@ -566,7 +573,7 @@ export class AIController {
     for (let i = 0; i < actions.length && i < _results.length; i++) {
       const action = actions[i];
       const result = _results[i];
-      
+
       if (result.success) {
         if (action.type === ActionType.ATTACK) {
           this.performanceMetrics.casualtiesInflicted++;
@@ -596,7 +603,9 @@ export class AIController {
    */
   private logAIState(strategicAssessment: any, decisions: AIDecision[]): void {
     if (decisions.length > 0) {
-      console.log(`[AI] State: ${strategicAssessment.currentState}, Decisions: ${decisions.length}`);
+      console.log(
+        `[AI] State: ${strategicAssessment.currentState}, Decisions: ${decisions.length}`
+      );
       decisions.slice(0, 3).forEach(decision => {
         console.log(`  - ${decision.type}: ${decision.reasoning}`);
       });

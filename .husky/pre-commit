@@ -19,6 +19,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Run strict linting (zero errors allowed, warnings permitted)
+echo "🔍 Strict linting check..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed! All errors must be fixed before commit."
+  echo "💡 Run 'npm run lint' to see issues and 'npm run lint:fix' to auto-fix."
+  exit 1
+fi
+
 # Run tests to ensure nothing is broken
 echo "🧪 Running tests..."
 npm test -- --silent
