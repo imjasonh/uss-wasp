@@ -446,6 +446,18 @@ function testAILearning() {
     }
 }
 
+// Load baseline for comparison
+function loadBaseline() {
+    try {
+        const fs = require('fs');
+        const baseline = JSON.parse(fs.readFileSync('./ai-gap-baseline.json', 'utf8'));
+        return baseline.baseline;
+    } catch (error) {
+        console.log('⚠️ No baseline found, using empty baseline');
+        return {};
+    }
+}
+
 // Run all gap analysis tests
 async function runGapAnalysis() {
     console.log('Running comprehensive AI system gap analysis...\n');
@@ -476,31 +488,70 @@ async function runGapAnalysis() {
     console.log(`🚁 Transport Operations: ${results.transport ? '✅' : '❌'}`);
     console.log(`🧠 Learning/Adaptation: ${results.learning ? '✅' : '❌'}`);
     
+    // Compare with baseline to detect regressions
+    console.log('\n🔍 REGRESSION ANALYSIS:');
+    const baseline = loadBaseline();
+    const regressions = [];
+    const improvements = [];
+    
+    for (const [feature, current] of Object.entries(results)) {
+        const baselineValue = baseline[feature];
+        if (baselineValue === true && current === false) {
+            regressions.push(feature);
+        } else if (baselineValue === false && current === true) {
+            improvements.push(feature);
+        }
+    }
+    
+    if (regressions.length > 0) {
+        console.log(`❌ REGRESSIONS DETECTED: ${regressions.join(', ')}`);
+        console.log('🚨 Previously working features are now broken!');
+    } else {
+        console.log('✅ No regressions detected - all baseline features maintained');
+    }
+    
+    if (improvements.length > 0) {
+        console.log(`🎉 IMPROVEMENTS: ${improvements.join(', ')}`);
+    }
+    
     console.log('\n🔧 RECOMMENDED NEXT STEPS:');
+    const missingFeatures = [];
     
     if (!results.waspOps) {
-        console.log('1. Implement USS Wasp launch/recovery AI decision types');
+        console.log('   1. Implement USS Wasp launch/recovery AI decision types');
+        missingFeatures.push('USS Wasp Operations');
     }
     if (!results.hiddenUnits) {
-        console.log('2. Add hidden unit reveal/hide AI tactical decisions');
+        console.log('   2. Add hidden unit reveal/hide AI tactical decisions');
+        missingFeatures.push('Hidden Unit Tactics');
     }
     if (!results.specialAbilities) {
-        console.log('3. Implement special ability usage in AI decision-making');
+        console.log('   3. Implement special ability usage in AI decision-making');
+        missingFeatures.push('Special Abilities');
     }
     if (!results.objectives) {
-        console.log('4. Add objective-focused strategic AI planning');
+        console.log('   4. Add objective-focused strategic AI planning');
+        missingFeatures.push('Objective Strategy');
     }
     if (!results.transport) {
-        console.log('5. Implement transport load/unload AI operations');
+        console.log('   5. Implement transport load/unload AI operations');
+        missingFeatures.push('Transport Operations');
     }
     if (!results.learning) {
-        console.log('6. Complete AI learning and adaptation system');
+        console.log('   6. Complete AI learning and adaptation system');
+        missingFeatures.push('Learning/Adaptation');
     }
     
     if (implemented === total) {
-        console.log('🎉 ALL AI SYSTEMS OPERATIONAL - Ready for Phase 7!');
+        console.log('\n🎉 ALL AI SYSTEMS OPERATIONAL - Ready for Phase 7!');
+        process.exit(0);
+    } else if (regressions.length > 0) {
+        console.log(`\n💥 CRITICAL: ${regressions.length} regression(s) detected - CI should fail!`);
+        process.exit(1);
     } else {
-        console.log(`\n⚡ Current Status: ${Math.round(implemented/total*100)}% complete - ${total-implemented} systems need implementation`);
+        console.log(`\n⚡ Current Status: ${Math.round(implemented/total*100)}% complete - ${missingFeatures.length} systems still need implementation`);
+        console.log('📊 No regressions detected - baseline maintained ✅');
+        process.exit(0);
     }
 }
 
