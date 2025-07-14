@@ -21,6 +21,7 @@ export class PixiRenderer {
   private readonly app: PIXI.Application;
   private readonly hexLayout: HexLayout;
   private readonly mapContainer: PIXI.Container;
+  private readonly fortificationContainer: PIXI.Container;
   private readonly unitContainer: PIXI.Container;
   private readonly uiContainer: PIXI.Container;
   private selectedHex?: Hex;
@@ -53,10 +54,12 @@ export class PixiRenderer {
 
     // Create main containers
     this.mapContainer = new PIXI.Container();
+    this.fortificationContainer = new PIXI.Container();
     this.unitContainer = new PIXI.Container();
     this.uiContainer = new PIXI.Container();
 
     this.app.stage.addChild(this.mapContainer);
+    this.app.stage.addChild(this.fortificationContainer);
     this.app.stage.addChild(this.unitContainer);
     this.app.stage.addChild(this.uiContainer);
 
@@ -87,6 +90,8 @@ export class PixiRenderer {
 
         this.mapContainer.x += deltaX;
         this.mapContainer.y += deltaY;
+        this.fortificationContainer.x += deltaX;
+        this.fortificationContainer.y += deltaY;
         this.unitContainer.x += deltaX;
         this.unitContainer.y += deltaY;
 
@@ -111,6 +116,7 @@ export class PixiRenderer {
       const newScale = Math.max(0.5, Math.min(2.0, this.mapContainer.scale.x * scaleFactor));
 
       this.mapContainer.scale.set(newScale);
+      this.fortificationContainer.scale.set(newScale);
       this.unitContainer.scale.set(newScale);
     });
   }
@@ -235,6 +241,74 @@ export class PixiRenderer {
           this.unitContainer.addChild(unitGraphics);
         }
       }
+    }
+  }
+
+  /**
+   * Render fortifications on the map
+   */
+  renderFortifications(gameState: GameState): void {
+    this.fortificationContainer.removeChildren();
+    
+    const fortifications = gameState.map.getAllFortifications();
+    for (const fortification of fortifications) {
+      const fortGraphics = this.createFortificationGraphics(fortification);
+      this.fortificationContainer.addChild(fortGraphics);
+    }
+  }
+
+  /**
+   * Create graphics for a fortification
+   */
+  private createFortificationGraphics(fortification: any): PIXI.Graphics {
+    const graphics = new PIXI.Graphics();
+    const center = this.hexLayout.hexToPixel(fortification.position);
+    
+    // Get fortification visual properties
+    const { icon, color, size } = this.getFortificationVisualProps(fortification.type);
+    
+    // Draw fortification background
+    graphics.beginFill(color, 0.3);
+    graphics.lineStyle(2, color, 0.8);
+    graphics.drawCircle(center.x, center.y, size);
+    graphics.endFill();
+    
+    // Add fortification icon
+    const text = new PIXI.Text(icon, {
+      fontSize: size,
+      fill: color,
+      fontWeight: 'bold',
+      align: 'center',
+    });
+    text.anchor.set(0.5);
+    text.x = center.x;
+    text.y = center.y;
+    graphics.addChild(text);
+    
+    // Add tooltip on hover
+    graphics.interactive = true;
+    graphics.on('pointerover', () => {
+      // Could add tooltip showing fortification stats
+    });
+    
+    return graphics;
+  }
+
+  /**
+   * Get visual properties for fortification type
+   */
+  private getFortificationVisualProps(type: string): { icon: string; color: number; size: number } {
+    switch (type) {
+      case 'bunker':
+        return { icon: '🏗️', color: 0x8b4513, size: 18 };
+      case 'minefield':
+        return { icon: '💣', color: 0xff4500, size: 16 };
+      case 'trench':
+        return { icon: '🕳️', color: 0x8b7355, size: 16 };
+      case 'barricade':
+        return { icon: '🚧', color: 0xffa500, size: 16 };
+      default:
+        return { icon: '🔨', color: 0x666666, size: 16 };
     }
   }
 
