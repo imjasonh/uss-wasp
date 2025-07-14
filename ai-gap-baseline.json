@@ -2,14 +2,14 @@
   "baseline": {
     "waspOps": false,
     "hiddenUnits": false,
-    "specialAbilities": false,
+    "specialAbilities": true,
     "objectives": false,
     "transport": false,
     "learning": true
   },
-  "expectedImplemented": 1,
+  "expectedImplemented": 2,
   "expectedTotal": 6,
-  "expectedPercentage": 17,
+  "expectedPercentage": 33,
   "lastUpdated": "2025-01-14",
-  "notes": "Updated baseline to reflect current actual state after comprehensive testing. Only learning system is currently working. All other systems need re-implementation or fixes."
+  "notes": "Major breakthrough: Fixed AI special abilities decision-to-action pipeline and implemented combat-focused movement. Units now actively engage in combat with real damage and tactical mechanics. Core AI decision generation working perfectly."
 }
