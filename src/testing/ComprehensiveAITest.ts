@@ -228,11 +228,11 @@ export class ComprehensiveAITest {
             console.log(`  🤖 Turn ${turnCount}: AI generated ${aiActions.length} actions`);
             // Execute AI actions to test the game engine
             const actionResults = this.testActionExecution(aiActions, gameEngine);
-            
+
             // Analyze the action results
             const analysis = this.analyzeActionTypes(aiActions);
             testResult.actionAnalysis = analysis;
-            
+
             // Check for execution failures
             const failedActions = actionResults.filter(r => !r.success);
             if (failedActions.length > 0) {
@@ -788,18 +788,18 @@ export class ComprehensiveAITest {
   private testActionExecution(actions: GameAction[], gameEngine: GameEngine): ActionResult[] {
     console.log(`  🎯 Executing ${actions.length} AI actions...`);
     const results = gameEngine.executeAIActions(actions);
-    
+
     // Log execution results
     const successful = results.filter(r => r.success).length;
     const failed = results.length - successful;
-    
+
     if (successful > 0) {
       console.log(`  ✅ ${successful} actions executed successfully`);
     }
     if (failed > 0) {
       console.log(`  ❌ ${failed} actions failed`);
     }
-    
+
     return results;
   }
 
@@ -808,19 +808,19 @@ export class ComprehensiveAITest {
    */
   private testUSSWaspLaunchOperations(gameEngine: GameEngine, testResult: TestResults): void {
     console.log('  🚢 Testing USS Wasp launch operations...');
-    
+
     try {
       // Get all players to find USS Wasp units
       const players = gameEngine.getPlayers();
       let waspFound = false;
       let aircraftEmbarked = 0;
-      
+
       for (const player of players) {
         const waspUnits = player.getLivingUnits().filter(unit => unit.type === UnitType.USS_WASP);
         if (waspUnits.length > 0) {
           waspFound = true;
           console.log(`  📍 Found ${waspUnits.length} USS Wasp unit(s) for player ${player.side}`);
-          
+
           // Check for embarked aircraft
           for (const wasp of waspUnits) {
             const capacity = wasp.getCargoCapacity();
@@ -830,7 +830,7 @@ export class ComprehensiveAITest {
           }
         }
       }
-      
+
       if (!waspFound) {
         testResult.gameEngineGaps.push('No USS Wasp units found for testing launch operations');
       } else {
@@ -855,7 +855,7 @@ export class ComprehensiveAITest {
       waspOperations: 0,
       loadUnloadActions: 0,
       objectiveActions: 0,
-      total: actions.length
+      total: actions.length,
     };
 
     for (const action of actions) {
@@ -904,19 +904,21 @@ export class ComprehensiveAITest {
   private analyzeAIPerformance(gameEngine: GameEngine, testResult: TestResults): void {
     // Analyze AI controller status for both players
     console.log('📊 AI Performance Analysis');
-    
+
     try {
       const players = gameEngine.getPlayers();
       console.log(`   Found ${players.length} players in game`);
-      
+
       for (const player of players) {
         const units = player.getLivingUnits();
         console.log(`   Player ${player.side}: ${units.length} units remaining`);
-        
+
         // Check AI controller status
         const aiStatus = gameEngine.getAIStatus(player.id);
         if (aiStatus) {
-          console.log(`   AI Status: ${aiStatus.difficulty} difficulty, state: ${aiStatus.currentState}`);
+          console.log(
+            `   AI Status: ${aiStatus.difficulty} difficulty, state: ${aiStatus.currentState}`
+          );
         }
       }
     } catch (error) {
@@ -932,19 +934,19 @@ export class ComprehensiveAITest {
 
     // Analyze AI decision types for amphibious operations
     const analysis = this.analyzeActionTypes(aiActions as GameAction[]);
-    
+
     console.log(`   Action analysis: ${analysis.total} total actions`);
     console.log(`   - Movement: ${analysis.movementActions}`);
     console.log(`   - Combat: ${analysis.combatActions}`);
     console.log(`   - Special abilities: ${analysis.specialActions}`);
     console.log(`   - USS Wasp operations: ${analysis.waspOperations}`);
     console.log(`   - Load/Unload: ${analysis.loadUnloadActions}`);
-    
+
     // Check for amphibious-specific tactics
     if (analysis.waspOperations === 0 && analysis.loadUnloadActions === 0) {
       testResult.aiProgrammingGaps.push('No amphibious assault tactics detected in AI decisions');
     }
-    
+
     if (analysis.total === 0) {
       testResult.aiProgrammingGaps.push('AI not generating any actions for amphibious scenario');
     }
