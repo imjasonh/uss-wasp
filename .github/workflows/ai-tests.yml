@@ -32,7 +32,7 @@ jobs:
     - name: Run AI system gap analysis
       run: |
         echo "🤖 Running AI system gap analysis..."
-        node tests/ai/test-ai-system-gaps.js
+        npx tsx tests/ai/test-ai-system-gaps.ts
     
     - name: Run AI battle series tests
       run: |
@@ -42,12 +42,12 @@ jobs:
     - name: Run comprehensive AI tests
       run: |
         echo "🧪 Running comprehensive AI validation..."
-        node tests/ai/run-comprehensive-ai-test.js || echo "Comprehensive AI test completed"
+        npx tsx tests/ai/run-comprehensive-ai-test.ts || echo "Comprehensive AI test completed"
     
     - name: Performance benchmark
       run: |
         echo "📊 Running AI performance benchmarks..."
-        node tests/simulation/quick-battle-test.js
+        npx tsx tests/simulation/quick-battle-test.ts
 
   combat-validation:
     runs-on: ubuntu-latest
@@ -70,13 +70,13 @@ jobs:
     - name: Validate combat mechanics
       run: |
         echo "⚔️ Testing combat system..."
-        node tests/combat/test-direct-combat.js
+        npx tsx tests/combat/test-direct-combat.ts
         node tests/combat/test-close-combat.js
     
     - name: Test pathfinding core
       run: |
         echo "🗺️ Testing pathfinding..."
-        node tests/core/test-pathfinding-core.js
+        npx tsx tests/core/test-pathfinding-core.ts
 
   game-simulation:
     runs-on: ubuntu-latest
