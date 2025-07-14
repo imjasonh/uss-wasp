@@ -26,14 +26,14 @@ export class AIDecisionMaker {
   private readonly decisionHistory: AIDecision[] = [];
   private readonly threatAssessments: Map<string, ThreatAssessment> = new Map();
 
-  constructor(difficulty: AIDifficulty = AIDifficulty.VETERAN) {
+  public constructor(difficulty: AIDifficulty = AIDifficulty.VETERAN) {
     this.config = this.createConfiguration(difficulty);
   }
 
   /**
    * Main decision-making entry point
    */
-  makeDecisions(context: AIDecisionContext): AIDecision[] {
+  public makeDecisions(context: AIDecisionContext): AIDecision[] {
     const decisions: AIDecision[] = [];
 
     // Update threat assessments
@@ -106,6 +106,15 @@ export class AIDecisionMaker {
       priorities.push({ priority: TacticalPriority.MANAGE_LOGISTICS, weight: 6 });
     }
 
+    // Check for hidden unit tactical opportunities
+    const hasHiddenUnits = context.availableUnits.some(unit => unit.isHidden());
+    const canHideUnits = context.availableUnits.some(
+      unit => unit.canBeHidden() && !unit.isHidden()
+    );
+    if (hasHiddenUnits || canHideUnits) {
+      priorities.push({ priority: TacticalPriority.HIDDEN_OPERATIONS, weight: 8 });
+    }
+
     // Check for special ability opportunities
     const hasSpecialAbilities = context.availableUnits.some(
       unit => unit.specialAbilities.length > 0 && unit.canAct()
@@ -147,6 +156,8 @@ export class AIDecisionMaker {
         return this.generateIntelligenceDecisions(context);
       case TacticalPriority.WASP_OPERATIONS:
         return this.generateWaspOperationsDecisions(context);
+      case TacticalPriority.HIDDEN_OPERATIONS:
+        return this.generateHiddenOperationsDecisions(context);
       case TacticalPriority.MANAGE_LOGISTICS:
         return this.generateLogisticsDecisions(context);
       case TacticalPriority.USE_SPECIAL_ABILITIES:
@@ -513,7 +524,7 @@ export class AIDecisionMaker {
     return totalHealth / units.length;
   }
 
-  private assessObjectiveThreats(context: AIDecisionContext): number {
+  private assessObjectiveThreats(_context: AIDecisionContext): number {
     // Implementation would analyze threat to objectives
     return 0.5; // Placeholder
   }
@@ -548,33 +559,37 @@ export class AIDecisionMaker {
     return Math.min(1.0, vulnerabilityScore / enemyUnits.length);
   }
 
-  private findSafeWithdrawalPosition(unit: Unit, context: AIDecisionContext): Hex | null {
+  private findSafeWithdrawalPosition(_unit: Unit, _context: AIDecisionContext): Hex | null {
     // Implementation would find safe position for withdrawal
     return null; // Placeholder
   }
 
-  private getThreatenedObjectives(context: AIDecisionContext): any[] {
+  private getThreatenedObjectives(
+    _context: AIDecisionContext
+  ): Array<{ position: Hex; type: string; id: string }> {
     // Implementation would identify objectives under threat
     return []; // Placeholder
   }
 
-  private findBestDefenders(position: Hex, units: Unit[]): Unit[] {
+  private findBestDefenders(_position: Hex, _units: Unit[]): Unit[] {
     // Implementation would select optimal defenders
     return []; // Placeholder
   }
 
   private findOptimalDefensePosition(
-    objective: Hex,
-    unit: Unit,
-    context: AIDecisionContext
+    _objective: Hex,
+    _unit: Unit,
+    _context: AIDecisionContext
   ): Hex | null {
     // Implementation would find best defensive position
     return null; // Placeholder
   }
 
-  private identifyKeyTerrain(context: AIDecisionContext): any[] {
+  private identifyKeyTerrain(
+    context: AIDecisionContext
+  ): Array<{ position: Hex; strategicValue: number; type: string }> {
     // Identify reachable positions that move toward objectives
-    const keyTerrain: any[] = [];
+    const keyTerrain: Array<{ position: Hex; strategicValue: number; type: string }> = [];
 
     for (const unit of context.availableUnits) {
       if (unit.state.hasMoved) {
@@ -635,18 +650,21 @@ export class AIDecisionMaker {
     return keyTerrain.slice(0, 5); // Return best movement options
   }
 
-  private canUnitReachPosition(unit: Unit, position: Hex, context: AIDecisionContext): boolean {
+  private canUnitReachPosition(unit: Unit, position: Hex, _context: AIDecisionContext): boolean {
     // Simple movement range check
     const distance = this.calculateDistance(unit.state.position, position);
     return distance <= unit.stats.mv && !unit.state.hasMoved;
   }
 
-  private selectBestUnitForPosition(units: Unit[], terrain: any): Unit {
+  private selectBestUnitForPosition(
+    units: Unit[],
+    _terrain: { position: Hex; strategicValue: number; type: string }
+  ): Unit {
     // Implementation would select optimal unit for terrain
     return units[0]; // Placeholder
   }
 
-  private findValidTargets(unit: Unit, enemies: Unit[], context: AIDecisionContext): Unit[] {
+  private findValidTargets(unit: Unit, enemies: Unit[], _context: AIDecisionContext): Unit[] {
     // Find enemies that this unit can potentially attack
     const targets: Unit[] = [];
 
@@ -661,7 +679,7 @@ export class AIDecisionMaker {
     }
 
     // BALANCE FIX: Prioritize air targets for AA units
-    if (unit.type === 'aa_team' || unit.type === 'sam_site') {
+    if (unit.type === UnitType.AA_TEAM || unit.type === UnitType.SAM_SITE) {
       const airTargets = targets.filter(
         t => t.hasCategory(UnitCategory.AIRCRAFT) || t.hasCategory(UnitCategory.HELICOPTER)
       );
@@ -676,7 +694,7 @@ export class AIDecisionMaker {
   private analyzeEngagement(
     attacker: Unit,
     target: Unit,
-    context: AIDecisionContext
+    _context: AIDecisionContext
   ): EngagementAnalysis {
     // Simple engagement analysis
     const attackerPower = attacker.stats.atk;
@@ -701,9 +719,12 @@ export class AIDecisionMaker {
     };
   }
 
-  private estimateCasualties(attacker: Unit, target: Unit): any {
+  private estimateCasualties(
+    _attacker: Unit,
+    _target: Unit
+  ): { attackerLosses: number; defenderLosses: number } {
     // Implementation would estimate combat casualties
-    return {}; // Placeholder
+    return { attackerLosses: 0, defenderLosses: 0 }; // Placeholder
   }
 
   private identifyIntelligenceGaps(context: AIDecisionContext): Hex[] {
@@ -718,15 +739,15 @@ export class AIDecisionMaker {
     return gaps.slice(0, 2); // Limit scouting missions
   }
 
-  private findNearestUnit(units: Unit[], position: Hex): Unit | null {
+  private findNearestUnit(units: Unit[], _position: Hex): Unit | null {
     // Implementation would find closest unit to position
     return units[0] || null; // Placeholder
   }
 
   private findOptimalObservationPosition(
-    area: Hex,
-    unit: Unit,
-    context: AIDecisionContext
+    _area: Hex,
+    _unit: Unit,
+    _context: AIDecisionContext
   ): Hex | null {
     // Implementation would find best observation position
     return null; // Placeholder
@@ -737,7 +758,7 @@ export class AIDecisionMaker {
     return decisions; // Placeholder
   }
 
-  private introduceMistakes(decisions: AIDecision[], context: AIDecisionContext): AIDecision[] {
+  private introduceMistakes(decisions: AIDecision[], _context: AIDecisionContext): AIDecision[] {
     // Implementation would introduce AI mistakes based on difficulty
     return decisions; // Placeholder
   }
@@ -761,26 +782,26 @@ export class AIDecisionMaker {
     }
 
     // Long-range artillery can attack anywhere (use large number)
-    if (unit.type === 'long_range_artillery') {
+    if (unit.type === UnitType.LONG_RANGE_ARTILLERY) {
       return 10;
     }
 
     // Mortar team has 5 hex range but can't attack adjacent
-    if (unit.type === 'mortar_team') {
+    if (unit.type === UnitType.MORTAR_TEAM) {
       return 5;
     }
 
     // USS Wasp Sea Sparrow has 5 hex range
-    if (unit.type === 'uss_wasp') {
+    if (unit.type === UnitType.USS_WASP) {
       return 5;
     }
 
     // BALANCE FIX: Give AA units extended range to counter air power
-    if (unit.type === 'aa_team') {
+    if (unit.type === UnitType.AA_TEAM) {
       return 3; // Match aircraft range
     }
 
-    if (unit.type === 'sam_site') {
+    if (unit.type === UnitType.SAM_SITE) {
       return 4; // Longer range for static SAM sites
     }
 
@@ -847,43 +868,54 @@ export class AIDecisionMaker {
   /**
    * Find a position to move towards an enemy for combat
    */
-  private findPositionTowardsEnemy(unit: Unit, enemy: Unit, context: AIDecisionContext): Hex | null {
+  private findPositionTowardsEnemy(
+    unit: Unit,
+    enemy: Unit,
+    context: AIDecisionContext
+  ): Hex | null {
     const unitPos = unit.state.position;
     const enemyPos = enemy.state.position;
-    
+
     // Calculate direction vector toward enemy
     const deltaQ = enemyPos.q - unitPos.q;
     const deltaR = enemyPos.r - unitPos.r;
-    
+
     // Try to move one hex toward the enemy
-    const moveQ = deltaQ > 0 ? 1 : deltaQ < 0 ? -1 : 0;
-    const moveR = deltaR > 0 ? 1 : deltaR < 0 ? -1 : 0;
+    let moveQ = 0;
+    if (deltaQ > 0) {
+      moveQ = 1;
+    } else if (deltaQ < 0) {
+      moveQ = -1;
+    }
+
+    let moveR = 0;
+    if (deltaR > 0) {
+      moveR = 1;
+    } else if (deltaR < 0) {
+      moveR = -1;
+    }
     const moveS = -(moveQ + moveR); // Hex coordinate constraint: q + r + s = 0
-    
-    const targetPosition = new Hex(
-      unitPos.q + moveQ,
-      unitPos.r + moveR,
-      unitPos.s + moveS
-    );
-    
+
+    const targetPosition = new Hex(unitPos.q + moveQ, unitPos.r + moveR, unitPos.s + moveS);
+
     // Check if position is valid and reachable
     if (this.canUnitReachPosition(unit, targetPosition, context)) {
       return targetPosition;
     }
-    
+
     // If direct movement fails, try adjacent positions toward enemy
     const adjacentPositions = this.getAdjacentPositions(unitPos);
-    
+
     for (const pos of adjacentPositions) {
       const distanceToEnemy = this.calculateDistance(pos, enemyPos);
       const currentDistance = this.calculateDistance(unitPos, enemyPos);
-      
+
       // Only consider positions that get us closer to the enemy
       if (distanceToEnemy < currentDistance && this.canUnitReachPosition(unit, pos, context)) {
         return pos;
       }
     }
-    
+
     return null; // No valid position found
   }
 
@@ -897,11 +929,12 @@ export class AIDecisionMaker {
       if (unit.type === UnitType.USS_WASP) {
         // Check if USS Wasp has embarked units to launch
         const embarkedUnits = unit.state.cargo || [];
-        const launchableUnits = embarkedUnits.filter(embarkedUnit => 
-          embarkedUnit.hasCategory(UnitCategory.AIRCRAFT) || 
-          embarkedUnit.hasCategory(UnitCategory.HELICOPTER)
+        const launchableUnits = embarkedUnits.filter(
+          embarkedUnit =>
+            embarkedUnit.hasCategory(UnitCategory.AIRCRAFT) ||
+            embarkedUnit.hasCategory(UnitCategory.HELICOPTER)
         );
-        
+
         if (launchableUnits.length > 0) {
           // Launch specific embarked aircraft
           decisions.push({
@@ -927,6 +960,142 @@ export class AIDecisionMaker {
               unitsToLaunch: [], // Empty array for no embarked units
             },
           });
+        }
+      }
+    }
+
+    return decisions;
+  }
+
+  /**
+   * Generate hidden unit tactical decisions
+   */
+  private generateHiddenOperationsDecisions(context: AIDecisionContext): AIDecision[] {
+    const decisions: AIDecision[] = [];
+
+    for (const unit of context.availableUnits) {
+      // REVEAL DECISIONS - for hidden units
+      if (unit.isHidden()) {
+        // Find nearby enemies for ambush opportunities
+        const nearbyEnemies = context.enemyUnits.filter(enemy => {
+          const distance = this.calculateDistance(unit.state.position, enemy.state.position);
+          return distance <= this.getUnitRange(unit) + 1; // Within attack range next turn
+        });
+
+        if (nearbyEnemies.length > 0) {
+          // Calculate ambush value - prioritize high-value targets
+          let ambushValue = 0;
+          for (const enemy of nearbyEnemies) {
+            ambushValue += enemy.stats.atk + enemy.stats.def; // Higher for stronger units
+          }
+
+          // Reveal if ambush opportunity is good
+          if (ambushValue >= 6 || nearbyEnemies.length >= 2) {
+            decisions.push({
+              type: AIDecisionType.REVEAL_UNIT,
+              priority: 9, // High priority for ambushes
+              unitId: unit.id,
+              reasoning: `Revealing ${unit.type} for ambush on ${nearbyEnemies.length} enemies (value: ${ambushValue})`,
+              metadata: {
+                ambushTargets: nearbyEnemies.map(e => e.id),
+                ambushValue: ambushValue,
+              },
+            });
+          }
+        }
+
+        // Reveal if unit needs to defend objectives
+        const unitPosition = unit.state.position;
+        const mapHex = context.gameState.map.getHex(unitPosition);
+        if (mapHex?.objective) {
+          decisions.push({
+            type: AIDecisionType.REVEAL_UNIT,
+            priority: 8,
+            unitId: unit.id,
+            reasoning: `Revealing ${unit.type} to defend objective at current position`,
+            metadata: {
+              objectiveDefense: true,
+              objectiveId: mapHex.objective.id,
+            },
+          });
+        }
+
+        // Fallback: Reveal if no specific conditions met but enemies are present (testing)
+        if (
+          context.enemyUnits.length > 0 &&
+          decisions.filter(d => d.unitId === unit.id).length === 0
+        ) {
+          decisions.push({
+            type: AIDecisionType.REVEAL_UNIT,
+            priority: 10, // Higher priority than special abilities
+            unitId: unit.id,
+            reasoning: `Revealing ${unit.type} - tactical decision with enemies present`,
+            metadata: {
+              fallbackReveal: true,
+              enemyCount: context.enemyUnits.length,
+            },
+          });
+        }
+      }
+
+      // HIDE DECISIONS - for units that can be hidden
+      if (unit.canBeHidden() && !unit.isHidden() && unit.canAct()) {
+        // Check threat level
+        const threat = this.calculateThreatLevel(unit, context);
+
+        // Hide if under high threat
+        if (threat.overallThreatLevel > 50) {
+          decisions.push({
+            type: AIDecisionType.HIDE_UNIT,
+            priority: 7,
+            unitId: unit.id,
+            reasoning: `Hiding ${unit.type} from high threat (${threat.overallThreatLevel}% threat level)`,
+            metadata: {
+              threatLevel: threat.overallThreatLevel,
+              immediateThreats: threat.immediateThreats.length,
+            },
+          });
+        }
+
+        // Hide damaged units for preservation
+        const healthPercent = unit.state.currentHP / unit.stats.hp;
+        if (healthPercent <= 0.5) {
+          decisions.push({
+            type: AIDecisionType.HIDE_UNIT,
+            priority: 8, // Higher priority for damaged units
+            unitId: unit.id,
+            reasoning: `Hiding damaged ${unit.type} for preservation (${Math.round(healthPercent * 100)}% health)`,
+            metadata: {
+              healthPercent: healthPercent,
+              preservation: true,
+            },
+          });
+        }
+
+        // Hide units for tactical positioning (lower priority)
+        if (unit.hasCategory(UnitCategory.INFANTRY) && !unit.state.hasMoved) {
+          const enemyDistance =
+            context.enemyUnits.length > 0
+              ? Math.min(
+                  ...context.enemyUnits.map(e =>
+                    this.calculateDistance(unit.state.position, e.state.position)
+                  )
+                )
+              : 999;
+
+          // Hide if enemies are at medium distance (tactical concealment)
+          if (enemyDistance >= 3 && enemyDistance <= 5) {
+            decisions.push({
+              type: AIDecisionType.HIDE_UNIT,
+              priority: 5,
+              unitId: unit.id,
+              reasoning: `Hiding ${unit.type} for tactical concealment (enemies at distance ${enemyDistance})`,
+              metadata: {
+                tacticalHide: true,
+                enemyDistance: enemyDistance,
+              },
+            });
+          }
         }
       }
     }

@@ -125,6 +125,11 @@ function testHiddenUnitAI() {
         // Test AI hidden unit tactics
         console.log('   Testing hidden unit AI decisions...');
         
+        // Debug: Check unit states
+        console.log('   Available units by player:');
+        console.log('     Assault:', assaultPlayer.getLivingUnits().map(u => `${u.type}(hidden:${u.isHidden()})`));
+        console.log('     Defender:', defenderPlayer.getLivingUnits().map(u => `${u.type}(hidden:${u.isHidden()})`));
+        
         gameState.phase = 'action';
         const assaultActions = gameEngine.updateAI();
         
