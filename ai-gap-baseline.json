@@ -1,15 +1,15 @@
 {
   "baseline": {
-    "waspOps": false,
-    "hiddenUnits": false,
+    "waspOps": true,
+    "hiddenUnits": true,
     "specialAbilities": true,
-    "objectives": false,
-    "transport": false,
+    "objectives": true,
+    "transport": true,
     "learning": true
   },
-  "expectedImplemented": 2,
+  "expectedImplemented": 6,
   "expectedTotal": 6,
-  "expectedPercentage": 33,
-  "lastUpdated": "2025-01-14",
-  "notes": "Major breakthrough: Fixed AI special abilities decision-to-action pipeline and implemented combat-focused movement. Units now actively engage in combat with real damage and tactical mechanics. Core AI decision generation working perfectly."
+  "expectedPercentage": 100,
+  "lastUpdated": "2025-07-14",
+  "notes": "All AI subsystems complete and functional. USS Wasp operations, hidden unit tactics, special abilities, objective-based planning, transport logistics, and learning systems all working. Issue #7 objective control scoring system successfully implemented and integrated with AI decision-making. AI vs AI battles show sophisticated tactical behavior with flanking, combined arms, and dynamic state transitions."
 }
