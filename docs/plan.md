@@ -1,8 +1,8 @@
-# Engineering Plan for "Operation: Beachhead Inferno"
+# Engineering Plan for USS Wasp (LHD-1) Wargame
 
-An ambitious but achievable goal! Here's an engineering plan for "Operation: Beachhead Inferno," broken down into phases with milestones, deliverables, and estimated timelines. This plan assumes a single dedicated developer (or small team with clearly defined roles) and a focus on incremental delivery.
+An ambitious but achievable goal! Here's an engineering plan for the USS Wasp (LHD-1) amphibious assault wargame, broken down into phases with milestones, deliverables, and estimated timelines. This plan assumes a single dedicated developer (or small team with clearly defined roles) and a focus on incremental delivery.
 
-**Overall Goal:** Develop a playable and simulatable TypeScript-based tabletop wargame for "Operation: Beachhead Inferno" within 5-6 months.
+**Overall Goal:** Develop a playable and simulatable TypeScript-based tabletop wargame for the USS Wasp (LHD-1) amphibious assault simulation within 5-6 months.
 
 ## Technology Stack
 

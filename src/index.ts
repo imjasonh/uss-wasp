@@ -7,7 +7,7 @@ import { GameState, Player, GameMap, Unit } from './core/game';
 import { UnitType, PlayerSide } from './core/game/types';
 import { UNIT_DEFINITIONS } from './core/units/UnitDefinitions';
 
-console.log('USS Wasp: Operation Beachhead Inferno');
+console.log('USS Wasp (LHD-1) Wargame');
 console.log('====================================');
 
 // Test basic game simulation

@@ -23,7 +23,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/ui/index.html',
-      title: 'USS Wasp: Operation Beachhead Inferno',
+      title: 'USS Wasp (LHD-1) - Amphibious Assault Wargame',
     }),
   ],
   devServer: {

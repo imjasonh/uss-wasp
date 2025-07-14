@@ -1,7 +1,7 @@
 {
   "name": "uss-wasp-game",
   "version": "0.1.0",
-  "description": "Operation: Beachhead Inferno - A USS Wasp LHD-1 Tabletop Wargame",
+  "description": "USS Wasp (LHD-1) - Amphibious Assault Wargame Simulation",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -21,7 +21,10 @@
     "prepare": "husky"
   },
   "keywords": [
+    "uss-wasp",
+    "lhd-1",
     "wargame",
+    "amphibious-assault",
     "simulation",
     "typescript",
     "hex-grid"

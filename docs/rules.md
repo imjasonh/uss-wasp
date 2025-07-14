@@ -1,5 +1,5 @@
-# Operation: Beachhead Inferno
-## A USS Wasp LHD-1 Tabletop Wargame (Enhanced Digital Implementation)
+# USS Wasp (LHD-1) Wargame
+## Amphibious Assault Tactical Simulation (Enhanced Digital Implementation)
 
 **Players:** 2 (1 Assault Force Player, 1 Defender Player) or 1 Player vs AI  
 **Game Length:** 10-15 Turns (configurable, default 15)  
@@ -9,7 +9,7 @@
 
 ## 🎯 Overview
 
-This enhanced digital implementation of Operation: Beachhead Inferno features comprehensive tactical simulation, advanced AI opponents, and detailed operational systems. While maintaining the core tabletop game mechanics, the implementation adds sophisticated combat calculations, USS Wasp operations management, and multi-layered artificial intelligence.
+This enhanced digital implementation of the USS Wasp (LHD-1) wargame features comprehensive tactical simulation, advanced AI opponents, and detailed operational systems. While maintaining the core tabletop game mechanics, the implementation adds sophisticated combat calculations, USS Wasp operations management, and multi-layered artificial intelligence.
 
 ## 1. Game Components
 

@@ -1,6 +1,6 @@
 # USS Wasp Test Suite Organization
 
-This directory contains all test and debug files for the USS Wasp: Operation Beachhead Inferno project, organized by purpose and functionality.
+This directory contains all test and debug files for the USS Wasp (LHD-1) project, organized by purpose and functionality.
 
 ## Directory Structure
 
