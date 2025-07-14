@@ -376,8 +376,47 @@ export class GameEngine {
         return this.executeSeaSparrow(unit, data);
       case 'Breaching Charge':
         return this.executeBreachingCharge(unit, data);
+      
+      // Vehicle abilities
+      case 'Fast Reconnaissance':
+        return this.executeFastReconnaissance(unit, data);
+      case 'Fast Ambush':
+        return this.executeFastAmbush(unit, data);
+      case 'Mobility':
+        return this.executeMobility(unit, data);
+      case 'Improvised':
+        return this.executeImprovised(unit, data);
+      
+      // Infantry abilities
+      case 'Urban Specialists':
+        return this.executeUrbanSpecialists(unit, data);
+      case 'Defensive Position':
+        return this.executeDefensivePosition(unit, data);
+      case 'Entrench':
+        return this.executeEntrench(unit, data);
+      case 'Amphibious Training':
+        return this.executeAmphibiousTraining(unit, data);
+      
+      // Combat specialist abilities
+      case 'Anti-Vehicle Specialist':
+        return this.executeAntiVehicleSpecialist(unit, data);
+      case 'Anti-Aircraft':
+        return this.executeAntiAircraft(unit, data);
+      case 'Anti-Air Focus':
+        return this.executeAntiAirFocus(unit, data);
+      case 'Anti-Tank':
+        return this.executeAntiTank(unit, data);
+      
+      // Support abilities
+      case 'Indirect Fire':
+        return this.executeIndirectFire(unit, data);
+      case 'Local Knowledge':
+        return this.executeLocalKnowledge(unit, data);
+      case 'Heavy Bombardment':
+        return this.executeHeavyBombardment(unit, data);
+      
       default:
-        return { success: false, message: 'Unknown special ability' };
+        return { success: false, message: `Unknown special ability: ${abilityName}` };
     }
   }
 
@@ -976,5 +1015,225 @@ export class GameEngine {
     }
     
     return results;
+  }
+
+  /**
+   * Execute Fast Reconnaissance ability (HUMVEE)
+   */
+  private executeFastReconnaissance(unit: Unit, data: any): ActionResult {
+    // Provide movement bonus or scouting information
+    return {
+      success: true,
+      message: `${unit.type} uses Fast Reconnaissance - enhanced mobility and scouting`,
+      data: { movementBonus: 2, scoutingRange: 3 }
+    };
+  }
+
+  /**
+   * Execute Fast Ambush ability (TECHNICAL)  
+   */
+  private executeFastAmbush(unit: Unit, data: any): ActionResult {
+    // Allow movement after attacking if unit was hidden
+    if (unit.isHidden() || !unit.state.hasActed) {
+      return {
+        success: true,
+        message: `${unit.type} uses Fast Ambush - can move after attacking`,
+        data: { canMoveAfterAttack: true }
+      };
+    }
+    return {
+      success: false,
+      message: 'Fast Ambush requires starting position to be hidden'
+    };
+  }
+
+  /**
+   * Execute Mobility ability (simplified HUMVEE)
+   */
+  private executeMobility(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Mobility - enhanced movement capability`,
+      data: { movementBonus: 1 }
+    };
+  }
+
+  /**
+   * Execute Improvised ability (simplified TECHNICAL)
+   */
+  private executeImprovised(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Improvised tactics - low cost mobility`,
+      data: { improvised: true }
+    };
+  }
+
+  /**
+   * Execute Urban Specialists ability (MARINE_SQUAD)
+   */
+  private executeUrbanSpecialists(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Urban Specialists - bonus in urban terrain`,
+      data: { urbanBonus: true, attackBonus: 1 }
+    };
+  }
+
+  /**
+   * Execute Defensive Position ability (INFANTRY_SQUAD)
+   */
+  private executeDefensivePosition(unit: Unit, data: any): ActionResult {
+    // Apply defensive bonus
+    unit.state.suppressionTokens = Math.max(0, unit.state.suppressionTokens - 1);
+    return {
+      success: true,
+      message: `${unit.type} takes Defensive Position - improved defense`,
+      data: { defenseBonus: 1, suppressionReduced: true }
+    };
+  }
+
+  /**
+   * Execute Entrench ability (simplified infantry)
+   */
+  private executeEntrench(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} entrenches - defensive bonus applied`,
+      data: { defenseBonus: 1, entrenched: true }
+    };
+  }
+
+  /**
+   * Execute Amphibious Training ability (simplified marines)
+   */
+  private executeAmphibiousTraining(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Amphibious Training - water movement bonus`,
+      data: { amphibiousBonus: true }
+    };
+  }
+
+  /**
+   * Execute Anti-Vehicle Specialist ability (ATGM)
+   */
+  private executeAntiVehicleSpecialist(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Anti-Vehicle Specialist - bonus vs vehicles`,
+      data: { antiVehicleBonus: 2 }
+    };
+  }
+
+  /**
+   * Execute Anti-Aircraft ability (AA teams)
+   */
+  private executeAntiAircraft(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Anti-Aircraft - bonus vs aircraft`,
+      data: { antiAircraftBonus: 2 }
+    };
+  }
+
+  /**
+   * Execute Anti-Air Focus ability (official AA teams)
+   */
+  private executeAntiAirFocus(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Anti-Air Focus - enhanced air defense`,
+      data: { antiAircraftBonus: 2, range: 3 }
+    };
+  }
+
+  /**
+   * Execute Anti-Tank ability (simplified ATGM)
+   */
+  private executeAntiTank(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Anti-Tank - bonus vs armored vehicles`,
+      data: { antiTankBonus: 2 }
+    };
+  }
+
+  /**
+   * Execute Indirect Fire ability (MORTAR_TEAM)
+   */
+  private executeIndirectFire(unit: Unit, data: any): ActionResult {
+    if (!data.targetHex) {
+      return { success: false, message: 'Target hex required for indirect fire' };
+    }
+
+    const targetHex = new Hex(data.targetHex.q, data.targetHex.r, data.targetHex.s);
+    const distance = new Hex(
+      unit.state.position.q,
+      unit.state.position.r,
+      unit.state.position.s
+    ).distanceTo(targetHex);
+
+    if (distance > 5) {
+      return { success: false, message: 'Target beyond maximum range (5 hexes)' };
+    }
+
+    // Hit units at target location
+    const targets = this.gameState.getUnitsAt(targetHex);
+    const results = [];
+    
+    for (const target of targets) {
+      const damage = Math.floor(Math.random() * 3); // 0-2 damage
+      if (damage > 0) {
+        target.takeDamage(damage);
+        results.push(`${target.type} hit for ${damage} damage`);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Indirect fire at (${targetHex.q},${targetHex.r}): ${results.join(', ') || 'No hits'}`,
+      data: { results, range: distance }
+    };
+  }
+
+  /**
+   * Execute Local Knowledge ability (MILITIA_SQUAD)
+   */
+  private executeLocalKnowledge(unit: Unit, data: any): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Local Knowledge - terrain movement bonus`,
+      data: { terrainBonus: true, movementBonus: 1 }
+    };
+  }
+
+  /**
+   * Execute Heavy Bombardment ability (LONG_RANGE_ARTILLERY)
+   */
+  private executeHeavyBombardment(unit: Unit, data: any): ActionResult {
+    if (!data.targetHexes || data.targetHexes.length === 0) {
+      return { success: false, message: 'Target hexes required for heavy bombardment' };
+    }
+
+    const results = [];
+    for (const hexData of data.targetHexes) {
+      const hex = new Hex(hexData.q, hexData.r, hexData.s);
+      const targets = this.gameState.getUnitsAt(hex);
+
+      for (const target of targets) {
+        const damage = Math.floor(Math.random() * 4); // 0-3 damage
+        if (damage > 0) {
+          target.takeDamage(damage);
+          results.push(`${target.type} hit for ${damage} damage`);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: `Heavy bombardment completed: ${results.join(', ') || 'No hits'}`,
+      data: { results, hexesTargeted: data.targetHexes.length }
+    };
   }
 }
