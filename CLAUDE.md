@@ -220,8 +220,137 @@ A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious
 - **Behavior Trees**: Alternative AI architecture exploration
 - **Emergent Tactics**: Complex strategy emergence from simple rules
 
+## Issues Workflow and Development Process
+
+### 🎯 Issue Management Strategy
+
+The USS Wasp project uses labeled GitHub issues for comprehensive development tracking and prioritization. This workflow ensures systematic progress tracking and clear communication.
+
+#### Issue Categories:
+
+**🔴 Critical Priority** - `priority/critical`
+- Blocking core functionality 
+- Must be fixed before other work
+- Examples: Combat execution failures, core AI pipeline breaks
+
+**🟠 High Priority** - `priority/high`  
+- Phase completion blockers
+- Core feature implementations
+- Examples: AI system gaps, essential UI components
+
+**🟡 Medium Priority** - `priority/medium`
+- Polish and enhancement features
+- User experience improvements
+- Examples: Audio/visual effects, advanced UI features
+
+#### System Labels:
+- `area/ai` - AI system and decision-making
+- `area/ui` - User interface and experience  
+- `area/combat` - Combat system and mechanics
+- `area/testing` - Testing framework and validation
+- `system/*` - Specific game systems (uss-wasp, stealth, transport, etc.)
+- `phase/*` - Development phase alignment (4, 5, 6, 7)
+- `type/*` - Issue classification (bug, enhancement, technical-debt)
+
+### 📝 Issue Development Workflow
+
+#### For AI Assistant (Claude):
+
+**1. Issue Investigation:**
+- Add detailed comments to issues as new information is discovered
+- Document technical findings, code locations, and implementation approaches
+- Update issue descriptions with diagnostic results and root cause analysis
+
+**2. Progress Documentation:**
+- Comment on issues with implementation progress and findings
+- Reference related issues and dependencies discovered during work
+- Document any blockers or additional requirements identified
+
+**3. Pull Request Management:**
+- Open PRs that completely close issues when possible
+- Reference issues in PR descriptions using "Closes #X" or "Fixes #X"
+- For partial fixes, document what's implemented and what remains
+- Use "Related to #X" for PRs that make progress without full resolution
+
+**4. Placeholder Issue Enhancement:**
+- Transform `[placeholder]` issues by adding comprehensive detail
+- Research implementation requirements and provide technical specifications
+- Remove `[placeholder]` prefix and update with descriptive titles
+- Add appropriate labels and priority classifications
+
+#### For Human Developer (Jason):
+
+**1. Issue Creation:**
+- Create `[placeholder]` issues with `placeholder` label for concepts
+- Provide basic scope and context for AI to enhance
+- Review and approve detailed issue specifications
+
+**2. Work Assignment:**
+- Assign issues based on priority and dependencies
+- Review AI comments and technical proposals
+- Approve implementation approaches before major work begins
+
+**3. Code Review:**
+- Review PRs for completeness and code quality
+- Ensure issues are properly closed or progress documented
+- Validate that implementations match issue requirements
+
+### 🔄 Current Issue Status
+
+**Phase 6 (Critical Path):**
+- Issues #4, #10 - Critical combat and AI pipeline fixes
+- Issues #2, #3, #5, #6, #8, #9 - Core AI system implementations
+
+**Phase 4 (Missing Features):**
+- Issues #11, #13 - Essential defender mechanics
+- Issue #14 - Map system enhancements
+
+**Phase 5 (Polish):**
+- Issues #16, #18 - Audio and visual effects
+
+**Phase 7 (Future):**
+- Issue #7 - UI enhancements
+
+### 📊 Issue Tracking Examples
+
+**Good PR Practice:**
+```
+Title: "Fix AI special abilities decision-to-action conversion"
+Description: "Fixes #4 - Implements proper action conversion pipeline for special abilities..."
+Result: Issue #4 automatically closed
+```
+
+**Progress Documentation:**
+```
+Comment on Issue #2: "Investigation complete - USS Wasp cargo capacity showing 0 due to missing initialization in WaspOperations.ts:45. Root cause identified, implementing fix."
+```
+
+**Placeholder Enhancement:**
+```
+Before: "[placeholder] Add game overview to README"
+After: "Documentation: Comprehensive Game Overview for README"
++ Detailed implementation requirements
++ Content structure and technical specifications
+```
+
+### 🎯 Success Metrics
+
+**Issue Resolution:**
+- Critical issues resolved before other work
+- Clear progress documentation in comments
+- PRs properly reference and close issues
+- Minimal work outside of tracked issues
+
+**Development Efficiency:**  
+- Issues provide clear implementation guidance
+- Dependencies and blockers identified early
+- Technical debt tracked and addressed systematically
+- Feature completeness validated through issue requirements
+
+This workflow ensures systematic progress toward USS Wasp project completion while maintaining high code quality and clear development tracking.
+
 ---
 
-*Last Updated: 2025-01-13*  
-*Phase 6 Status: Advanced AI Implementation - Near Combat Ready*  
-*Next Session Goal: Enable actual combat execution between adjacent units*
+*Last Updated: 2025-07-14*  
+*Phase 6 Status: Advanced AI Implementation - Issues Workflow Established*  
+*Current Focus: Critical combat system fixes (Issues #4, #10)*
