@@ -9,7 +9,7 @@ const { GameState } = require('./dist/core/game/GameState');
 const { GameEngine } = require('./dist/core/game/GameEngine');
 const { Player } = require('./dist/core/game/Player');
 const { GameMap } = require('./dist/core/game/Map');
-const { PlayerSide, UnitType } = require('./dist/core/game/types');
+const { PlayerSide, UnitType, ObjectiveType } = require('./dist/core/game/types');
 const { AIDifficulty } = require('./dist/core/ai/types');
 const { createTestUnits } = require('./dist/testing/UnitTestHelper');
 const { Hex } = require('./dist/core/hex');
@@ -267,11 +267,15 @@ function testObjectiveAI() {
         assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
         defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
 
-        // Add objectives to the map (this might need implementation)
+        // Add objectives to the map
         const objectives = [
             { id: 'obj1', position: new Hex(7, 2), type: 'Command Post', controlledBy: null },
             { id: 'obj2', position: new Hex(7, 3), type: 'Supply Depot', controlledBy: null }
         ];
+        
+        // Actually add objectives to the map
+        map.addObjective(objectives[0].position, ObjectiveType.COMMS_HUB, objectives[0].id);
+        map.addObjective(objectives[1].position, ObjectiveType.PORT, objectives[1].id);
         
         console.log(`   Objectives: ${objectives.length} targets`);
 
