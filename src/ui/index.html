@@ -230,6 +230,172 @@
             padding: 8px;
             margin-bottom: 10px;
         }
+
+        /* Fortification UI styling */
+        .fortification-palette {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            background: rgba(40, 40, 40, 0.95);
+            border: 2px solid #666;
+            border-radius: 8px;
+            padding: 16px;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+
+        .palette-title {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            color: #ffd700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .fortification-btn {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+            padding: 12px;
+            background: linear-gradient(135deg, #4a4a4a, #2a2a2a);
+            border: 2px solid #666;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .fortification-btn:hover:not(.disabled) {
+            background: linear-gradient(135deg, #5a5a5a, #3a3a3a);
+            border-color: #888;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .fortification-btn.selected {
+            background: linear-gradient(135deg, #0066cc, #004499);
+            border-color: #4da6ff;
+            box-shadow: 0 0 10px rgba(77, 166, 255, 0.4);
+        }
+
+        .fortification-btn.disabled {
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            border-color: #444;
+            color: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .fort-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .fort-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #ffd700;
+        }
+
+        .fort-count {
+            font-size: 12px;
+            color: #ccc;
+            font-style: italic;
+        }
+
+        .fort-stats {
+            font-size: 11px;
+            color: #aaa;
+            text-align: center;
+            margin-top: 4px;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            width: 100%;
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #cc3300, #990000) !important;
+            border-color: #ff6633 !important;
+            margin-top: 16px;
+        }
+
+        .clear-btn:hover {
+            background: linear-gradient(135deg, #dd4411, #aa1100) !important;
+            border-color: #ff7744 !important;
+        }
+
+        .placement-instructions {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .placement-instructions p {
+            margin: 0 0 8px 0;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .placement-instructions ul {
+            margin: 0;
+            padding-left: 16px;
+        }
+
+        .placement-instructions li {
+            margin-bottom: 4px;
+            color: #ccc;
+        }
+
+        /* Hide palette when not in deployment phase */
+        .fortification-palette.hidden {
+            display: none;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .fortification-palette {
+                position: fixed;
+                bottom: 20px;
+                top: auto;
+                right: 20px;
+                left: 20px;
+                width: auto;
+            }
+            
+            .btn-content {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .fort-icon {
+                margin-bottom: 0;
+                margin-right: 8px;
+            }
+            
+            .fort-stats {
+                margin-top: 0;
+                flex: 1;
+                text-align: right;
+            }
+        }
     </style>
 </head>
 <body>

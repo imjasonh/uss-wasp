@@ -165,6 +165,13 @@ export class GameMap {
   }
 
   /**
+   * Get all fortifications on the map
+   */
+  getAllFortifications(): Fortification[] {
+    return Array.from(this.fortifications.values());
+  }
+
+  /**
    * Check if hex is in offshore zone
    */
   isOffshoreZone(coordinate: HexCoordinate): boolean {

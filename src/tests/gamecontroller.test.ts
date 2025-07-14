@@ -57,6 +57,7 @@ jest.mock('../ui/renderer/PixiRenderer', () => {
       getApp: (): typeof mockPixiApp => mockPixiApp,
       renderHexGrid: jest.fn(),
       renderUnits: jest.fn(),
+      renderFortifications: jest.fn(),
       highlightHexes: jest.fn(),
       clearHighlights: jest.fn(),
       resize: jest.fn(),
