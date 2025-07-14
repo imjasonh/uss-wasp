@@ -851,11 +851,16 @@ export class AIDecisionMaker {
     for (const unit of context.availableUnits) {
       if (unit.specialAbilities.length > 0 && unit.canAct()) {
         // Use first available special ability
+        const ability = unit.specialAbilities[0];
+        const abilityName = ability.name;
         decisions.push({
           type: AIDecisionType.SPECIAL_ABILITY,
           priority: 7,
           unitId: unit.id,
-          reasoning: `Using special ability: ${unit.specialAbilities[0]}`,
+          reasoning: `Using special ability: ${abilityName}`,
+          metadata: {
+            abilityName: abilityName,
+          },
         });
       }
     }
