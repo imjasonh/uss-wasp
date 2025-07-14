@@ -1,15 +1,21 @@
 /**
  * Event Card System Test Framework
- * 
+ *
  * This test framework validates the Event Card System implementation
  * including card creation, deck management, and effect application.
  */
 
-import { EventCardManager, EventCard, EventCardRarity, EventCardEffectType, DEFAULT_EVENT_DECK_CONFIG } from '../core/game/EventCard';
+import {
+  EventCardManager,
+  EventCard,
+  EventCardRarity,
+  EventCardEffectType,
+  DEFAULT_EVENT_DECK_CONFIG,
+} from '../core/game/EventCard';
 import { GameState } from '../core/game/GameState';
 import { Player } from '../core/game/Player';
 import { GameMap } from '../core/game/Map';
-import { PlayerSide, TurnPhase } from '../core/game/types';
+import { PlayerSide, TurnPhase, UnitType } from '../core/game/types';
 import { createTestUnit } from './UnitTestHelper';
 import { Hex } from '../core/hex';
 
@@ -27,7 +33,7 @@ interface EventCardTestResult {
  * Event Card System Test Suite
  */
 export class EventCardTest {
-  private testResults: EventCardTestResult[] = [];
+  private readonly testResults: EventCardTestResult[] = [];
 
   /**
    * Run all event card tests
@@ -64,15 +70,21 @@ export class EventCardTest {
       const deckStats = manager.getDeckStats();
 
       if (deckStats.totalCards > 0) {
-        this.recordSuccess('Event Card Manager Initialization', 
-          `Successfully initialized with ${deckStats.totalCards} cards`);
+        this.recordSuccess(
+          'Event Card Manager Initialization',
+          `Successfully initialized with ${deckStats.totalCards} cards`
+        );
       } else {
-        this.recordFailure('Event Card Manager Initialization', 
-          'No cards found in deck after initialization');
+        this.recordFailure(
+          'Event Card Manager Initialization',
+          'No cards found in deck after initialization'
+        );
       }
     } catch (error) {
-      this.recordFailure('Event Card Manager Initialization', 
-        `Failed to initialize: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Event Card Manager Initialization',
+        `Failed to initialize: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -92,11 +104,15 @@ export class EventCardTest {
       const initialHand = manager.getPlayerHand(playerId);
 
       if (initialHand.length === DEFAULT_EVENT_DECK_CONFIG.startingHandSize) {
-        this.recordSuccess('Player Hand Management', 
-          `Player starts with ${initialHand.length} cards as expected`);
+        this.recordSuccess(
+          'Player Hand Management',
+          `Player starts with ${initialHand.length} cards as expected`
+        );
       } else {
-        this.recordFailure('Player Hand Management', 
-          `Expected ${DEFAULT_EVENT_DECK_CONFIG.startingHandSize} cards, got ${initialHand.length}`);
+        this.recordFailure(
+          'Player Hand Management',
+          `Expected ${DEFAULT_EVENT_DECK_CONFIG.startingHandSize} cards, got ${initialHand.length}`
+        );
       }
 
       // Test hand size limit
@@ -107,15 +123,21 @@ export class EventCardTest {
 
       const fullHand = manager.getPlayerHand(playerId);
       if (fullHand.length <= maxHand) {
-        this.recordSuccess('Hand Size Limit', 
-          `Hand size properly limited to ${fullHand.length} cards`);
+        this.recordSuccess(
+          'Hand Size Limit',
+          `Hand size properly limited to ${fullHand.length} cards`
+        );
       } else {
-        this.recordFailure('Hand Size Limit', 
-          `Hand exceeded limit: ${fullHand.length} > ${maxHand}`);
+        this.recordFailure(
+          'Hand Size Limit',
+          `Hand exceeded limit: ${fullHand.length} > ${maxHand}`
+        );
       }
     } catch (error) {
-      this.recordFailure('Player Hand Management', 
-        `Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Player Hand Management',
+        `Test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -138,15 +160,18 @@ export class EventCardTest {
       const newDeckStats = manager.getDeckStats();
 
       if (drawnCard && newDeckStats.cardsRemaining === initialDeckStats.cardsRemaining - 1) {
-        this.recordSuccess('Card Drawing', 
-          `Successfully drew "${drawnCard.name}" and deck size reduced by 1`);
+        this.recordSuccess(
+          'Card Drawing',
+          `Successfully drew "${drawnCard.name}" and deck size reduced by 1`
+        );
       } else {
-        this.recordFailure('Card Drawing', 
-          'Card drawing did not work properly');
+        this.recordFailure('Card Drawing', 'Card drawing did not work properly');
       }
     } catch (error) {
-      this.recordFailure('Card Drawing', 
-        `Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Card Drawing',
+        `Test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -170,46 +195,56 @@ export class EventCardTest {
         flavorText: 'Strike aircraft sweep in from the horizon...',
         rarity: EventCardRarity.UNCOMMON,
         cost: 3,
-        effects: [{
-          type: EventCardEffectType.IMMEDIATE,
-          target: 'specific_unit',
-          magnitude: 3,
-          description: 'Target unit gains +3 attack for this combat',
-          metadata: { selectTarget: true }
-        }],
-        playConditions: [{
-          type: 'phase',
-          value: TurnPhase.ACTION
-        }],
-        canPlayMultiple: true
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'specific_unit' as const,
+            magnitude: 3,
+            description: 'Target unit gains +3 attack for this combat',
+            metadata: { selectTarget: true },
+          },
+        ],
+        playConditions: [
+          {
+            type: 'phase' as const,
+            value: TurnPhase.ACTION as string | number,
+          },
+        ],
+        canPlayMultiple: true,
       };
-      
+
       // Add the card to the hand for testing
       manager.addCardToHand(playerId, closeAirSupportCard);
 
       // Check if card is in hand
       const handCards = manager.getPlayerHand(playerId);
-      console.log('Cards in hand:', handCards.map(c => c.id));
-      
+      console.log(
+        'Cards in hand:',
+        handCards.map(c => c.id)
+      );
+
       // Test phase condition
       gameState.phase = TurnPhase.COMMAND;
       const canPlayInCommand = manager.canPlayCard('close_air_support', playerId, gameState);
       console.log('Can play in COMMAND:', canPlayInCommand);
-      
+
       gameState.phase = TurnPhase.ACTION;
       const canPlayInAction = manager.canPlayCard('close_air_support', playerId, gameState);
       console.log('Can play in ACTION:', canPlayInAction);
 
       if (!canPlayInCommand && canPlayInAction) {
-        this.recordSuccess('Phase Conditions', 
-          'Phase-restricted cards work correctly');
+        this.recordSuccess('Phase Conditions', 'Phase-restricted cards work correctly');
       } else {
-        this.recordFailure('Phase Conditions', 
-          `Phase restrictions not working: command=${canPlayInCommand}, action=${canPlayInAction}`);
+        this.recordFailure(
+          'Phase Conditions',
+          `Phase restrictions not working: command=${canPlayInCommand}, action=${canPlayInAction}`
+        );
       }
     } catch (error) {
-      this.recordFailure('Card Play Conditions', 
-        `Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Card Play Conditions',
+        `Test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -226,44 +261,44 @@ export class EventCardTest {
 
       // Add supply_drop card to player's hand for testing
       const manager = gameState.eventCardManager;
-      const supplyDropCard = {
+      const supplyDropCard: EventCard = {
         id: 'supply_drop',
         name: 'Emergency Supply Drop',
         description: 'Critical supplies are air-dropped to the front lines',
         flavorText: 'Parachutes bloom in the sky...',
         rarity: EventCardRarity.UNCOMMON,
         cost: 1,
-        effects: [{
-          type: EventCardEffectType.IMMEDIATE,
-          target: 'self',
-          magnitude: 2,
-          description: 'Gain 2 additional Command Points this turn'
-        }],
-        canPlayMultiple: true
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'self' as const,
+            magnitude: 2,
+            description: 'Gain 2 additional Command Points this turn',
+          },
+        ],
+        canPlayMultiple: true,
       };
-      
+
       // Add the card to the hand for testing
       manager.addCardToHand(playerId, supplyDropCard);
-      
+
       // Test playing a card
       const result = gameState.playEventCard('supply_drop', playerId);
 
       if (result.success) {
-        this.recordSuccess('Card Effects', 
-          `Successfully played card: ${result.message}`);
+        this.recordSuccess('Card Effects', `Successfully played card: ${result.message}`);
       } else {
-        this.recordFailure('Card Effects', 
-          `Failed to play card: ${result.message}`);
+        this.recordFailure('Card Effects', `Failed to play card: ${result.message}`);
       }
 
       // Test active effects
       const activeEffects = gameState.getActiveEventEffects();
-      this.recordSuccess('Active Effects', 
-        `${activeEffects.length} active effects tracked`);
-
+      this.recordSuccess('Active Effects', `${activeEffects.length} active effects tracked`);
     } catch (error) {
-      this.recordFailure('Event Card Effects', 
-        `Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Event Card Effects',
+        `Test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -280,23 +315,24 @@ export class EventCardTest {
 
       // Test getting player cards
       const playerCards = gameState.getPlayerEventCards(playerId);
-      
+
       if (playerCards.length > 0) {
-        this.recordSuccess('Game State Integration', 
-          `Player has ${playerCards.length} event cards`);
+        this.recordSuccess(
+          'Game State Integration',
+          `Player has ${playerCards.length} event cards`
+        );
       } else {
-        this.recordFailure('Game State Integration', 
-          'Player has no event cards');
+        this.recordFailure('Game State Integration', 'Player has no event cards');
       }
 
       // Test deck statistics
       const deckStats = gameState.getEventCardDeckStats();
-      this.recordSuccess('Deck Statistics', 
-        `Deck has ${deckStats.cardsRemaining} cards remaining`);
-
+      this.recordSuccess('Deck Statistics', `Deck has ${deckStats.cardsRemaining} cards remaining`);
     } catch (error) {
-      this.recordFailure('Game State Integration', 
-        `Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Game State Integration',
+        `Test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -312,24 +348,26 @@ export class EventCardTest {
       const playerId = 'test-player';
 
       const initialCards = gameState.getPlayerEventCards(playerId).length;
-      
+
       // Advance to EVENT phase and process
       gameState.phase = TurnPhase.EVENT;
       gameState.updateEventCardSystem();
-      
+
       const newCards = gameState.getPlayerEventCards(playerId).length;
 
       if (newCards >= initialCards) {
-        this.recordSuccess('Turn Processing', 
-          `Cards properly managed during turn processing`);
+        this.recordSuccess('Turn Processing', `Cards properly managed during turn processing`);
       } else {
-        this.recordFailure('Turn Processing', 
-          `Card count decreased unexpectedly: ${initialCards} -> ${newCards}`);
+        this.recordFailure(
+          'Turn Processing',
+          `Card count decreased unexpectedly: ${initialCards} -> ${newCards}`
+        );
       }
-
     } catch (error) {
-      this.recordFailure('Turn Processing', 
-        `Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Turn Processing',
+        `Test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -349,7 +387,7 @@ export class EventCardTest {
         { id: 'air_support_delay', expectedEffect: 'duration' },
         { id: 'intelligence_coup', expectedEffect: 'immediate' },
         { id: 'supply_drop', expectedEffect: 'immediate' },
-        { id: 'tactical_surprise', expectedEffect: 'immediate' }
+        { id: 'tactical_surprise', expectedEffect: 'immediate' },
       ];
 
       let successCount = 0;
@@ -357,13 +395,13 @@ export class EventCardTest {
 
       for (const testCard of testCards) {
         totalCards++;
-        
+
         // Add the card to player's hand for testing
         const manager = gameState.eventCardManager;
-        
+
         // Check if card can be played
         const canPlay = manager.canPlayCard(testCard.id, playerId, gameState);
-        
+
         if (canPlay) {
           const result = gameState.playEventCard(testCard.id, playerId);
           if (result.success) {
@@ -372,12 +410,15 @@ export class EventCardTest {
         }
       }
 
-      this.recordSuccess('Specific Event Cards', 
-        `Successfully tested ${successCount}/${totalCards} event cards`);
-
+      this.recordSuccess(
+        'Specific Event Cards',
+        `Successfully tested ${successCount}/${totalCards} event cards`
+      );
     } catch (error) {
-      this.recordFailure('Specific Event Cards', 
-        `Test failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.recordFailure(
+        'Specific Event Cards',
+        `Test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -395,7 +436,7 @@ export class EventCardTest {
     // Add some test units
     const testUnit = createTestUnit(
       'test-unit-1',
-      'marine_squad',
+      UnitType.MARINE_SQUAD,
       PlayerSide.Assault,
       new Hex(2, 2)
     );
@@ -416,12 +457,16 @@ export class EventCardTest {
   /**
    * Record test success
    */
-  private recordSuccess(testName: string, message: string, details?: Record<string, unknown>): void {
+  private recordSuccess(
+    testName: string,
+    message: string,
+    details?: Record<string, unknown>
+  ): void {
     const result: EventCardTestResult = {
       testName,
       success: true,
       message,
-      details
+      ...(details && { details }),
     };
     this.testResults.push(result);
     console.log(`✅ ${testName}: ${message}`);
@@ -430,12 +475,16 @@ export class EventCardTest {
   /**
    * Record test failure
    */
-  private recordFailure(testName: string, message: string, details?: Record<string, unknown>): void {
+  private recordFailure(
+    testName: string,
+    message: string,
+    details?: Record<string, unknown>
+  ): void {
     const result: EventCardTestResult = {
       testName,
       success: false,
       message,
-      details
+      ...(details && { details }),
     };
     this.testResults.push(result);
     console.log(`❌ ${testName}: ${message}`);

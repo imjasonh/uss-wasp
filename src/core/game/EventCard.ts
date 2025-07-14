@@ -1,15 +1,12 @@
 /**
  * Event Card System - Dynamic gameplay elements for USS Wasp operations
- * 
- * This module implements the Event Card System that adds strategic depth 
+ *
+ * This module implements the Event Card System that adds strategic depth
  * and dynamic gameplay elements to USS Wasp operations.
  */
 
-import { PlayerSide, UnitType, TurnPhase } from './types';
+import { TurnPhase } from './types';
 import { GameState } from './GameState';
-import { Player } from './Player';
-import { Unit } from './Unit';
-import { Hex } from '../hex';
 
 /**
  * Types of event card effects
@@ -18,7 +15,7 @@ export enum EventCardEffectType {
   IMMEDIATE = 'immediate',
   DURATION = 'duration',
   TRIGGERED = 'triggered',
-  PASSIVE = 'passive'
+  PASSIVE = 'passive',
 }
 
 /**
@@ -28,7 +25,7 @@ export enum EventCardRarity {
   COMMON = 'common',
   UNCOMMON = 'uncommon',
   RARE = 'rare',
-  LEGENDARY = 'legendary'
+  LEGENDARY = 'legendary',
 }
 
 /**
@@ -78,7 +75,7 @@ export interface ActiveEventEffect {
   readonly playerId: string;
   readonly startTurn: number;
   readonly endTurn?: number;
-  readonly isActive: boolean;
+  isActive: boolean;
 }
 
 /**
@@ -86,9 +83,9 @@ export interface ActiveEventEffect {
  */
 export interface EventCardHand {
   readonly playerId: string;
-  readonly cards: EventCard[];
+  cards: EventCard[];
   readonly maxHandSize: number;
-  readonly cardsPlayedThisTurn: string[];
+  cardsPlayedThisTurn: string[];
 }
 
 /**
@@ -123,7 +120,7 @@ export class EventCardManager {
   private readonly activeEffects: ActiveEventEffect[] = [];
   private readonly config: EventDeckConfig;
 
-  constructor(config: EventDeckConfig) {
+  public constructor(config: EventDeckConfig) {
     this.config = config;
     this.initializeDeck();
   }
@@ -143,294 +140,415 @@ export class EventCardManager {
   private createEventCards(): EventCard[] {
     const cards: EventCard[] = [];
 
-    // Air Support Cards
-    cards.push({
-      id: 'air_support_delay',
-      name: 'Air Support Delay',
-      description: 'Adverse weather conditions delay air operations',
-      flavorText: 'Dark clouds gather over the task force...',
-      rarity: EventCardRarity.COMMON,
-      cost: 0,
-      effects: [{
-        type: EventCardEffectType.DURATION,
-        duration: 2,
-        target: 'all_units',
-        magnitude: -2,
-        description: 'All aircraft have -2 movement for 2 turns',
-        metadata: { unitTypes: ['HARRIER', 'SUPER_COBRA', 'OSPREY'] }
-      }],
-      canPlayMultiple: false
-    });
-
-    cards.push({
-      id: 'close_air_support',
-      name: 'Close Air Support',
-      description: 'Coordinated air support provides tactical advantage',
-      flavorText: 'Strike aircraft sweep in from the horizon...',
-      rarity: EventCardRarity.UNCOMMON,
-      cost: 3,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'specific_unit',
-        magnitude: 3,
-        description: 'Target unit gains +3 attack for this combat',
-        metadata: { selectTarget: true }
-      }],
-      playConditions: [{
-        type: 'phase',
-        value: TurnPhase.ACTION
-      }],
-      canPlayMultiple: true
-    });
-
-    // Weather Cards
-    cards.push({
-      id: 'storm_surge',
-      name: 'Storm Surge',
-      description: 'Rough seas affect amphibious operations',
-      flavorText: 'Waves crash over the landing craft...',
-      rarity: EventCardRarity.COMMON,
-      cost: 0,
-      effects: [{
-        type: EventCardEffectType.DURATION,
-        duration: 3,
-        target: 'all_units',
-        magnitude: 1,
-        description: 'All amphibious units have +1 movement cost for 3 turns',
-        metadata: { unitTypes: ['LCAC', 'AAV_7'] }
-      }],
-      canPlayMultiple: false
-    });
-
-    cards.push({
-      id: 'clear_skies',
-      name: 'Clear Skies',
-      description: 'Perfect weather enhances all operations',
-      flavorText: 'The sun breaks through the clouds...',
-      rarity: EventCardRarity.RARE,
-      cost: 2,
-      effects: [{
-        type: EventCardEffectType.DURATION,
-        duration: 3,
-        target: 'all_units',
-        magnitude: 1,
-        description: 'All units gain +1 movement for 3 turns'
-      }],
-      canPlayMultiple: false
-    });
-
-    // Intelligence Cards
-    cards.push({
-      id: 'intelligence_coup',
-      name: 'Intelligence Coup',
-      description: 'Valuable intelligence reveals enemy positions',
-      flavorText: 'Encrypted communications are intercepted...',
-      rarity: EventCardRarity.UNCOMMON,
-      cost: 2,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'enemy',
-        magnitude: 0,
-        description: 'Reveal all hidden enemy units for 1 turn',
-        metadata: { revealHidden: true }
-      }],
-      canPlayMultiple: true
-    });
-
-    // Supply Cards
-    cards.push({
-      id: 'supply_drop',
-      name: 'Emergency Supply Drop',
-      description: 'Critical supplies are air-dropped to the front lines',
-      flavorText: 'Parachutes bloom in the sky...',
-      rarity: EventCardRarity.UNCOMMON,
-      cost: 1,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'self',
-        magnitude: 2,
-        description: 'Gain 2 additional Command Points this turn'
-      }],
-      canPlayMultiple: true
-    });
-
-    // Equipment Cards
-    cards.push({
-      id: 'equipment_malfunction',
-      name: 'Equipment Malfunction',
-      description: 'Critical equipment fails at the worst moment',
-      flavorText: 'Sparks fly from damaged systems...',
-      rarity: EventCardRarity.COMMON,
-      cost: 0,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'specific_unit',
-        magnitude: -1,
-        description: 'Target unit cannot take actions this turn',
-        metadata: { selectTarget: true, skipTurn: true }
-      }],
-      canPlayMultiple: true
-    });
-
-    // Tactical Cards
-    cards.push({
-      id: 'tactical_surprise',
-      name: 'Tactical Surprise',
-      description: 'Swift maneuvering catches the enemy off-guard',
-      flavorText: 'The element of surprise is everything...',
-      rarity: EventCardRarity.RARE,
-      cost: 3,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'self',
-        magnitude: 1,
-        description: 'Take an additional action this turn',
-        metadata: { extraAction: true }
-      }],
-      playConditions: [{
-        type: 'phase',
-        value: TurnPhase.ACTION
-      }],
-      canPlayMultiple: false
-    });
-
-    // USS Wasp Specific Cards
-    cards.push({
-      id: 'wasp_engine_trouble',
-      name: 'Engine Trouble',
-      description: 'USS Wasp experiences mechanical difficulties',
-      flavorText: 'The great ship shudders to a halt...',
-      rarity: EventCardRarity.UNCOMMON,
-      cost: 0,
-      effects: [{
-        type: EventCardEffectType.DURATION,
-        duration: 2,
-        target: 'wasp',
-        magnitude: 0,
-        description: 'USS Wasp cannot launch or recover aircraft for 2 turns',
-        metadata: { disableOperations: true }
-      }],
-      playConditions: [{
-        type: 'unit_type',
-        value: 'USS_WASP'
-      }],
-      canPlayMultiple: false
-    });
-
-    cards.push({
-      id: 'rapid_deployment',
-      name: 'Rapid Deployment',
-      description: 'Efficient operations accelerate unit deployment',
-      flavorText: 'The deck crew works with practiced precision...',
-      rarity: EventCardRarity.RARE,
-      cost: 2,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'wasp',
-        magnitude: 0,
-        description: 'Launch up to 3 units from USS Wasp this turn',
-        metadata: { bonusLaunch: 3 }
-      }],
-      playConditions: [{
-        type: 'unit_type',
-        value: 'USS_WASP'
-      }],
-      canPlayMultiple: false
-    });
-
-    // Defensive Cards
-    cards.push({
-      id: 'defensive_positions',
-      name: 'Defensive Positions',
-      description: 'Units establish strong defensive positions',
-      flavorText: 'Sandbags and camouflage are hastily prepared...',
-      rarity: EventCardRarity.COMMON,
-      cost: 1,
-      effects: [{
-        type: EventCardEffectType.DURATION,
-        duration: 3,
-        target: 'all_units',
-        magnitude: 1,
-        description: 'All infantry units gain +1 defense for 3 turns',
-        metadata: { unitCategory: 'INFANTRY' }
-      }],
-      canPlayMultiple: false
-    });
-
-    // Communication Cards
-    cards.push({
-      id: 'communications_jam',
-      name: 'Communications Jam',
-      description: 'Enemy jamming disrupts coordination',
-      flavorText: 'Static fills the radio channels...',
-      rarity: EventCardRarity.UNCOMMON,
-      cost: 0,
-      effects: [{
-        type: EventCardEffectType.DURATION,
-        duration: 2,
-        target: 'enemy',
-        magnitude: -1,
-        description: 'Enemy units have -1 coordination for 2 turns',
-        metadata: { affectsCoordination: true }
-      }],
-      canPlayMultiple: false
-    });
-
-    // Morale Cards
-    cards.push({
-      id: 'heroic_action',
-      name: 'Heroic Action',
-      description: 'Exceptional bravery inspires nearby units',
-      flavorText: 'One soldier\'s courage rallies the troops...',
-      rarity: EventCardRarity.LEGENDARY,
-      cost: 4,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'all_units',
-        magnitude: 2,
-        description: 'All friendly units gain +2 to all stats for this turn',
-        metadata: { temporaryBoost: true }
-      }],
-      canPlayMultiple: false
-    });
-
-    // Reconnaissance Cards
-    cards.push({
-      id: 'scout_report',
-      name: 'Scout Report',
-      description: 'Detailed reconnaissance provides tactical advantage',
-      flavorText: 'The recon team reports back with vital intelligence...',
-      rarity: EventCardRarity.COMMON,
-      cost: 1,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'self',
-        magnitude: 0,
-        description: 'Reveal enemy positions within 3 hexes of your units',
-        metadata: { scoutRange: 3 }
-      }],
-      canPlayMultiple: true
-    });
-
-    // Medical Cards
-    cards.push({
-      id: 'medical_evacuation',
-      name: 'Medical Evacuation',
-      description: 'Rapid medical support saves lives',
-      flavorText: 'The medevac helicopter swoops in...',
-      rarity: EventCardRarity.UNCOMMON,
-      cost: 2,
-      effects: [{
-        type: EventCardEffectType.IMMEDIATE,
-        target: 'specific_unit',
-        magnitude: 2,
-        description: 'Target damaged unit recovers 2 HP',
-        metadata: { selectTarget: true, healing: true }
-      }],
-      canPlayMultiple: true
-    });
+    // Add different card categories
+    cards.push(...this.createAirSupportCards());
+    cards.push(...this.createWeatherCards());
+    cards.push(...this.createIntelligenceCards());
+    cards.push(...this.createSupplyCards());
+    cards.push(...this.createEquipmentCards());
+    cards.push(...this.createTacticalCards());
+    cards.push(...this.createWaspCards());
+    cards.push(...this.createDefensiveCards());
+    cards.push(...this.createCommunicationCards());
+    cards.push(...this.createMoraleCards());
+    cards.push(...this.createReconCards());
+    cards.push(...this.createMedicalCards());
 
     return cards;
+  }
+
+  /**
+   * Create air support related cards
+   */
+  private createAirSupportCards(): EventCard[] {
+    return [
+      {
+        id: 'air_support_delay',
+        name: 'Air Support Delay',
+        description: 'Adverse weather conditions delay air operations',
+        flavorText: 'Dark clouds gather over the task force...',
+        rarity: EventCardRarity.COMMON,
+        cost: 0,
+        effects: [
+          {
+            type: EventCardEffectType.DURATION,
+            duration: 2,
+            target: 'all_units',
+            magnitude: -2,
+            description: 'All aircraft have -2 movement for 2 turns',
+            metadata: { unitTypes: ['HARRIER', 'SUPER_COBRA', 'OSPREY'] },
+          },
+        ],
+        canPlayMultiple: false,
+      },
+      {
+        id: 'close_air_support',
+        name: 'Close Air Support',
+        description: 'Coordinated air support provides tactical advantage',
+        flavorText: 'Strike aircraft sweep in from the horizon...',
+        rarity: EventCardRarity.UNCOMMON,
+        cost: 3,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'specific_unit',
+            magnitude: 3,
+            description: 'Target unit gains +3 attack for this combat',
+            metadata: { selectTarget: true },
+          },
+        ],
+        playConditions: [
+          {
+            type: 'phase',
+            value: TurnPhase.ACTION,
+          },
+        ],
+        canPlayMultiple: true,
+      },
+    ];
+  }
+
+  /**
+   * Create weather related cards
+   */
+  private createWeatherCards(): EventCard[] {
+    return [
+      {
+        id: 'storm_surge',
+        name: 'Storm Surge',
+        description: 'Rough seas affect amphibious operations',
+        flavorText: 'Waves crash over the landing craft...',
+        rarity: EventCardRarity.COMMON,
+        cost: 0,
+        effects: [
+          {
+            type: EventCardEffectType.DURATION,
+            duration: 3,
+            target: 'all_units',
+            magnitude: 1,
+            description: 'All amphibious units have +1 movement cost for 3 turns',
+            metadata: { unitTypes: ['LCAC', 'AAV_7'] },
+          },
+        ],
+        canPlayMultiple: false,
+      },
+      {
+        id: 'clear_skies',
+        name: 'Clear Skies',
+        description: 'Perfect weather enhances all operations',
+        flavorText: 'The sun breaks through the clouds...',
+        rarity: EventCardRarity.RARE,
+        cost: 2,
+        effects: [
+          {
+            type: EventCardEffectType.DURATION,
+            duration: 3,
+            target: 'all_units',
+            magnitude: 1,
+            description: 'All units gain +1 movement for 3 turns',
+          },
+        ],
+        canPlayMultiple: false,
+      },
+    ];
+  }
+
+  /**
+   * Create intelligence related cards
+   */
+  private createIntelligenceCards(): EventCard[] {
+    return [
+      {
+        id: 'intelligence_coup',
+        name: 'Intelligence Coup',
+        description: 'Valuable intelligence reveals enemy positions',
+        flavorText: 'Encrypted communications are intercepted...',
+        rarity: EventCardRarity.UNCOMMON,
+        cost: 2,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'enemy',
+            magnitude: 0,
+            description: 'Reveal all hidden enemy units for 1 turn',
+            metadata: { revealHidden: true },
+          },
+        ],
+        canPlayMultiple: true,
+      },
+    ];
+  }
+
+  /**
+   * Create supply related cards
+   */
+  private createSupplyCards(): EventCard[] {
+    return [
+      {
+        id: 'supply_drop',
+        name: 'Emergency Supply Drop',
+        description: 'Critical supplies are air-dropped to the front lines',
+        flavorText: 'Parachutes bloom in the sky...',
+        rarity: EventCardRarity.UNCOMMON,
+        cost: 1,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'self',
+            magnitude: 2,
+            description: 'Gain 2 additional Command Points this turn',
+          },
+        ],
+        canPlayMultiple: true,
+      },
+    ];
+  }
+
+  /**
+   * Create equipment related cards
+   */
+  private createEquipmentCards(): EventCard[] {
+    return [
+      {
+        id: 'equipment_malfunction',
+        name: 'Equipment Malfunction',
+        description: 'Critical equipment fails at the worst moment',
+        flavorText: 'Sparks fly from damaged systems...',
+        rarity: EventCardRarity.COMMON,
+        cost: 0,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'specific_unit',
+            magnitude: -1,
+            description: 'Target unit cannot take actions this turn',
+            metadata: { selectTarget: true, skipTurn: true },
+          },
+        ],
+        canPlayMultiple: true,
+      },
+    ];
+  }
+
+  /**
+   * Create tactical cards
+   */
+  private createTacticalCards(): EventCard[] {
+    return [
+      {
+        id: 'tactical_surprise',
+        name: 'Tactical Surprise',
+        description: 'Swift maneuvering catches the enemy off-guard',
+        flavorText: 'The element of surprise is everything...',
+        rarity: EventCardRarity.RARE,
+        cost: 3,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'self',
+            magnitude: 1,
+            description: 'Take an additional action this turn',
+            metadata: { extraAction: true },
+          },
+        ],
+        playConditions: [
+          {
+            type: 'phase',
+            value: TurnPhase.ACTION,
+          },
+        ],
+        canPlayMultiple: false,
+      },
+    ];
+  }
+
+  /**
+   * Create USS Wasp specific cards
+   */
+  private createWaspCards(): EventCard[] {
+    return [
+      {
+        id: 'wasp_engine_trouble',
+        name: 'Engine Trouble',
+        description: 'USS Wasp experiences mechanical difficulties',
+        flavorText: 'The great ship shudders to a halt...',
+        rarity: EventCardRarity.UNCOMMON,
+        cost: 0,
+        effects: [
+          {
+            type: EventCardEffectType.DURATION,
+            duration: 2,
+            target: 'wasp',
+            magnitude: 0,
+            description: 'USS Wasp cannot launch or recover aircraft for 2 turns',
+            metadata: { disableOperations: true },
+          },
+        ],
+        playConditions: [
+          {
+            type: 'unit_type',
+            value: 'USS_WASP',
+          },
+        ],
+        canPlayMultiple: false,
+      },
+      {
+        id: 'rapid_deployment',
+        name: 'Rapid Deployment',
+        description: 'Efficient operations accelerate unit deployment',
+        flavorText: 'The deck crew works with practiced precision...',
+        rarity: EventCardRarity.RARE,
+        cost: 2,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'wasp',
+            magnitude: 0,
+            description: 'Launch up to 3 units from USS Wasp this turn',
+            metadata: { bonusLaunch: 3 },
+          },
+        ],
+        playConditions: [
+          {
+            type: 'unit_type',
+            value: 'USS_WASP',
+          },
+        ],
+        canPlayMultiple: false,
+      },
+    ];
+  }
+
+  /**
+   * Create defensive cards
+   */
+  private createDefensiveCards(): EventCard[] {
+    return [
+      {
+        id: 'defensive_positions',
+        name: 'Defensive Positions',
+        description: 'Units establish strong defensive positions',
+        flavorText: 'Sandbags and camouflage are hastily prepared...',
+        rarity: EventCardRarity.COMMON,
+        cost: 1,
+        effects: [
+          {
+            type: EventCardEffectType.DURATION,
+            duration: 3,
+            target: 'all_units',
+            magnitude: 1,
+            description: 'All infantry units gain +1 defense for 3 turns',
+            metadata: { unitCategory: 'INFANTRY' },
+          },
+        ],
+        canPlayMultiple: false,
+      },
+    ];
+  }
+
+  /**
+   * Create communication cards
+   */
+  private createCommunicationCards(): EventCard[] {
+    return [
+      {
+        id: 'communications_jam',
+        name: 'Communications Jam',
+        description: 'Enemy jamming disrupts coordination',
+        flavorText: 'Static fills the radio channels...',
+        rarity: EventCardRarity.UNCOMMON,
+        cost: 0,
+        effects: [
+          {
+            type: EventCardEffectType.DURATION,
+            duration: 2,
+            target: 'enemy',
+            magnitude: -1,
+            description: 'Enemy units have -1 coordination for 2 turns',
+            metadata: { affectsCoordination: true },
+          },
+        ],
+        canPlayMultiple: false,
+      },
+    ];
+  }
+
+  /**
+   * Create morale cards
+   */
+  private createMoraleCards(): EventCard[] {
+    return [
+      {
+        id: 'heroic_action',
+        name: 'Heroic Action',
+        description: 'Exceptional bravery inspires nearby units',
+        flavorText: "One soldier's courage rallies the troops...",
+        rarity: EventCardRarity.LEGENDARY,
+        cost: 4,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'all_units',
+            magnitude: 2,
+            description: 'All friendly units gain +2 to all stats for this turn',
+            metadata: { temporaryBoost: true },
+          },
+        ],
+        canPlayMultiple: false,
+      },
+    ];
+  }
+
+  /**
+   * Create reconnaissance cards
+   */
+  private createReconCards(): EventCard[] {
+    return [
+      {
+        id: 'scout_report',
+        name: 'Scout Report',
+        description: 'Detailed reconnaissance provides tactical advantage',
+        flavorText: 'The recon team reports back with vital intelligence...',
+        rarity: EventCardRarity.COMMON,
+        cost: 1,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'self',
+            magnitude: 0,
+            description: 'Reveal enemy positions within 3 hexes of your units',
+            metadata: { scoutRange: 3 },
+          },
+        ],
+        canPlayMultiple: true,
+      },
+    ];
+  }
+
+  /**
+   * Create medical cards
+   */
+  private createMedicalCards(): EventCard[] {
+    return [
+      {
+        id: 'medical_evacuation',
+        name: 'Medical Evacuation',
+        description: 'Rapid medical support saves lives',
+        flavorText: 'The medevac helicopter swoops in...',
+        rarity: EventCardRarity.UNCOMMON,
+        cost: 2,
+        effects: [
+          {
+            type: EventCardEffectType.IMMEDIATE,
+            target: 'specific_unit',
+            magnitude: 2,
+            description: 'Target damaged unit recovers 2 HP',
+            metadata: { selectTarget: true, healing: true },
+          },
+        ],
+        canPlayMultiple: true,
+      },
+    ];
   }
 
   /**
@@ -451,7 +569,7 @@ export class EventCardManager {
       playerId,
       cards: [],
       maxHandSize: this.config.maxHandSize,
-      cardsPlayedThisTurn: []
+      cardsPlayedThisTurn: [],
     };
 
     // Store hand first before drawing cards
@@ -554,52 +672,72 @@ export class EventCardManager {
   /**
    * Check if a play condition is met
    */
-  private checkPlayCondition(condition: EventCardCondition, gameState: GameState, playerId: string): boolean {
+  private checkPlayCondition(
+    condition: EventCardCondition,
+    gameState: GameState,
+    playerId: string
+  ): boolean {
     switch (condition.type) {
       case 'phase':
         return gameState.phase === condition.value;
-      
-      case 'turn_number':
-        const comparison = condition.comparison || '=';
+
+      case 'turn_number': {
+        const comparison = condition.comparison ?? '=';
         const turnNum = gameState.turn;
         const targetTurn = condition.value as number;
-        
+
         switch (comparison) {
-          case '=': return turnNum === targetTurn;
-          case '>': return turnNum > targetTurn;
-          case '<': return turnNum < targetTurn;
-          case '>=': return turnNum >= targetTurn;
-          case '<=': return turnNum <= targetTurn;
-          default: return false;
+          case '=':
+            return turnNum === targetTurn;
+          case '>':
+            return turnNum > targetTurn;
+          case '<':
+            return turnNum < targetTurn;
+          case '>=':
+            return turnNum >= targetTurn;
+          case '<=':
+            return turnNum <= targetTurn;
+          default:
+            return false;
         }
-      
-      case 'unit_type':
+      }
+
+      case 'unit_type': {
         const player = gameState.getPlayer(playerId);
-        if (!player) return false;
-        
-        const hasUnitType = player.getLivingUnits().some(unit => 
-          unit.type === condition.value
-        );
+        if (!player) {
+          return false;
+        }
+
+        const hasUnitType = player.getLivingUnits().some(unit => unit.type === condition.value);
         return hasUnitType;
-      
-      case 'player_side':
+      }
+
+      case 'player_side': {
         const playerSide = gameState.getPlayer(playerId)?.side;
         return playerSide === condition.value;
-      
-      case 'unit_count':
-        const unitCount = gameState.getPlayer(playerId)?.getLivingUnits().length || 0;
+      }
+
+      case 'unit_count': {
+        const unitCount = gameState.getPlayer(playerId)?.getLivingUnits().length ?? 0;
         const targetCount = condition.value as number;
-        const countComparison = condition.comparison || '=';
-        
+        const countComparison = condition.comparison ?? '=';
+
         switch (countComparison) {
-          case '=': return unitCount === targetCount;
-          case '>': return unitCount > targetCount;
-          case '<': return unitCount < targetCount;
-          case '>=': return unitCount >= targetCount;
-          case '<=': return unitCount <= targetCount;
-          default: return false;
+          case '=':
+            return unitCount === targetCount;
+          case '>':
+            return unitCount > targetCount;
+          case '<':
+            return unitCount < targetCount;
+          case '>=':
+            return unitCount >= targetCount;
+          case '<=':
+            return unitCount <= targetCount;
+          default:
+            return false;
         }
-      
+      }
+
       default:
         return false;
     }
@@ -608,12 +746,17 @@ export class EventCardManager {
   /**
    * Play an event card
    */
-  public playCard(cardId: string, playerId: string, gameState: GameState, targetData?: Record<string, unknown>): EventCardPlayResult {
+  public playCard(
+    cardId: string,
+    playerId: string,
+    gameState: GameState,
+    _targetData?: Record<string, unknown>
+  ): EventCardPlayResult {
     if (!this.canPlayCard(cardId, playerId, gameState)) {
       return {
         success: false,
         message: 'Cannot play this card',
-        effectsApplied: []
+        effectsApplied: [],
       };
     }
 
@@ -623,7 +766,7 @@ export class EventCardManager {
       return {
         success: false,
         message: 'Card not found in hand',
-        effectsApplied: []
+        effectsApplied: [],
       };
     }
 
@@ -633,7 +776,7 @@ export class EventCardManager {
       return {
         success: false,
         message: 'Insufficient command points',
-        effectsApplied: []
+        effectsApplied: [],
       };
     }
 
@@ -643,9 +786,9 @@ export class EventCardManager {
 
     // Apply card effects
     const effectsApplied: ActiveEventEffect[] = [];
-    
+
     for (const effect of card.effects) {
-      const activeEffect = this.applyCardEffect(card, effect, playerId, gameState, targetData);
+      const activeEffect = this.applyCardEffect(card, effect, playerId, gameState, _targetData);
       if (activeEffect) {
         effectsApplied.push(activeEffect);
       }
@@ -655,14 +798,20 @@ export class EventCardManager {
       success: true,
       message: `${card.name} played successfully`,
       effectsApplied,
-      data: { cardName: card.name, effects: effectsApplied.length }
+      data: { cardName: card.name, effects: effectsApplied.length },
     };
   }
 
   /**
    * Apply a single card effect
    */
-  private applyCardEffect(card: EventCard, effect: EventCardEffect, playerId: string, gameState: GameState, targetData?: Record<string, unknown>): ActiveEventEffect | null {
+  private applyCardEffect(
+    card: EventCard,
+    effect: EventCardEffect,
+    playerId: string,
+    gameState: GameState,
+    targetData?: Record<string, unknown>
+  ): ActiveEventEffect | null {
     const activeEffect: ActiveEventEffect = {
       cardId: card.id,
       cardName: card.name,
@@ -670,8 +819,8 @@ export class EventCardManager {
       playerId,
       startTurn: gameState.turn,
       endTurn: effect.duration ? gameState.turn + effect.duration : undefined,
-      isActive: true
-    };
+      isActive: true,
+    } as ActiveEventEffect;
 
     // Add to active effects if it has duration
     if (effect.type === EventCardEffectType.DURATION) {
@@ -689,32 +838,44 @@ export class EventCardManager {
   /**
    * Apply immediate effect to game state
    */
-  private applyImmediateEffect(effect: EventCardEffect, playerId: string, gameState: GameState, targetData?: Record<string, unknown>): void {
+  private applyImmediateEffect(
+    effect: EventCardEffect,
+    playerId: string,
+    gameState: GameState,
+    targetData?: Record<string, unknown>
+  ): void {
     const player = gameState.getPlayer(playerId);
-    if (!player) return;
+    if (!player) {
+      return;
+    }
 
     switch (effect.target) {
       case 'self':
         if (effect.metadata?.extraAction) {
           // Grant extra action (would need GameState integration)
-          console.log(`Player ${playerId} gains an extra action`);
+          // console.log(`Player ${playerId} gains an extra action`);
         }
         break;
-      
+
       case 'specific_unit':
         if (targetData?.unitId) {
           const unit = gameState.getUnit(targetData.unitId as string);
           if (unit && effect.metadata?.healing) {
-            unit.heal(effect.magnitude);
+            // Apply healing by restoring HP
+            unit.state.currentHP = Math.min(unit.stats.hp, unit.state.currentHP + effect.magnitude);
           }
         }
         break;
-      
+
       case 'enemy':
         if (effect.metadata?.revealHidden) {
           // Reveal hidden enemy units (would need FogOfWar integration)
-          console.log('Revealing hidden enemy units');
+          // console.log('Revealing hidden enemy units');
         }
+        break;
+
+      default:
+        // No action needed for other targets
         break;
     }
   }
@@ -731,7 +892,9 @@ export class EventCardManager {
     });
 
     // Clean up inactive effects
-    this.activeEffects.splice(0, this.activeEffects.length, 
+    this.activeEffects.splice(
+      0,
+      this.activeEffects.length,
       ...this.activeEffects.filter(effect => effect.isActive)
     );
   }
@@ -756,9 +919,8 @@ export class EventCardManager {
    * Get active effects affecting a specific unit
    */
   public getActiveEffectsForUnit(unitId: string): ActiveEventEffect[] {
-    return this.activeEffects.filter(effect => 
-      effect.effect.metadata?.unitId === unitId ||
-      effect.effect.target === 'all_units'
+    return this.activeEffects.filter(
+      effect => effect.effect.metadata?.unitId === unitId || effect.effect.target === 'all_units'
     );
   }
 
@@ -766,12 +928,13 @@ export class EventCardManager {
    * Get deck statistics
    */
   public getDeckStats(): { cardsRemaining: number; totalCards: number } {
-    const totalCards = this.deck.length + 
+    const totalCards =
+      this.deck.length +
       Array.from(this.hands.values()).reduce((sum, hand) => sum + hand.cards.length, 0);
-    
+
     return {
       cardsRemaining: this.deck.length,
-      totalCards
+      totalCards,
     };
   }
 }
@@ -788,6 +951,6 @@ export const DEFAULT_EVENT_DECK_CONFIG: EventDeckConfig = {
     [EventCardRarity.COMMON]: 0.5,
     [EventCardRarity.UNCOMMON]: 0.3,
     [EventCardRarity.RARE]: 0.15,
-    [EventCardRarity.LEGENDARY]: 0.05
-  }
+    [EventCardRarity.LEGENDARY]: 0.05,
+  },
 };
