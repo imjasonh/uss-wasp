@@ -42,6 +42,11 @@ jobs:
     - name: Run tests
       run: npm run test -- --coverage --collectCoverageFrom="src/**/*.ts" --coverageReporters=text-summary
     
+    - name: Quick AI validation
+      run: |
+        echo "🤖 Running quick AI validation..."
+        timeout 120 node quick-battle-test.js
+    
     - name: Security audit
       run: npm audit --audit-level moderate
       continue-on-error: true
@@ -56,11 +61,6 @@ jobs:
         else
           echo "✅ No large files detected"
         fi
-    
-    - name: Quick AI validation
-      run: |
-        echo "🤖 Running quick AI validation..."
-        timeout 120 node quick-battle-test.js
     
     - name: Validate commit messages (PR only)
       if: github.event_name == 'pull_request'
