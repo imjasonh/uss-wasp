@@ -8,6 +8,7 @@ import { Player } from './Player';
 import { GameMap } from './Map';
 import { FogOfWar } from './FogOfWar';
 import { WaspOperations, WaspOperationalStatus } from './WaspOperations';
+import { EventCardManager, EventCard, EventCardPlayResult, DEFAULT_EVENT_DECK_CONFIG } from './EventCard';
 import {
   PlayerSide,
   TurnPhase,
@@ -49,6 +50,7 @@ export class GameState {
   public readonly map: GameMap;
   public readonly players: Map<string, Player>;
   public readonly fogOfWar: FogOfWar;
+  public readonly eventCardManager: EventCardManager;
   public waspOperations?: WaspOperations;
   public turn: number;
   public phase: TurnPhase;
@@ -74,6 +76,9 @@ export class GameState {
 
     // Initialize fog of war system
     this.fogOfWar = new FogOfWar(this);
+    
+    // Initialize event card system
+    this.eventCardManager = new EventCardManager(DEFAULT_EVENT_DECK_CONFIG);
   }
 
   /**
@@ -89,6 +94,9 @@ export class GameState {
 
     // Initialize Wasp operations if player has USS Wasp
     this.initializeWaspOperations();
+    
+    // Initialize event card hand for player
+    this.eventCardManager.initializePlayerHand(player.id);
   }
 
   /**
@@ -237,6 +245,9 @@ export class GameState {
 
     // Update fog of war at start of turn
     this.fogOfWar.updateVisibility();
+    
+    // Update event card system for new turn
+    this.updateEventCardSystem();
 
     this.addEvent('turn_start', `Turn ${this.turn} begins`);
 
@@ -669,5 +680,93 @@ export class GameState {
     }
 
     return result;
+  }
+
+  /**
+   * Event Card System Methods
+   */
+
+  /**
+   * Get a player's event card hand
+   */
+  getPlayerEventCards(playerId: string): EventCard[] {
+    return this.eventCardManager.getPlayerHand(playerId);
+  }
+
+  /**
+   * Draw event cards for a player
+   */
+  drawEventCard(playerId: string): EventCard | null {
+    const card = this.eventCardManager.drawCard(playerId);
+    if (card) {
+      this.addEvent('event_card_drawn', `${playerId} drew an event card`, {
+        playerId,
+        cardId: card.id,
+        cardName: card.name
+      });
+    }
+    return card;
+  }
+
+  /**
+   * Check if a player can play an event card
+   */
+  canPlayEventCard(cardId: string, playerId: string): boolean {
+    return this.eventCardManager.canPlayCard(cardId, playerId, this);
+  }
+
+  /**
+   * Play an event card
+   */
+  playEventCard(cardId: string, playerId: string, targetData?: Record<string, unknown>): EventCardPlayResult {
+    const result = this.eventCardManager.playCard(cardId, playerId, this, targetData);
+    
+    if (result.success) {
+      this.addEvent('event_card_played', result.message, {
+        playerId,
+        cardId,
+        effectsApplied: result.effectsApplied.length,
+        cost: result.data?.cost || 0
+      });
+    }
+    
+    return result;
+  }
+
+  /**
+   * Get all active event card effects
+   */
+  getActiveEventEffects() {
+    return this.eventCardManager.getActiveEffects();
+  }
+
+  /**
+   * Get active event effects for a specific unit
+   */
+  getActiveEventEffectsForUnit(unitId: string) {
+    return this.eventCardManager.getActiveEffectsForUnit(unitId);
+  }
+
+  /**
+   * Update event card system for new turn
+   */
+  updateEventCardSystem(): void {
+    // Update active effects
+    this.eventCardManager.updateActiveEffects(this.turn);
+    
+    // Reset turn-based restrictions
+    this.eventCardManager.resetTurnCards();
+    
+    // Draw cards for active player during EVENT phase
+    if (this.phase === TurnPhase.EVENT) {
+      this.drawEventCard(this.activePlayerId);
+    }
+  }
+
+  /**
+   * Get event card deck statistics
+   */
+  getEventCardDeckStats() {
+    return this.eventCardManager.getDeckStats();
   }
 }

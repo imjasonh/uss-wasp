@@ -137,6 +137,7 @@ export enum ActionType {
   REVEAL = 'reveal',
   LAUNCH_FROM_WASP = 'launch_from_wasp',
   RECOVER_TO_WASP = 'recover_to_wasp',
+  PLAY_EVENT_CARD = 'play_event_card',
 }
 
 /**
