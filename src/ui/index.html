@@ -368,6 +368,127 @@
             display: none;
         }
 
+        /* Objective Control Styling */
+        .objective-summary {
+            margin-bottom: 12px;
+        }
+        
+        .assault-score {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .defender-score {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .progress-section {
+            margin: 12px 0;
+        }
+        
+        .progress-bar-container {
+            margin-bottom: 8px;
+        }
+        
+        .progress-label {
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #ccc;
+        }
+        
+        .progress-bar {
+            position: relative;
+            height: 16px;
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .assault-progress {
+            background: linear-gradient(90deg, #00ff00, #008800);
+        }
+        
+        .defender-progress {
+            background: linear-gradient(90deg, #ff6b6b, #cc4444);
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 11px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .section-divider {
+            font-size: 14px;
+            font-weight: bold;
+            color: #e94560;
+            margin: 12px 0 8px 0;
+            border-bottom: 1px solid #0f3460;
+            padding-bottom: 4px;
+        }
+        
+        .objective-item {
+            background: rgba(15, 52, 96, 0.3);
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 6px;
+        }
+        
+        .objective-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .objective-name {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .objective-points {
+            font-size: 12px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .objective-status {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .objective-status.assault-controlled {
+            color: #00ff00;
+        }
+        
+        .objective-status.defender-controlled {
+            color: #ff6b6b;
+        }
+        
+        .objective-status.neutral {
+            color: #888;
+        }
+        
+        .objective-description {
+            font-size: 11px;
+            color: #ccc;
+            line-height: 1.3;
+        }
+
         /* Mobile responsive */
         @media (max-width: 768px) {
             .fortification-palette {
@@ -394,6 +515,18 @@
                 margin-top: 0;
                 flex: 1;
                 text-align: right;
+            }
+            
+            .progress-bar {
+                height: 20px;
+            }
+            
+            .progress-text {
+                font-size: 12px;
+            }
+            
+            .objective-item {
+                padding: 10px;
             }
         }
     </style>

@@ -15,6 +15,7 @@ import {
   UnitCategory,
   StatusEffect,
   TerrainType,
+  ObjectiveType,
 } from '../core/game/types';
 import { PixiRenderer } from './renderer/PixiRenderer';
 import { MapRenderer } from './renderer/MapRenderer';
@@ -36,6 +37,56 @@ export enum UIMode {
   UNLOAD_TARGET = 'unload_target',
   ABILITY_TARGET = 'ability_target',
   FORTIFICATION_PLACEMENT = 'fortification_placement',
+}
+
+/**
+ * Constants for objective scoring
+ */
+const OBJECTIVE_POINT_VALUES = {
+  PORT: 50,
+  AIRFIELD: 40,
+  COMMS_HUB: 30,
+  CIVIC_CENTER: 20,
+  HIGH_VALUE_TARGET: 25,
+  DEFAULT: 10,
+} as const;
+
+const SCORING_MULTIPLIERS = {
+  UNIT_POINTS: 10,
+  COMMAND_POINTS: 5,
+  PERCENTAGE_SCALE: 100,
+} as const;
+
+const GAME_CONSTANTS = {
+  MAX_TURNS: 10,
+  MESSAGE_TIMEOUT: 3000,
+  WASP_CAPACITY: 2,
+} as const;
+
+/**
+ * Objective control status for a single objective
+ */
+export interface ObjectiveStatus {
+  readonly id: string;
+  readonly type: ObjectiveType;
+  readonly position: Hex;
+  readonly controlledBy: string | null;
+  readonly isPrimary: boolean;
+  readonly pointValue: number;
+  readonly description: string;
+}
+
+/**
+ * Overall objective control summary
+ */
+export interface ObjectiveControl {
+  readonly assaultPoints: number;
+  readonly defenderPoints: number;
+  readonly neutralObjectives: number;
+  readonly totalObjectives: number;
+  readonly objectives: ObjectiveStatus[];
+  readonly assaultProgress: number; // 0-100%
+  readonly defenderProgress: number; // 0-100%
 }
 
 /**
@@ -326,9 +377,153 @@ export class GameController {
       this.updateElement('defender-units', defenderPlayer.getLivingUnits().length.toString());
     }
 
+    // Update objective control display
+    this.updateObjectiveControlDisplay();
+
     // Check for victory conditions
     if (this.gameState.isGameOver) {
       this.showGameEndScreen();
+    }
+  }
+
+  /**
+   * Update objective control display in the UI
+   */
+  private updateObjectiveControlDisplay(): void {
+    const objectiveControl = this.calculateObjectiveControl();
+    const objectivesList = document.getElementById('objectives-list');
+
+    if (!objectivesList) {
+      return;
+    }
+
+    let html = '';
+
+    // Overall control summary
+    html += '<div class="objective-summary">';
+    html += '<div class="info-grid">';
+    html += `<div class="info-item">`;
+    html += `<span class="info-label">Assault Score:</span>`;
+    html += `<span class="info-value assault-score">${objectiveControl.assaultPoints}</span>`;
+    html += `</div>`;
+    html += `<div class="info-item">`;
+    html += `<span class="info-label">Defender Score:</span>`;
+    html += `<span class="info-value defender-score">${objectiveControl.defenderPoints}</span>`;
+    html += `</div>`;
+    html += `<div class="info-item">`;
+    html += `<span class="info-label">Neutral:</span>`;
+    html += `<span class="info-value">${objectiveControl.neutralObjectives}</span>`;
+    html += `</div>`;
+    html += `<div class="info-item">`;
+    html += `<span class="info-label">Total:</span>`;
+    html += `<span class="info-value">${objectiveControl.totalObjectives}</span>`;
+    html += `</div>`;
+    html += '</div>';
+
+    // Progress bars
+    html += '<div class="progress-section">';
+    html += '<div class="progress-bar-container">';
+    html += '<div class="progress-label">Assault Progress</div>';
+    html += '<div class="progress-bar">';
+    html += `<div class="progress-fill assault-progress" style="width: ${objectiveControl.assaultProgress}%"></div>`;
+    html += `<span class="progress-text">${Math.round(objectiveControl.assaultProgress)}%</span>`;
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="progress-bar-container">';
+    html += '<div class="progress-label">Defender Progress</div>';
+    html += '<div class="progress-bar">';
+    html += `<div class="progress-fill defender-progress" style="width: ${objectiveControl.defenderProgress}%"></div>`;
+    html += `<span class="progress-text">${Math.round(objectiveControl.defenderProgress)}%</span>`;
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // Individual objectives
+    if (objectiveControl.objectives.length > 0) {
+      html += '<div class="objective-details">';
+      html += '<div class="section-divider">Objectives</div>';
+
+      for (const objective of objectiveControl.objectives) {
+        const controlClass = this.getObjectiveControlClass(objective.controlledBy);
+        const controlText = this.getObjectiveControlText(objective.controlledBy);
+        const primaryIcon = objective.isPrimary ? '⭐' : '';
+
+        html += '<div class="objective-item">';
+        html += `<div class="objective-header">`;
+        html += `<span class="objective-name">${primaryIcon} ${this.getObjectiveTypeDisplayName(objective.type)}</span>`;
+        html += `<span class="objective-points">${objective.pointValue}pts</span>`;
+        html += `</div>`;
+        html += `<div class="objective-status ${controlClass}">${controlText}</div>`;
+        html += `<div class="objective-description">${objective.description}</div>`;
+        html += '</div>';
+      }
+
+      html += '</div>';
+    } else {
+      html += '<div class="info-item"><span class="info-label">No objectives found</span></div>';
+    }
+
+    objectivesList.innerHTML = html;
+  }
+
+  /**
+   * Get CSS class for objective control status
+   */
+  private getObjectiveControlClass(controlledBy: string | null): string {
+    if (!controlledBy) {
+      return 'neutral';
+    }
+
+    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
+    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
+
+    if (controlledBy === assaultPlayer?.id) {
+      return 'assault-controlled';
+    }
+    if (controlledBy === defenderPlayer?.id) {
+      return 'defender-controlled';
+    }
+    return 'neutral';
+  }
+
+  /**
+   * Get display text for objective control status
+   */
+  private getObjectiveControlText(controlledBy: string | null): string {
+    if (!controlledBy) {
+      return 'Neutral';
+    }
+
+    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
+    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
+
+    if (controlledBy === assaultPlayer?.id) {
+      return 'Assault';
+    }
+    if (controlledBy === defenderPlayer?.id) {
+      return 'Defender';
+    }
+    return 'Unknown';
+  }
+
+  /**
+   * Get display name for objective type
+   */
+  private getObjectiveTypeDisplayName(type: ObjectiveType): string {
+    switch (type) {
+      case ObjectiveType.PORT:
+        return 'Port';
+      case ObjectiveType.AIRFIELD:
+        return 'Airfield';
+      case ObjectiveType.COMMS_HUB:
+        return 'Comms Hub';
+      case ObjectiveType.CIVIC_CENTER:
+        return 'Civic Center';
+      case ObjectiveType.HIGH_VALUE_TARGET:
+        return 'HVT';
+      default:
+        return 'Unknown';
     }
   }
 
@@ -441,11 +636,11 @@ export class GameController {
       messageDiv.className = `message message-${type}`;
       messageDiv.textContent = message;
 
-      // Auto-clear after 3 seconds
+      // Auto-clear after timeout
       setTimeout(() => {
         messageDiv.className = 'message';
         messageDiv.textContent = '';
-      }, 3000);
+      }, GAME_CONSTANTS.MESSAGE_TIMEOUT);
     }
   }
 
@@ -541,6 +736,16 @@ export class GameController {
       buttons.push('<button onclick="gameController.revealUnit()">Reveal</button>');
     } else if (unit.canBeHidden()) {
       buttons.push('<button onclick="gameController.hideUnit()">Hide</button>');
+    }
+
+    // Secure objective for infantry units
+    if (unit.hasCategory(UnitCategory.INFANTRY) && this.isValidPhase(ActionType.SECURE_OBJECTIVE)) {
+      const mapHex = this.gameState.map.getHex(unit.state.position);
+      if (mapHex?.objective) {
+        buttons.push(
+          '<button onclick="gameController.secureObjective()">Secure Objective</button>'
+        );
+      }
     }
 
     actionButtons.innerHTML = buttons.join('');
@@ -1120,8 +1325,8 @@ export class GameController {
       return;
     }
 
-    // Check turn limit (example: 10 turns)
-    if (this.gameState.turn >= 10) {
+    // Check turn limit
+    if (this.gameState.turn >= GAME_CONSTANTS.MAX_TURNS) {
       // Determine winner by objectives or units remaining
       const assaultScore = this.calculatePlayerScore(assaultPlayer);
       const defenderScore = this.calculatePlayerScore(defenderPlayer);
@@ -1140,18 +1345,143 @@ export class GameController {
   }
 
   /**
+   * Calculate objective control status for both players
+   */
+  private calculateObjectiveControl(): ObjectiveControl {
+    const mapObjectives = this.gameState.map.getObjectives();
+    const objectives: ObjectiveStatus[] = [];
+
+    let assaultPoints = 0;
+    let defenderPoints = 0;
+    let neutralObjectives = 0;
+
+    // Get player IDs for comparison
+    const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
+    const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
+
+    for (const mapHex of mapObjectives) {
+      if (!mapHex.objective) {
+        continue;
+      }
+
+      const objectiveStatus: ObjectiveStatus = {
+        id: mapHex.objective.id,
+        type: mapHex.objective.type,
+        position: new Hex(mapHex.coordinate.q, mapHex.coordinate.r, mapHex.coordinate.s),
+        controlledBy: mapHex.objective.controlledBy ?? null,
+        isPrimary: this.isObjectivePrimary(mapHex.objective.type),
+        pointValue: this.getObjectivePointValue(mapHex.objective.type),
+        description: this.getObjectiveDescription(mapHex.objective.type),
+      };
+
+      objectives.push(objectiveStatus);
+
+      // Add points to controlling player
+      if (mapHex.objective.controlledBy === assaultPlayer?.id) {
+        assaultPoints += objectiveStatus.pointValue;
+      } else if (mapHex.objective.controlledBy === defenderPlayer?.id) {
+        defenderPoints += objectiveStatus.pointValue;
+      } else {
+        neutralObjectives++;
+      }
+    }
+
+    const totalObjectives = objectives.length;
+    const maxPossiblePoints = objectives.reduce((sum, obj) => sum + obj.pointValue, 0);
+
+    return {
+      assaultPoints,
+      defenderPoints,
+      neutralObjectives,
+      totalObjectives,
+      objectives,
+      assaultProgress:
+        maxPossiblePoints > 0
+          ? (assaultPoints / maxPossiblePoints) * SCORING_MULTIPLIERS.PERCENTAGE_SCALE
+          : 0,
+      defenderProgress:
+        maxPossiblePoints > 0
+          ? (defenderPoints / maxPossiblePoints) * SCORING_MULTIPLIERS.PERCENTAGE_SCALE
+          : 0,
+    };
+  }
+
+  /**
+   * Check if an objective is primary (critical for victory)
+   */
+  private isObjectivePrimary(type: ObjectiveType): boolean {
+    switch (type) {
+      case ObjectiveType.PORT:
+      case ObjectiveType.AIRFIELD:
+        return true;
+      case ObjectiveType.COMMS_HUB:
+      case ObjectiveType.CIVIC_CENTER:
+      case ObjectiveType.HIGH_VALUE_TARGET:
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Get point value for an objective type
+   */
+  private getObjectivePointValue(type: ObjectiveType): number {
+    switch (type) {
+      case ObjectiveType.PORT:
+        return OBJECTIVE_POINT_VALUES.PORT;
+      case ObjectiveType.AIRFIELD:
+        return OBJECTIVE_POINT_VALUES.AIRFIELD;
+      case ObjectiveType.COMMS_HUB:
+        return OBJECTIVE_POINT_VALUES.COMMS_HUB;
+      case ObjectiveType.CIVIC_CENTER:
+        return OBJECTIVE_POINT_VALUES.CIVIC_CENTER;
+      case ObjectiveType.HIGH_VALUE_TARGET:
+        return OBJECTIVE_POINT_VALUES.HIGH_VALUE_TARGET;
+      default:
+        return OBJECTIVE_POINT_VALUES.DEFAULT;
+    }
+  }
+
+  /**
+   * Get description for an objective type
+   */
+  private getObjectiveDescription(type: ObjectiveType): string {
+    switch (type) {
+      case ObjectiveType.PORT:
+        return 'Strategic Port - Critical for supply lines';
+      case ObjectiveType.AIRFIELD:
+        return 'Airfield - Essential for air operations';
+      case ObjectiveType.COMMS_HUB:
+        return 'Communications Hub - Command and control center';
+      case ObjectiveType.CIVIC_CENTER:
+        return 'Civic Center - Administrative control point';
+      case ObjectiveType.HIGH_VALUE_TARGET:
+        return 'High Value Target - Strategic asset';
+      default:
+        return 'Unknown objective';
+    }
+  }
+
+  /**
    * Calculate player score for victory determination
    */
   private calculatePlayerScore(player: Player): number {
     let score = 0;
 
     // Points for surviving units
-    score += player.getLivingUnits().length * 10;
+    score += player.getLivingUnits().length * SCORING_MULTIPLIERS.UNIT_POINTS;
 
     // Points for command points remaining
-    score += player.commandPoints * 5;
+    score += player.commandPoints * SCORING_MULTIPLIERS.COMMAND_POINTS;
 
-    // TODO: Add objective control scoring when objectives are implemented
+    // Add objective control scoring
+    const objectiveControl = this.calculateObjectiveControl();
+    if (player.side === PlayerSide.Assault) {
+      score += objectiveControl.assaultPoints;
+    } else {
+      score += objectiveControl.defenderPoints;
+    }
 
     return score;
   }
@@ -1267,12 +1597,36 @@ export class GameController {
   }
 
   /**
+   * Secure objective with selected unit
+   */
+  public secureObjective(): void {
+    if (!this.selectedUnit) {
+      this.showMessage('No unit selected', 'error');
+      return;
+    }
+
+    const action = {
+      type: ActionType.SECURE_OBJECTIVE,
+      playerId: this.gameState.activePlayerId,
+      unitId: this.selectedUnit.id,
+    };
+
+    const result = this.gameEngine.executeAction(action);
+    this.handleActionResult(result);
+
+    if (result.success) {
+      this.render();
+      this.resetUIModeInternal();
+    }
+  }
+
+  /**
    * Get capacity based on operational status
    */
   private getCapacityForStatus(status: WaspOperationalLevel): number {
     switch (status) {
       case WaspOperationalLevel.OPERATIONAL:
-        return 2;
+        return GAME_CONSTANTS.WASP_CAPACITY;
       case WaspOperationalLevel.DEGRADED:
       case WaspOperationalLevel.LIMITED:
         return 1;
