@@ -221,18 +221,24 @@ export class AIController {
           break;
         case 'deployment':
         case 'movement':
-          // Movement phases - only movement actions
-          isAppropriate = decision.type === 'move_unit' || decision.type === 'withdraw';
+          // Movement phases - movement and logistics actions
+          isAppropriate = decision.type === 'move_unit' || 
+                          decision.type === 'withdraw' ||
+                          decision.type === 'load_transport' ||
+                          decision.type === 'unload_transport';
           break;
         case 'action':
-          // Action phase - combat and special abilities
+          // Action phase - combat, special abilities, and logistics
           isAppropriate =
             decision.type === 'attack_target' ||
             decision.type === 'hide_unit' ||
             decision.type === 'reveal_unit' ||
             decision.type === 'special_ability' ||
             decision.type === 'launch_from_wasp' ||
-            decision.type === 'recover_to_wasp';
+            decision.type === 'recover_to_wasp' ||
+            decision.type === 'load_transport' ||
+            decision.type === 'unload_transport' ||
+            decision.type === 'secure_objective';
           break;
         default:
           isAppropriate = false;

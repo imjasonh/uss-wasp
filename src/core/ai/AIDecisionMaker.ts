@@ -103,7 +103,7 @@ export class AIDecisionMaker {
     // Check for transport/logistics needs
     const hasTransports = context.availableUnits.some(unit => unit.getCargoCapacity() > 0);
     if (hasTransports) {
-      priorities.push({ priority: TacticalPriority.MANAGE_LOGISTICS, weight: 6 });
+      priorities.push({ priority: TacticalPriority.MANAGE_LOGISTICS, weight: 8 });
     }
 
     // Check for hidden unit tactical opportunities
@@ -1110,16 +1110,40 @@ export class AIDecisionMaker {
     const decisions: AIDecision[] = [];
     const usedUnits = new Set<string>(); // Track units already assigned
 
-    for (const unit of context.availableUnits) {
-      if (unit.getCargoCapacity() > 0 && !usedUnits.has(unit.id)) {
-        usedUnits.add(unit.id); // Mark unit as used
-        // Simple transport decision
-        decisions.push({
-          type: AIDecisionType.LOAD_TRANSPORT,
-          priority: 6,
-          unitId: unit.id,
-          reasoning: 'Loading transport for tactical deployment',
+    // Find all transport units and infantry units
+    const transportUnits = context.availableUnits.filter(unit => 
+      unit.getCargoCapacity() > 0 && !usedUnits.has(unit.id)
+    );
+    
+    const infantryUnits = context.availableUnits.filter(unit => 
+      unit.hasCategory(UnitCategory.INFANTRY) && !usedUnits.has(unit.id)
+    );
+
+    for (const transport of transportUnits) {
+      const currentCargo = transport.state.cargo.length;
+      const capacity = transport.getCargoCapacity();
+      
+      // LOAD OPERATIONS - if transport has space and infantry available
+      if (currentCargo < capacity && infantryUnits.length > 0) {
+        // Find nearby infantry that can be loaded
+        const nearbyInfantry = infantryUnits.filter(infantry => {
+          const distance = this.calculateDistance(transport.state.position, infantry.state.position);
+          return distance <= 1 && !usedUnits.has(infantry.id); // Adjacent or same hex
         });
+        
+        if (nearbyInfantry.length > 0) {
+          const infantryToLoad = nearbyInfantry[0]; // Load first available
+          usedUnits.add(transport.id);
+          usedUnits.add(infantryToLoad.id);
+          
+          decisions.push({
+            type: AIDecisionType.LOAD_TRANSPORT,
+            priority: 7,
+            unitId: transport.id,
+            targetUnitId: infantryToLoad.id,
+            reasoning: `Loading ${infantryToLoad.type} into ${transport.type} for tactical deployment`
+          });
+        }
       }
     }
 
