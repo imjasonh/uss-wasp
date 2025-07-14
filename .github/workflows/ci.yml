@@ -45,7 +45,7 @@ jobs:
     - name: Quick AI validation
       run: |
         echo "🤖 Running quick AI validation..."
-        timeout 120 node tests/simulation/quick-battle-test.js || echo "AI validation completed (issues expected in CI environment)"
+        timeout 120 npx tsx tests/simulation/quick-battle-test.ts || echo "AI validation completed (issues expected in CI environment)"
     
     - name: Security audit
       run: npm audit --audit-level moderate
