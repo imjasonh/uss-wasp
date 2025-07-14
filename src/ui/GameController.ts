@@ -18,10 +18,10 @@ import {
 } from '../core/game/types';
 import { PixiRenderer } from './renderer/PixiRenderer';
 import { MapRenderer } from './renderer/MapRenderer';
-import { 
-  FortificationPalette, 
-  FortificationType, 
-  DEFAULT_FORTIFICATION_CONFIG 
+import {
+  FortificationPalette,
+  FortificationType,
+  DEFAULT_FORTIFICATION_CONFIG,
 } from './components/FortificationUI';
 
 /**
@@ -1337,7 +1337,7 @@ export class GameController {
    */
   private onFortificationTypeSelected(type: FortificationType | null): void {
     this.selectedFortificationType = type;
-    
+
     if (type) {
       this.setUIMode(UIMode.FORTIFICATION_PLACEMENT);
       this.showMessage(`Click on a hex to place ${type}. Right-click to cancel.`, 'info');
@@ -1357,18 +1357,24 @@ export class GameController {
     }
 
     // Validate placement
-    const validationResult = this.validateFortificationPlacement(hex, this.selectedFortificationType);
+    const validationResult = this.validateFortificationPlacement(
+      hex,
+      this.selectedFortificationType
+    );
     if (!validationResult.valid) {
       this.showMessage(`Cannot place fortification: ${validationResult.reason}`, 'error');
       return false;
     }
 
     // Create fortification
-    const fortification: Fortification = this.createFortification(hex, this.selectedFortificationType);
-    
+    const fortification: Fortification = this.createFortification(
+      hex,
+      this.selectedFortificationType
+    );
+
     // Add to map
     this.gameState.map.addFortification(fortification);
-    
+
     // Update palette
     if (this.fortificationPalette) {
       this.fortificationPalette.fortificationPlaced(this.selectedFortificationType);
@@ -1391,7 +1397,7 @@ export class GameController {
    * Validate fortification placement
    */
   private validateFortificationPlacement(
-    hex: Hex, 
+    hex: Hex,
     type: FortificationType
   ): { valid: boolean; reason?: string } {
     // Check if hex is on the map
@@ -1442,20 +1448,20 @@ export class GameController {
     switch (type) {
       case FortificationType.BUNKER:
         return {
-          forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER]
+          forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER],
         };
       case FortificationType.MINEFIELD:
         return {
-          forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER, TerrainType.MOUNTAINS]
+          forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER, TerrainType.MOUNTAINS],
         };
       case FortificationType.TRENCH:
         return {
           forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER, TerrainType.MOUNTAINS],
-          preferred: [TerrainType.CLEAR, TerrainType.HILLS]
+          preferred: [TerrainType.CLEAR, TerrainType.HILLS],
         };
       case FortificationType.BARRICADE:
         return {
-          forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER]
+          forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER],
         };
       default:
         return { forbidden: [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER] };
@@ -1473,7 +1479,7 @@ export class GameController {
       position: hex,
       defenseBonus: stats.defenseBonus,
       movementPenalty: stats.movementPenalty,
-      blocksLOS: stats.blocksLOS
+      blocksLOS: stats.blocksLOS,
     };
   }
 
@@ -1507,7 +1513,7 @@ export class GameController {
     if (typeof document === 'undefined') {
       return;
     }
-    
+
     const paletteContainer = document.getElementById('fortification-palette');
     if (!paletteContainer) {
       return;
@@ -1516,9 +1522,9 @@ export class GameController {
     const currentPlayer = this.gameState.getActivePlayer();
     const isDefender = currentPlayer?.side === PlayerSide.Defender;
     const isDeploymentPhase = this.gameState.phase === TurnPhase.DEPLOYMENT;
-    
+
     const shouldShow = isDefender && isDeploymentPhase;
-    
+
     if (shouldShow) {
       paletteContainer.classList.remove('hidden');
     } else {
@@ -1544,12 +1550,12 @@ export class GameController {
    */
   private setUIMode(mode: UIMode): void {
     this.uiMode = mode;
-    
+
     // Clear selected unit when entering fortification mode
     if (mode === UIMode.FORTIFICATION_PLACEMENT) {
       this.selectedUnit = undefined;
     }
-    
+
     // Update UI elements based on mode
     this.updateModeDisplay();
   }
@@ -1575,9 +1581,12 @@ export class GameController {
    */
   public onPhaseChanged(): void {
     this.updateFortificationPaletteVisibility();
-    
+
     // Reset fortification placement when leaving deployment phase
-    if (this.gameState.phase !== TurnPhase.DEPLOYMENT && this.uiMode === UIMode.FORTIFICATION_PLACEMENT) {
+    if (
+      this.gameState.phase !== TurnPhase.DEPLOYMENT &&
+      this.uiMode === UIMode.FORTIFICATION_PLACEMENT
+    ) {
       this.onFortificationTypeSelected(null);
     }
   }
