@@ -1,7 +1,7 @@
 # USS Wasp: Operation Beachhead Inferno
 
-[![CI](https://github.com/username/uss-wasp/actions/workflows/ci.yml/badge.svg)](https://github.com/username/uss-wasp/actions/workflows/ci.yml)
-[![AI Tests](https://github.com/username/uss-wasp/actions/workflows/ai-tests.yml/badge.svg)](https://github.com/username/uss-wasp/actions/workflows/ai-tests.yml)
+[![CI](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml)
+[![AI Tests](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml)
 
 A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious assault gameplay.
 
