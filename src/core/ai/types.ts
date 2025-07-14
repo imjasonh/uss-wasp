@@ -66,20 +66,6 @@ export enum DetectionLevel {
 }
 
 /**
- * AI decision context
- */
-export interface AIDecisionContext {
-  gameState: GameState;
-  aiPlayer: string;
-  turn: number;
-  phase: string;
-  availableUnits: Unit[];
-  enemyUnits: Unit[];
-  threatLevel: number;
-  resourceStatus: ResourceStatus;
-}
-
-/**
  * Resource status for AI planning
  */
 export interface ResourceStatus {
@@ -91,16 +77,17 @@ export interface ResourceStatus {
 }
 
 /**
- * AI decision result
+ * AI decision context
  */
-export interface AIDecision {
-  type: AIDecisionType;
-  priority: number;
-  unitId?: string;
-  targetPosition?: Hex;
-  targetUnitId?: string;
-  reasoning: string;
-  metadata?: Record<string, any>;
+export interface AIDecisionContext {
+  gameState: GameState;
+  aiPlayer: string;
+  turn: number;
+  phase: string;
+  availableUnits: Unit[];
+  enemyUnits: Unit[];
+  threatLevel: number;
+  resourceStatus: ResourceStatus;
 }
 
 /**
@@ -123,6 +110,19 @@ export enum AIDecisionType {
   LOAD_TRANSPORT = 'load_transport',
   UNLOAD_TRANSPORT = 'unload_transport',
   SECURE_OBJECTIVE = 'secure_objective'
+}
+
+/**
+ * AI decision result
+ */
+export interface AIDecision {
+  type: AIDecisionType;
+  priority: number;
+  unitId?: string;
+  targetPosition?: Hex;
+  targetUnitId?: string;
+  reasoning: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -214,6 +214,38 @@ export interface AIConfiguration {
 }
 
 /**
+ * AI personality traits that define behavioral patterns
+ */
+export interface AIPersonality extends AIConfiguration {
+  readonly name: string;           // Human-readable personality name
+  readonly aggression: number;     // 0-5: Conservative to Aggressive
+  readonly forwardLooking: number; // 0-5: Naive to Strategic
+  readonly mistakes: number;       // 0-5: Error-prone to Precise
+  
+  // Derived tactical priority weights (calculated from personality traits)
+  readonly priorityWeights: Record<TacticalPriority, number>;
+  
+  // Behavioral modifiers
+  readonly riskTolerance: number;      // Willingness to take calculated risks
+  readonly adaptability: number;       // How quickly AI changes tactics
+  readonly specialization: number;     // Focus on specific unit types/abilities
+}
+
+/**
+ * Predefined AI personality types
+ */
+export enum AIPersonalityType {
+  BERSERKER = 'berserker',         // High aggression, low planning
+  STRATEGIST = 'strategist',       // High planning, moderate aggression
+  CONSERVATIVE = 'conservative',   // Low aggression, high survival focus
+  BALANCED = 'balanced',           // Moderate across all traits
+  ROOKIE = 'rookie',               // High mistakes, low forward-looking
+  VETERAN = 'veteran',             // Low mistakes, high experience
+  SPECIALIST = 'specialist',       // Focused on specific tactics
+  ADAPTIVE = 'adaptive'            // Changes behavior based on situation
+}
+
+/**
  * AI state transition triggers
  */
 export interface StateTransitionTrigger {
@@ -254,7 +286,7 @@ export interface BehaviorTreeNode {
   children?: BehaviorTreeNode[];
   behavior?: AIBehavior;
   condition?: (context: AIDecisionContext) => boolean;
-  decorator?: (result: any) => any;
+  decorator?: (result: unknown) => unknown;
 }
 
 /**

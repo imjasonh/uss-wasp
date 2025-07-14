@@ -12,6 +12,7 @@ import {
   EngagementAnalysis,
   ThreatAssessment,
   AIConfiguration,
+  AIPersonality,
   AIDifficulty,
 } from './types';
 import { Unit } from '../game/Unit';
@@ -23,11 +24,20 @@ import { UnitCategory, UnitType } from '../game/types';
  */
 export class AIDecisionMaker {
   private readonly config: AIConfiguration;
+  private readonly personality: AIPersonality | null;
   private readonly decisionHistory: AIDecision[] = [];
   private readonly threatAssessments: Map<string, ThreatAssessment> = new Map();
 
-  public constructor(difficulty: AIDifficulty = AIDifficulty.VETERAN) {
-    this.config = this.createConfiguration(difficulty);
+  public constructor(configOrPersonality: AIDifficulty | AIPersonality = AIDifficulty.VETERAN) {
+    if (typeof configOrPersonality === 'string') {
+      // Legacy difficulty-based configuration
+      this.config = this.createConfiguration(configOrPersonality);
+      this.personality = null;
+    } else {
+      // New personality-based configuration
+      this.personality = configOrPersonality;
+      this.config = configOrPersonality;
+    }
   }
 
   /**
@@ -58,82 +68,146 @@ export class AIDecisionMaker {
   }
 
   /**
-   * Determine current tactical priorities based on game state
+   * Determine current tactical priorities based on game state and personality
    */
   private determineTacticalPriorities(context: AIDecisionContext): TacticalPriority[] {
     const priorities: { priority: TacticalPriority; weight: number }[] = [];
 
-    // Analyze force preservation needs
+    // Get base personality weights or use default weights
+    const baseWeights = this.personality?.priorityWeights ?? this.getDefaultPriorityWeights();
+
+    // Analyze current situation and apply situational modifiers
+    const situationalModifiers = this.calculateSituationalModifiers(context);
+
+    // Apply personality-based weights with situational modifiers
+    for (const [priority, baseWeight] of Object.entries(baseWeights)) {
+      const situationalWeight = situationalModifiers[priority as TacticalPriority] || 1.0;
+      const finalWeight = baseWeight * situationalWeight;
+      
+      // Only include priorities that meet minimum threshold
+      if (finalWeight >= 1.0) {
+        priorities.push({ 
+          priority: priority as TacticalPriority, 
+          weight: finalWeight 
+        });
+      }
+    }
+
+    // Apply personality-specific urgency bonuses
+    this.applyUrgencyBonuses(priorities, context);
+
+    // Sort by weight (highest first)
+    priorities.sort((a, b) => b.weight - a.weight);
+
+    return priorities.map(p => p.priority);
+  }
+
+  /**
+   * Calculate situational modifiers for tactical priorities
+   */
+  private calculateSituationalModifiers(context: AIDecisionContext): Record<TacticalPriority, number> {
+    const modifiers: Record<TacticalPriority, number> = {} as Record<TacticalPriority, number>;
+
+    // Force preservation - higher when units are damaged
     const averageHealth = this.calculateAverageUnitHealth(context.availableUnits);
-    if (averageHealth < 0.5) {
-      priorities.push({ priority: TacticalPriority.PRESERVE_FORCE, weight: 8 });
-    }
+    modifiers[TacticalPriority.PRESERVE_FORCE] = averageHealth < 0.5 ? 2.0 : 1.0;
 
-    // Analyze objective threats
+    // Objective threats - higher when objectives are threatened
     const objectiveThreatLevel = this.assessObjectiveThreats(context);
-    if (objectiveThreatLevel > 0.7) {
-      priorities.push({ priority: TacticalPriority.DEFEND_OBJECTIVES, weight: 9 });
-    }
+    modifiers[TacticalPriority.DEFEND_OBJECTIVES] = objectiveThreatLevel > 0.7 ? 1.8 : 1.0;
+    modifiers[TacticalPriority.SECURE_OBJECTIVES] = objectiveThreatLevel > 0.5 ? 1.5 : 1.0;
 
-    // Analyze terrain control
+    // Terrain control - higher when losing territory
     const territoryControl = context.resourceStatus.territoryControl;
-    if (territoryControl < 0.6) {
-      priorities.push({ priority: TacticalPriority.DENY_TERRAIN, weight: 7 });
-    }
+    modifiers[TacticalPriority.DENY_TERRAIN] = territoryControl < 0.6 ? 1.6 : 1.0;
 
-    // Analyze enemy vulnerability
+    // Combat opportunities - higher when enemies are vulnerable
     const enemyVulnerability = this.assessEnemyVulnerability(context.enemyUnits);
-    if (enemyVulnerability > 0.1) {
-      // Lower threshold to encourage combat
-      priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 8 });
-    }
+    modifiers[TacticalPriority.INFLICT_CASUALTIES] = enemyVulnerability > 0.1 ? 1.4 : 1.0;
 
-    // If units are in combat range, prioritize fighting over movement (HIGHEST PRIORITY)
-    const unitsInRange = this.countUnitsInCombatRange(context);
-    if (unitsInRange > 0) {
-      priorities.push({ priority: TacticalPriority.INFLICT_CASUALTIES, weight: 20 }); // Maximum priority for combat
-    }
-
-    // Check for USS Wasp operations opportunities
+    // Unit-specific opportunities
     const hasWasp = context.availableUnits.some(unit => unit.type === UnitType.USS_WASP);
-    if (hasWasp) {
-      priorities.push({ priority: TacticalPriority.WASP_OPERATIONS, weight: 9 });
-    }
+    modifiers[TacticalPriority.WASP_OPERATIONS] = hasWasp ? 1.0 : 0.0;
 
-    // Check for transport/logistics needs
     const hasTransports = context.availableUnits.some(unit => unit.getCargoCapacity() > 0);
-    if (hasTransports) {
-      priorities.push({ priority: TacticalPriority.MANAGE_LOGISTICS, weight: 8 });
-    }
+    modifiers[TacticalPriority.MANAGE_LOGISTICS] = hasTransports ? 1.0 : 0.0;
 
-    // Check for hidden unit tactical opportunities
     const hasHiddenUnits = context.availableUnits.some(unit => unit.isHidden());
-    const canHideUnits = context.availableUnits.some(
-      unit => unit.canBeHidden() && !unit.isHidden()
-    );
-    if (hasHiddenUnits || canHideUnits) {
-      priorities.push({ priority: TacticalPriority.HIDDEN_OPERATIONS, weight: 8 });
-    }
+    const canHideUnits = context.availableUnits.some(unit => unit.canBeHidden() && !unit.isHidden());
+    modifiers[TacticalPriority.HIDDEN_OPERATIONS] = (hasHiddenUnits || canHideUnits) ? 1.0 : 0.0;
 
-    // Check for special ability opportunities
     const hasSpecialAbilities = context.availableUnits.some(
       unit => unit.specialAbilities.length > 0 && unit.canAct()
     );
-    if (hasSpecialAbilities) {
-      priorities.push({ priority: TacticalPriority.USE_SPECIAL_ABILITIES, weight: 8 });
+    modifiers[TacticalPriority.USE_SPECIAL_ABILITIES] = hasSpecialAbilities ? 1.0 : 0.0;
+
+    // Intelligence gathering - personality-dependent baseline
+    modifiers[TacticalPriority.GATHER_INTELLIGENCE] = 1.0;
+
+    return modifiers;
+  }
+
+  /**
+   * Apply urgency bonuses based on personality and situation
+   */
+  private applyUrgencyBonuses(priorities: { priority: TacticalPriority; weight: number }[], context: AIDecisionContext): void {
+    // Combat urgency - aggressive personalities get massive bonus for immediate combat
+    const unitsInRange = this.countUnitsInCombatRange(context);
+    if (unitsInRange > 0) {
+      const combatPriority = priorities.find(p => p.priority === TacticalPriority.INFLICT_CASUALTIES);
+      if (combatPriority) {
+        const aggressionBonus = this.personality?.aggression ?? 3;
+        combatPriority.weight += aggressionBonus * 4; // Significant bonus for aggressive personalities
+      }
     }
 
-    // Check for objective opportunities (always important)
-    priorities.push({ priority: TacticalPriority.SECURE_OBJECTIVES, weight: 9 });
+    // Forward-looking personalities boost planning priorities
+    const forwardLooking = this.personality?.forwardLooking ?? 3;
+    if (forwardLooking >= 4) {
+      const planningPriorities = [
+        TacticalPriority.GATHER_INTELLIGENCE,
+        TacticalPriority.MANAGE_LOGISTICS,
+        TacticalPriority.DEFEND_OBJECTIVES
+      ];
+      
+      priorities.forEach(p => {
+        if (planningPriorities.includes(p.priority)) {
+          p.weight += forwardLooking * 0.5;
+        }
+      });
+    }
+  }
 
-    // Always include intelligence gathering
-    priorities.push({ priority: TacticalPriority.GATHER_INTELLIGENCE, weight: 4 });
+  /**
+   * Get default priority weights for legacy compatibility
+   */
+  private getDefaultPriorityWeights(): Record<TacticalPriority, number> {
+    return {
+      [TacticalPriority.PRESERVE_FORCE]: 4,
+      [TacticalPriority.INFLICT_CASUALTIES]: 6,
+      [TacticalPriority.DENY_TERRAIN]: 5,
+      [TacticalPriority.DEFEND_OBJECTIVES]: 7,
+      [TacticalPriority.SECURE_OBJECTIVES]: 6,
+      [TacticalPriority.GATHER_INTELLIGENCE]: 3,
+      [TacticalPriority.MANAGE_LOGISTICS]: 5,
+      [TacticalPriority.WASP_OPERATIONS]: 6,
+      [TacticalPriority.HIDDEN_OPERATIONS]: 5,
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 4,
+    };
+  }
 
-    // Sort by weight and return top priorities
-    return priorities
-      .sort((a, b) => b.weight - a.weight)
-      .slice(0, 7) // Increased to 7 priorities for new capabilities
-      .map(p => p.priority);
+  /**
+   * Count units in combat range (for urgency calculations)
+   */
+  private countUnitsInCombatRange(context: AIDecisionContext): number {
+    return context.availableUnits.filter(unit => {
+      return context.enemyUnits.some(enemy => {
+        const unitHex = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+        const enemyHex = new Hex(enemy.state.position.q, enemy.state.position.r, enemy.state.position.s);
+        const distance = unitHex.distanceTo(enemyHex);
+        return distance <= 1; // Adjacent combat range
+      });
+    }).length;
   }
 
   /**
@@ -1366,18 +1440,6 @@ export class AIDecisionMaker {
     return adjacent;
   }
 
-  private countUnitsInCombatRange(context: AIDecisionContext): number {
-    let count = 0;
-
-    for (const unit of context.availableUnits) {
-      const targets = this.findValidTargets(unit, context.enemyUnits, context);
-      if (targets.length > 0) {
-        count++;
-      }
-    }
-
-    return count;
-  }
 
   /**
    * Find the nearest enemy unit to a given unit

@@ -6,11 +6,14 @@
 
 import { AIDecisionMaker } from './AIDecisionMaker';
 import { AIStateMachine } from './AIStateMachine';
+import { PersonalityFactory } from './PersonalityFactory';
 import {
   AIDifficulty,
   AIDecisionContext,
   AIDecision,
   AIConfiguration,
+  AIPersonality,
+  AIPersonalityType,
   AIState,
   PlayerPattern,
   AILearningData,
@@ -32,20 +35,60 @@ export class AIController {
   private stateMachine: AIStateMachine;
   private readonly aiPlayerId: string;
   private difficulty: AIDifficulty;
+  private readonly personality: AIPersonality | null;
   private playerPattern!: PlayerPattern;
   private learningData!: AILearningData;
   private performanceMetrics!: AIPerformanceMetrics;
   private isEnabled: boolean = true;
 
-  public constructor(aiPlayerId: string, difficulty: AIDifficulty = AIDifficulty.VETERAN) {
+  public constructor(
+    aiPlayerId: string, 
+    configOrPersonality: AIDifficulty | AIPersonality | AIPersonalityType = AIDifficulty.VETERAN
+  ) {
     this.aiPlayerId = aiPlayerId;
-    this.difficulty = difficulty;
-    this.decisionMaker = new AIDecisionMaker(difficulty);
+    
+    // Handle different constructor parameter types
+    if (typeof configOrPersonality === 'string') {
+      // It's either AIDifficulty or AIPersonalityType
+      if (Object.values(AIDifficulty).includes(configOrPersonality as AIDifficulty)) {
+        // Legacy difficulty-based initialization
+        this.difficulty = configOrPersonality as AIDifficulty;
+        this.personality = null;
+        this.decisionMaker = new AIDecisionMaker(this.difficulty);
+      } else {
+        // Personality type - create personality from factory
+        this.personality = PersonalityFactory.createPersonality(configOrPersonality as AIPersonalityType);
+        this.difficulty = this.personality.difficulty;
+        this.decisionMaker = new AIDecisionMaker(this.personality);
+      }
+    } else {
+      // Direct personality object
+      this.personality = configOrPersonality;
+      this.difficulty = this.personality.difficulty;
+      this.decisionMaker = new AIDecisionMaker(this.personality);
+    }
 
-    const config = this.createAIConfiguration(difficulty);
+    const config = this.personality ?? this.createAIConfiguration(this.difficulty);
     this.stateMachine = new AIStateMachine(config);
 
     this.initializeAIData();
+  }
+
+  /**
+   * Get the current AI personality (if any)
+   */
+  public getPersonality(): AIPersonality | null {
+    return this.personality;
+  }
+
+  /**
+   * Get personality description for UI display
+   */
+  public getPersonalityDescription(): string {
+    if (!this.personality) {
+      return `Difficulty: ${this.difficulty}`;
+    }
+    return `${this.personality.name} (Aggression: ${this.personality.aggression}, Planning: ${this.personality.forwardLooking}, Precision: ${this.personality.mistakes})`;
   }
 
   /**
