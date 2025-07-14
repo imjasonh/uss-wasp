@@ -94,7 +94,7 @@ export class GameState {
   /**
    * Initialize USS Wasp operations system
    */
-  private initializeWaspOperations(): void {
+  public initializeWaspOperations(): void {
     for (const player of this.players.values()) {
       const waspUnits = player.getLivingUnits().filter(unit => unit.type === UnitType.USS_WASP);
       if (waspUnits.length > 0) {
@@ -396,6 +396,8 @@ export class GameState {
           ActionType.SPECIAL_ABILITY,
           ActionType.SECURE_OBJECTIVE,
           ActionType.REVEAL,
+          ActionType.LAUNCH_FROM_WASP,
+          ActionType.RECOVER_TO_WASP,
         ].includes(actionType);
       default:
         return false;

@@ -301,6 +301,8 @@ export class Unit {
    */
   getCargoCapacity(): number {
     switch (this.type) {
+      case UnitType.USS_WASP:
+        return 6; // Realistic capacity for aircraft and landing craft
       case UnitType.OSPREY:
         return 2; // 2 Marine Squads or 1 Humvee
       case UnitType.SUPER_STALLION:

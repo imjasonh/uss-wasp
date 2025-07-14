@@ -45,6 +45,9 @@ function testWaspOperationsAI() {
         const wasp = waspUnits[0];
         console.log(`   USS Wasp cargo capacity: ${wasp.getCargoCapacity()}`);
         
+        // CRITICAL: Re-initialize USS Wasp operations after adding units
+        gameState.initializeWaspOperations();
+        
         const gameEngine = new GameEngine(gameState);
         gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
 
