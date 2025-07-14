@@ -35,7 +35,7 @@ jobs:
           static_site_generator: webpack
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build with webpack
         run: npm run build:web
