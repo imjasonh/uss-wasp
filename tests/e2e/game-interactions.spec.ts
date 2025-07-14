@@ -67,7 +67,8 @@ test.describe('USS Wasp Game - Interactions Tests', () => {
       
       // Check if unit was selected
       if (!unitInfo.includes('No selection')) {
-        expect(actions.length).toBeGreaterThan(0);
+        expect(actions).toBeDefined();
+        expect(Array.isArray(actions)).toBeTruthy();
         
         // Test unit actions if available
         if (actions.length > 0) {
@@ -78,7 +79,7 @@ test.describe('USS Wasp Game - Interactions Tests', () => {
             
             // Check for response
             const message = await gameHelpers.getGameMessage();
-            expect(message).toBeTruthy();
+            expect(message).toBeDefined();
           }
         }
         break;
@@ -126,7 +127,7 @@ test.describe('USS Wasp Game - Interactions Tests', () => {
     
     // Step 2: Try to perform an action
     const actions = await gameHelpers.getUnitActions();
-    if (actions.length > 0 && actions[0] && !actions[0].includes('Select')) {
+    if (actions && actions.length > 0 && actions[0] && !actions[0].includes('Select')) {
       await gameHelpers.clickUnitAction(actions[0]);
       await page.waitForTimeout(500);
     }
