@@ -32,6 +32,14 @@ function testWaspOperationsAI(): boolean {
     console.log('────────────────────────────────────');
     
     try {
+        // Set a fixed seed for deterministic behavior
+        const originalRandom = Math.random;
+        let seed = 54321;
+        Math.random = function() {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+        };
+        
         const map = new GameMap(8, 8);
         const gameState = new GameState('wasp-ops-test', map, 15);
         
@@ -81,10 +89,15 @@ function testWaspOperationsAI(): boolean {
             console.log('   ❌ MISSING: AI USS Wasp launch/recovery operations');
         }
         
+        // Restore original Math.random
+        Math.random = originalRandom;
+        
         return waspActions.length > 0;
         
     } catch (error) {
         console.log(`   ❌ ERROR: ${(error as Error).message}`);
+        // Restore original Math.random in case of error
+        Math.random = originalRandom;
         return false;
     }
 }
