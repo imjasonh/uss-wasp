@@ -114,6 +114,9 @@ function testHiddenUnitAI(): boolean {
         const assaultPlayer = new Player('assault', PlayerSide.Assault);
         const defenderPlayer = new Player('defender', PlayerSide.Defender);
         
+        assaultPlayer.commandPoints = 15;
+        defenderPlayer.commandPoints = 15;
+        
         gameState.addPlayer(assaultPlayer);
         gameState.addPlayer(defenderPlayer);
         gameState.setActivePlayerBySide(PlayerSide.Assault);
@@ -278,6 +281,9 @@ function testObjectiveAI(): boolean {
         const assaultPlayer = new Player('assault', PlayerSide.Assault);
         const defenderPlayer = new Player('defender', PlayerSide.Defender);
         
+        assaultPlayer.commandPoints = 15;
+        defenderPlayer.commandPoints = 15;
+        
         gameState.addPlayer(assaultPlayer);
         gameState.addPlayer(defenderPlayer);
         gameState.setActivePlayerBySide(PlayerSide.Assault);
@@ -373,6 +379,7 @@ function testTransportAI(): boolean {
         const gameState = new GameState('transport-test', map, 10);
         
         const assaultPlayer = new Player('assault', PlayerSide.Assault);
+        assaultPlayer.commandPoints = 15;
         gameState.addPlayer(assaultPlayer);
         gameState.setActivePlayerBySide(PlayerSide.Assault);
 
