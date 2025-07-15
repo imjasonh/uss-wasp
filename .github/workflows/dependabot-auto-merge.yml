@@ -39,7 +39,7 @@ jobs:
             This PR will be automatically merged when all CI checks pass.
             
             **Update details:**
-            - **Package**: ${{ steps.metadata.outputs.package-name }}
+            - **Package**: ${{ steps.metadata.outputs.dependency-names }}
             - **Update type**: ${{ steps.metadata.outputs.update-type }}
             - **Previous version**: ${{ steps.metadata.outputs.previous-version }}
             - **New version**: ${{ steps.metadata.outputs.new-version }}
