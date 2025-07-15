@@ -11,8 +11,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-    reviewers:
-      - "imjasonh"
     labels:
       - "dependencies"
       - "github-actions"
@@ -30,8 +28,6 @@ updates:
       day: "monday"
       time: "10:00"
     open-pull-requests-limit: 15
-    reviewers:
-      - "imjasonh"
     labels:
       - "dependencies"
       - "npm"
