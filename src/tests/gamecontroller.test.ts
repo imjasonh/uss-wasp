@@ -178,24 +178,23 @@ describe('GameController', () => {
 
   describe('UI Mode Management', () => {
     it('should start in normal mode', () => {
-      // Private property access for testing
-      expect((gameController as any).uiMode).toBe(UIMode.NORMAL);
+      expect(gameController.getCurrentUIMode()).toBe(UIMode.NORMAL);
     });
 
     it('should switch to move mode when startMove is called', () => {
       gameController.startMove();
-      expect((gameController as any).uiMode).toBe(UIMode.MOVE_TARGET);
+      expect(gameController.getCurrentUIMode()).toBe(UIMode.MOVE_TARGET);
     });
 
     it('should switch to attack mode when startAttack is called', () => {
       gameController.startAttack();
-      expect((gameController as any).uiMode).toBe(UIMode.ATTACK_TARGET);
+      expect(gameController.getCurrentUIMode()).toBe(UIMode.ATTACK_TARGET);
     });
 
     it('should reset to normal mode when resetUIMode is called', () => {
       gameController.startMove();
       gameController.resetUIMode();
-      expect((gameController as any).uiMode).toBe(UIMode.NORMAL);
+      expect(gameController.getCurrentUIMode()).toBe(UIMode.NORMAL);
     });
   });
 
@@ -208,9 +207,9 @@ describe('GameController', () => {
 
       if (marineUnit) {
         // Simulate unit selection
-        (gameController as any).onUnitSelected(marineUnit);
-        expect((gameController as any).selectedUnit).toBe(marineUnit);
-        expect((gameController as any).uiMode).toBe(UIMode.UNIT_SELECTED);
+        gameController.selectUnit(marineUnit);
+        expect(gameController.getSelectedUnit()).toBe(marineUnit);
+        expect(gameController.getCurrentUIMode()).toBe(UIMode.UNIT_SELECTED);
       }
     });
 
@@ -230,9 +229,9 @@ describe('GameController', () => {
         defenderPlayer.addUnit(enemyUnit);
 
         // Attempt to select enemy unit
-        (gameController as any).onUnitSelected(enemyUnit);
-        expect((gameController as any).selectedUnit).toBeUndefined();
-        expect((gameController as any).uiMode).toBe(UIMode.NORMAL);
+        gameController.selectUnit(enemyUnit);
+        expect(gameController.getSelectedUnit()).toBeUndefined();
+        expect(gameController.getCurrentUIMode()).toBe(UIMode.NORMAL);
       }
     });
   });
@@ -262,10 +261,10 @@ describe('GameController', () => {
   describe('Action Validation', () => {
     it('should validate phase-appropriate actions', () => {
       gameState.phase = TurnPhase.MOVEMENT;
-      const isValidMove = (gameController as any).isValidPhase(ActionType.MOVE);
+      const isValidMove = gameController.isValidPhase(ActionType.MOVE);
       expect(isValidMove).toBe(true);
 
-      const isValidAttack = (gameController as any).isValidPhase(ActionType.ATTACK);
+      const isValidAttack = gameController.isValidPhase(ActionType.ATTACK);
       expect(isValidAttack).toBe(false);
     });
 
@@ -276,7 +275,7 @@ describe('GameController', () => {
         .find(u => u.type === UnitType.MARINE_SQUAD);
 
       if (marineUnit && marineUnit.specialAbilities.length > 0) {
-        const canUse = (gameController as any).canUseAbility(
+        const canUse = gameController.canUseAbility(
           marineUnit,
           marineUnit.specialAbilities[0].name
         );
@@ -310,7 +309,7 @@ describe('GameController', () => {
 
       if (waspUnit && marineUnit) {
         // Test if marine can be loaded (basic validation)
-        const canLoad = (gameController as any).canUnitLoad(waspUnit, marineUnit);
+        const canLoad = gameController.canUnitLoad(waspUnit, marineUnit);
         expect(typeof canLoad).toBe('boolean');
       }
     });
@@ -321,11 +320,14 @@ describe('GameController', () => {
       // Remove all defender units to trigger elimination
       const defenderPlayer = gameState.getPlayerBySide(PlayerSide.Defender);
       if (defenderPlayer) {
-        // Clear all units
-        (defenderPlayer as any).units = [];
+        // Clear all units by removing them properly
+        const allUnits = defenderPlayer.getLivingUnits();
+        allUnits.forEach((unit: Unit) => {
+          defenderPlayer.removeUnit(unit.id);
+        });
 
         // Trigger victory check
-        (gameController as any).checkVictoryConditions();
+        gameController.checkVictoryConditions();
         expect(gameState.isGameOver).toBe(true);
       }
     });
@@ -337,7 +339,7 @@ describe('GameController', () => {
         const waspUnit = assaultPlayer.getLivingUnits().find(u => u.type === UnitType.USS_WASP);
         if (waspUnit) {
           waspUnit.takeDamage(1000); // Destroy it
-          (gameController as any).checkVictoryConditions();
+          gameController.checkVictoryConditions();
           expect(gameState.isGameOver).toBe(true);
         }
       }
@@ -346,7 +348,7 @@ describe('GameController', () => {
     it('should calculate player scores', () => {
       const assaultPlayer = gameState.getPlayerBySide(PlayerSide.Assault);
       if (assaultPlayer) {
-        const score = (gameController as any).calculatePlayerScore(assaultPlayer);
+        const score = gameController.calculatePlayerScore(assaultPlayer);
         expect(typeof score).toBe('number');
         expect(score).toBeGreaterThan(0);
       }
@@ -355,8 +357,8 @@ describe('GameController', () => {
 
   describe('UI Display Updates', () => {
     it('should update game status display', () => {
-      const updateElementSpy = jest.spyOn(gameController as any, 'updateElement');
-      (gameController as any).updateGameStatusDisplay();
+      const updateElementSpy = jest.spyOn(gameController, 'updateElement');
+      gameController.updateGameStatusDisplay();
 
       expect(updateElementSpy).toHaveBeenCalledWith('turn-display', expect.any(String));
       expect(updateElementSpy).toHaveBeenCalledWith('phase-display', expect.any(String));
@@ -364,14 +366,14 @@ describe('GameController', () => {
     });
 
     it('should handle message display', () => {
-      (gameController as any).showMessage('Test message', 'info');
+      gameController.showMessage('Test message', 'info');
       expect(document.getElementById).toHaveBeenCalledWith('game-message');
     });
 
     it('should update USS Wasp display', () => {
       // Test that updateWaspDisplay doesn't throw and executes without error
       expect(() => {
-        (gameController as any).updateWaspDisplay();
+        gameController.updateWaspDisplay();
       }).not.toThrow();
     });
   });
@@ -382,8 +384,8 @@ describe('GameController', () => {
       (document.getElementById as jest.Mock).mockReturnValue(null);
 
       expect(() => {
-        (gameController as any).updateGameStatusDisplay();
-        (gameController as any).showMessage('Test', 'info');
+        gameController.updateGameStatusDisplay();
+        gameController.showMessage('Test', 'info');
       }).not.toThrow();
     });
 

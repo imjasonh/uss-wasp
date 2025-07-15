@@ -4,7 +4,7 @@
  */
 
 import { GameEngine } from '../core/game/GameEngine';
-import { GameState } from '../core/game/GameState';
+import { GameState, GameAction } from '../core/game/GameState';
 import { Player } from '../core/game/Player';
 import { Unit } from '../core/game/Unit';
 import { GameMap } from '../core/game/Map';
@@ -396,13 +396,14 @@ describe('GameEngine', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should handle malformed actions', () => {
-      const action = {
+    it('should handle invalid actions', () => {
+      // Test with invalid unit ID to trigger validation failure
+      const action: GameAction = {
         type: ActionType.MOVE,
         playerId: assaultPlayer.id,
-        unitId: marineUnit.id,
-        // Missing targetPosition
-      } as any;
+        unitId: 'invalid-unit-id',
+        targetPosition: new Hex(1, 0, -1),
+      };
 
       const result = gameEngine.executeAction(action);
       expect(result.success).toBe(false);
