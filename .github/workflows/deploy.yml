@@ -29,8 +29,6 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
-        with:
-          static_site_generator: webpack
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
