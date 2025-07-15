@@ -19,7 +19,7 @@ import { GameStateManager } from '../logging/GameStateManager';
 export interface ActionResult {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 /**
@@ -32,6 +32,16 @@ export interface MovementPath {
 }
 
 /**
+ * Special ability data for various abilities
+ */
+interface SpecialAbilityData {
+  targetHex?: { q: number; r: number; s: number };
+  targetHexes?: { q: number; r: number; s: number }[];
+  targetId?: string;
+  [key: string]: unknown;
+}
+
+/**
  * Game engine that processes all player actions
  */
 export class GameEngine {
@@ -39,7 +49,7 @@ export class GameEngine {
   private logger: GameLogger | null = null;
   private stateManager: GameStateManager | null = null;
 
-  constructor(private readonly gameState: GameState) {
+  public constructor(private readonly gameState: GameState) {
     this.logger = getGameLogger();
     if (this.logger) {
       this.stateManager = new GameStateManager(this.logger);
@@ -49,7 +59,7 @@ export class GameEngine {
   /**
    * Set a custom logger for this engine
    */
-  setLogger(logger: GameLogger): void {
+  public setLogger(logger: GameLogger): void {
     this.logger = logger;
     this.stateManager = new GameStateManager(logger);
   }
@@ -57,7 +67,7 @@ export class GameEngine {
   /**
    * Execute a player action
    */
-  executeAction(action: GameAction): ActionResult {
+  public executeAction(action: GameAction): ActionResult {
     // Log action attempt
     this.logger?.log(
       LogLevel.DEBUG,
@@ -72,7 +82,7 @@ export class GameEngine {
     // Validate action
     const validation = this.gameState.canPerformAction(action);
     if (!validation.valid) {
-      const result = { success: false, message: validation.reason || 'Invalid action' };
+      const result = { success: false, message: validation.reason ?? 'Invalid action' };
       this.logger?.logUnitAction(action, result, this.gameState);
       return result;
     }
@@ -162,7 +172,7 @@ export class GameEngine {
     // Check terrain restrictions
     const terrainCheck = this.validateTerrainMovement(unit, targetHex);
     if (!terrainCheck.valid) {
-      return { success: false, message: terrainCheck.reason || 'Invalid terrain movement' };
+      return { success: false, message: terrainCheck.reason ?? 'Invalid terrain movement' };
     }
 
     // Execute move
@@ -200,7 +210,7 @@ export class GameEngine {
     // Validate attack
     const attackValidation = CombatSystem.canAttack(attacker, defender, this.gameState);
     if (!attackValidation.valid) {
-      return { success: false, message: attackValidation.reason || 'Cannot attack target' };
+      return { success: false, message: attackValidation.reason ?? 'Cannot attack target' };
     }
 
     // Check if defender is hidden and can be targeted
@@ -277,7 +287,7 @@ export class GameEngine {
     // Check cargo compatibility
     const compatibilityCheck = this.validateCargoCompatibility(transport, cargo);
     if (!compatibilityCheck.valid) {
-      return { success: false, message: compatibilityCheck.reason || 'Cargo compatibility issue' };
+      return { success: false, message: compatibilityCheck.reason ?? 'Cargo compatibility issue' };
     }
 
     // Execute load
@@ -319,7 +329,7 @@ export class GameEngine {
     // Validate unload position
     const unloadCheck = this.validateUnloadPosition(transport, cargo, targetHex);
     if (!unloadCheck.valid) {
-      return { success: false, message: unloadCheck.reason || 'Invalid unload position' };
+      return { success: false, message: unloadCheck.reason ?? 'Invalid unload position' };
     }
 
     cargo.moveTo(targetHex);
@@ -366,7 +376,7 @@ export class GameEngine {
   /**
    * Execute specific unit abilities
    */
-  private executeSpecificAbility(unit: Unit, abilityName: string, data: any): ActionResult {
+  private executeSpecificAbility(unit: Unit, abilityName: string, data: SpecialAbilityData): ActionResult {
     switch (abilityName) {
       case 'Artillery Barrage':
         return this.executeArtilleryBarrage(unit, data);
@@ -489,7 +499,7 @@ export class GameEngine {
   /**
    * Calculate movement path for a unit
    */
-  calculateMovementPath(unit: Unit, target: Hex): MovementPath {
+  public calculateMovementPath(unit: Unit, target: Hex): MovementPath {
     const start = unit.state.position;
     const targetCoord = { q: target.q, r: target.r, s: target.s };
 
@@ -671,7 +681,7 @@ export class GameEngine {
   /**
    * Execute artillery barrage
    */
-  private executeArtilleryBarrage(_unit: Unit, data: any): ActionResult {
+  private executeArtilleryBarrage(_unit: Unit, data: SpecialAbilityData): ActionResult {
     if (!data.targetHexes || data.targetHexes.length !== 3) {
       return { success: false, message: 'Artillery barrage requires 3 target hexes' };
     }
@@ -704,10 +714,13 @@ export class GameEngine {
   /**
    * Execute SAM strike
    */
-  private executeSAMStrike(_unit: Unit, data: any): ActionResult {
+  private executeSAMStrike(_unit: Unit, data: SpecialAbilityData): ActionResult {
     const targetId = data.targetId;
-    const target = this.gameState.getUnit(targetId);
+    if (!targetId) {
+      return { success: false, message: 'Target ID required for SAM strike' };
+    }
 
+    const target = this.gameState.getUnit(targetId);
     if (!target) {
       return { success: false, message: 'Target not found' };
     }
@@ -736,7 +749,7 @@ export class GameEngine {
   /**
    * Execute Sea Sparrow defense
    */
-  private executeSeaSparrow(unit: Unit, data: any): ActionResult {
+  private executeSeaSparrow(unit: Unit, data: SpecialAbilityData): ActionResult {
     // Similar to SAM strike but defensive
     return this.executeSAMStrike(unit, data);
   }
@@ -744,7 +757,7 @@ export class GameEngine {
   /**
    * Execute breaching charge
    */
-  private executeBreachingCharge(unit: Unit, data: any): ActionResult {
+  private executeBreachingCharge(unit: Unit, data: SpecialAbilityData): ActionResult {
     if (!data.targetHex) {
       return { success: false, message: 'Target hex required' };
     }
@@ -864,7 +877,7 @@ export class GameEngine {
   /**
    * Add AI controller for a player
    */
-  addAIController(playerId: string, difficulty: AIDifficulty = AIDifficulty.VETERAN): void {
+  public addAIController(playerId: string, difficulty: AIDifficulty = AIDifficulty.VETERAN): void {
     const aiController = new AIController(playerId, difficulty);
     this.aiControllers.set(playerId, aiController);
     console.log(`[AI] Added AI controller for player ${playerId} with difficulty ${difficulty}`);
@@ -873,7 +886,7 @@ export class GameEngine {
   /**
    * Remove AI controller for a player
    */
-  removeAIController(playerId: string): void {
+  public removeAIController(playerId: string): void {
     this.aiControllers.delete(playerId);
     console.log(`[AI] Removed AI controller for player ${playerId}`);
   }
@@ -881,14 +894,14 @@ export class GameEngine {
   /**
    * Check if player is AI controlled
    */
-  isAIControlled(playerId: string): boolean {
+  public isAIControlled(playerId: string): boolean {
     return this.aiControllers.has(playerId);
   }
 
   /**
    * Update AI for current active player
    */
-  updateAI(): GameAction[] {
+  public updateAI(): GameAction[] {
     const activePlayerId = this.gameState.activePlayerId;
     const aiController = this.aiControllers.get(activePlayerId);
 
@@ -927,21 +940,21 @@ export class GameEngine {
   /**
    * Get all players in the game
    */
-  getPlayers(): Player[] {
+  public getPlayers(): Player[] {
     return this.gameState.getAllPlayers();
   }
 
   /**
    * Get game state (for AI analysis)
    */
-  getGameState(): GameState {
+  public getGameState(): GameState {
     return this.gameState;
   }
 
   /**
    * Process player actions for AI learning
    */
-  processPlayerActionsForAI(playerId: string, actions: GameAction[]): void {
+  public processPlayerActionsForAI(playerId: string, actions: GameAction[]): void {
     // Find enemy AI controllers that should learn from these actions
     for (const [aiPlayerId, aiController] of this.aiControllers) {
       if (aiPlayerId !== playerId) {
@@ -954,7 +967,7 @@ export class GameEngine {
   /**
    * Get AI status for UI display
    */
-  getAIStatus(playerId: string): {
+  public getAIStatus(playerId: string): {
     difficulty: AIDifficulty;
     currentState: AIState;
     performanceMetrics: AIPerformanceMetrics;
@@ -967,7 +980,7 @@ export class GameEngine {
   /**
    * Set AI difficulty for a player
    */
-  setAIDifficulty(playerId: string, difficulty: AIDifficulty): void {
+  public setAIDifficulty(playerId: string, difficulty: AIDifficulty): void {
     const aiController = this.aiControllers.get(playerId);
     if (aiController) {
       aiController.setDifficulty(difficulty);
@@ -977,7 +990,7 @@ export class GameEngine {
   /**
    * Enable/disable AI for a player
    */
-  setAIEnabled(playerId: string, enabled: boolean): void {
+  public setAIEnabled(playerId: string, enabled: boolean): void {
     const aiController = this.aiControllers.get(playerId);
     if (aiController) {
       aiController.setEnabled(enabled);
@@ -987,14 +1000,14 @@ export class GameEngine {
   /**
    * Get all AI controllers
    */
-  getAllAIControllers(): Map<string, AIController> {
+  public getAllAIControllers(): Map<string, AIController> {
     return new Map(this.aiControllers);
   }
 
   /**
    * Auto-setup AI based on player sides
    */
-  autoSetupAI(defenderDifficulty: AIDifficulty = AIDifficulty.VETERAN): void {
+  public autoSetupAI(defenderDifficulty: AIDifficulty = AIDifficulty.VETERAN): void {
     // Find defender player and make them AI controlled
     const defenderPlayer = this.gameState.getPlayerBySide(PlayerSide.Defender);
     if (defenderPlayer) {
@@ -1006,7 +1019,7 @@ export class GameEngine {
   /**
    * Execute AI actions and return results for testing
    */
-  executeAIActions(actions: GameAction[]): ActionResult[] {
+  public executeAIActions(actions: GameAction[]): ActionResult[] {
     const results: ActionResult[] = [];
     
     for (const action of actions) {
@@ -1020,7 +1033,7 @@ export class GameEngine {
   /**
    * Execute Fast Reconnaissance ability (HUMVEE)
    */
-  private executeFastReconnaissance(unit: Unit, data: any): ActionResult {
+  private executeFastReconnaissance(unit: Unit, _data: SpecialAbilityData): ActionResult {
     // Provide movement bonus or scouting information
     return {
       success: true,
@@ -1032,7 +1045,7 @@ export class GameEngine {
   /**
    * Execute Fast Ambush ability (TECHNICAL)  
    */
-  private executeFastAmbush(unit: Unit, data: any): ActionResult {
+  private executeFastAmbush(unit: Unit, _data: SpecialAbilityData): ActionResult {
     // Allow movement after attacking if unit was hidden
     if (unit.isHidden() || !unit.state.hasActed) {
       return {
@@ -1050,7 +1063,7 @@ export class GameEngine {
   /**
    * Execute Mobility ability (simplified HUMVEE)
    */
-  private executeMobility(unit: Unit, data: any): ActionResult {
+  private executeMobility(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Mobility - enhanced movement capability`,
@@ -1061,7 +1074,7 @@ export class GameEngine {
   /**
    * Execute Improvised ability (simplified TECHNICAL)
    */
-  private executeImprovised(unit: Unit, data: any): ActionResult {
+  private executeImprovised(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Improvised tactics - low cost mobility`,
@@ -1072,7 +1085,7 @@ export class GameEngine {
   /**
    * Execute Urban Specialists ability (MARINE_SQUAD)
    */
-  private executeUrbanSpecialists(unit: Unit, data: any): ActionResult {
+  private executeUrbanSpecialists(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Urban Specialists - bonus in urban terrain`,
@@ -1083,7 +1096,7 @@ export class GameEngine {
   /**
    * Execute Defensive Position ability (INFANTRY_SQUAD)
    */
-  private executeDefensivePosition(unit: Unit, data: any): ActionResult {
+  private executeDefensivePosition(unit: Unit, _data: SpecialAbilityData): ActionResult {
     // Apply defensive bonus
     unit.state.suppressionTokens = Math.max(0, unit.state.suppressionTokens - 1);
     return {
@@ -1096,7 +1109,7 @@ export class GameEngine {
   /**
    * Execute Entrench ability (simplified infantry)
    */
-  private executeEntrench(unit: Unit, data: any): ActionResult {
+  private executeEntrench(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} entrenches - defensive bonus applied`,
@@ -1107,7 +1120,7 @@ export class GameEngine {
   /**
    * Execute Amphibious Training ability (simplified marines)
    */
-  private executeAmphibiousTraining(unit: Unit, data: any): ActionResult {
+  private executeAmphibiousTraining(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Amphibious Training - water movement bonus`,
@@ -1118,7 +1131,7 @@ export class GameEngine {
   /**
    * Execute Anti-Vehicle Specialist ability (ATGM)
    */
-  private executeAntiVehicleSpecialist(unit: Unit, data: any): ActionResult {
+  private executeAntiVehicleSpecialist(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Anti-Vehicle Specialist - bonus vs vehicles`,
@@ -1129,7 +1142,7 @@ export class GameEngine {
   /**
    * Execute Anti-Aircraft ability (AA teams)
    */
-  private executeAntiAircraft(unit: Unit, data: any): ActionResult {
+  private executeAntiAircraft(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Anti-Aircraft - bonus vs aircraft`,
@@ -1140,7 +1153,7 @@ export class GameEngine {
   /**
    * Execute Anti-Air Focus ability (official AA teams)
    */
-  private executeAntiAirFocus(unit: Unit, data: any): ActionResult {
+  private executeAntiAirFocus(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Anti-Air Focus - enhanced air defense`,
@@ -1151,7 +1164,7 @@ export class GameEngine {
   /**
    * Execute Anti-Tank ability (simplified ATGM)
    */
-  private executeAntiTank(unit: Unit, data: any): ActionResult {
+  private executeAntiTank(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Anti-Tank - bonus vs armored vehicles`,
@@ -1162,7 +1175,7 @@ export class GameEngine {
   /**
    * Execute Indirect Fire ability (MORTAR_TEAM)
    */
-  private executeIndirectFire(unit: Unit, data: any): ActionResult {
+  private executeIndirectFire(unit: Unit, data: SpecialAbilityData): ActionResult {
     if (!data.targetHex) {
       return { success: false, message: 'Target hex required for indirect fire' };
     }
@@ -1180,7 +1193,7 @@ export class GameEngine {
 
     // Hit units at target location
     const targets = this.gameState.getUnitsAt(targetHex);
-    const results = [];
+    const results: string[] = [];
     
     for (const target of targets) {
       const damage = Math.floor(Math.random() * 3); // 0-2 damage
@@ -1200,7 +1213,7 @@ export class GameEngine {
   /**
    * Execute Local Knowledge ability (MILITIA_SQUAD)
    */
-  private executeLocalKnowledge(unit: Unit, data: any): ActionResult {
+  private executeLocalKnowledge(unit: Unit, _data: SpecialAbilityData): ActionResult {
     return {
       success: true,
       message: `${unit.type} uses Local Knowledge - terrain movement bonus`,
@@ -1211,12 +1224,12 @@ export class GameEngine {
   /**
    * Execute Heavy Bombardment ability (LONG_RANGE_ARTILLERY)
    */
-  private executeHeavyBombardment(unit: Unit, data: any): ActionResult {
+  private executeHeavyBombardment(unit: Unit, data: SpecialAbilityData): ActionResult {
     if (!data.targetHexes || data.targetHexes.length === 0) {
       return { success: false, message: 'Target hexes required for heavy bombardment' };
     }
 
-    const results = [];
+    const results: string[] = [];
     for (const hexData of data.targetHexes) {
       const hex = new Hex(hexData.q, hexData.r, hexData.s);
       const targets = this.gameState.getUnitsAt(hex);
