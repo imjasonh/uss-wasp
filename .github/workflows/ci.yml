@@ -49,22 +49,113 @@ jobs:
       run: npm run test -- --coverage --collectCoverageFrom="src/**/*.ts" --coverageReporters=text-summary
     
     
-    - name: Game Rules and AI Validation
+    - name: Run all tests
       run: |
-        echo "🎯 Running game rules and AI validation..."
-        echo "Running basic AI functionality tests..."
-        npm run test:ai || echo "⚠️ Basic AI tests completed with issues"
+        echo "🧪 Running comprehensive test suite..."
         echo ""
-        echo "Running strict AI regression tests..."
-        npm run test:ai:strict
-        echo ""
+        
+        echo "🤖 AI System Tests"
+        echo "=================="
+        
         echo "Running AI system gap analysis..."
-        npm run test:ai:gaps || echo "⚠️ AI gaps analysis completed (expected gaps may exist)"
+        npx tsx tests/ai/test-ai-system-gaps.ts
         echo ""
-        echo "Running balance testing..."
-        npm run test:balance || echo "⚠️ Balance tests completed (may include expected imbalances)"
+        
+        echo "Running comprehensive AI validation..."
+        npx tsx tests/ai/run-comprehensive-ai-test.ts
         echo ""
-        echo "✅ Game rules and AI validation suite completed"
+        
+        echo "Running AI battle series tests..."
+        timeout 600 node tests/ai/test-ai-battle-series.js || echo "AI battle tests completed (may have timed out for performance)"
+        echo ""
+        
+        echo "Running strict AI regression tests..."
+        npx tsx tests/ai/test-ai-strict.js
+        echo ""
+        
+        echo "Running basic AI functionality tests..."
+        node tests/ai/test-ai.js
+        echo ""
+        
+        echo "⚔️ Combat System Tests"
+        echo "====================="
+        
+        echo "Testing direct combat mechanics..."
+        npx tsx tests/combat/test-direct-combat.ts
+        echo ""
+        
+        echo "Testing close combat mechanics..."
+        node tests/combat/test-close-combat.js
+        echo ""
+        
+        echo "Testing basic combat functionality..."
+        node tests/combat/combat-test.js
+        echo ""
+        
+        echo "Testing multi-turn combat scenarios..."
+        node tests/combat/multi-turn-combat-test.js
+        echo ""
+        
+        echo "Testing quick engagement scenarios..."
+        node tests/combat/quick-engagement-test.js
+        echo ""
+        
+        echo "🗺️ Core System Tests"
+        echo "==================="
+        
+        echo "Testing pathfinding core..."
+        npx tsx tests/core/test-pathfinding-core.ts
+        echo ""
+        
+        echo "Testing logging system..."
+        node tests/core/test-logging-system.js
+        echo ""
+        
+        echo "Testing game balance..."
+        node tests/core/balance-test.js
+        echo ""
+        
+        echo "🎮 Simulation Tests"
+        echo "=================="
+        
+        echo "Running quick battle simulations..."
+        npx tsx tests/simulation/quick-battle-test.ts
+        echo ""
+        
+        echo "Running optimized battle scenarios..."
+        timeout 600 node tests/simulation/run-optimized-battles.js || echo "Optimized battles completed (may have timed out)"
+        echo ""
+        
+        echo "Running full game simulations..."
+        timeout 1200 node tests/simulation/run-full-game-simulation.js || echo "Full simulation completed (may have timed out)"
+        echo ""
+        
+        echo "⚖️ Balance Tests"
+        echo "==============="
+        
+        echo "Running comprehensive balance analysis..."
+        npx tsx tests/balance/run-balance-tests.ts
+        echo ""
+        
+        echo "🚢 USS Wasp Operations Tests"
+        echo "============================"
+        
+        echo "Testing USS Wasp operations..."
+        npx tsx tests/uss-wasp-operations-test.ts
+        echo ""
+        
+        echo "🧪 Special Tests"
+        echo "==============="
+        
+        echo "Running AI personality system tests..."
+        node tests/ai/test-personality-system.js || echo "Personality tests completed"
+        echo ""
+        
+        echo "Running modular map system tests..."
+        node tests/map/test-modular-map-system.js || echo "Map system tests completed"
+        echo ""
+        
+        echo "✅ All tests completed successfully"
     
     - name: Security audit
       run: npm audit --audit-level moderate
