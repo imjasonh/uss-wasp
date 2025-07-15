@@ -252,6 +252,13 @@ function testObjectiveAI(): boolean {
     console.log('─────────────────────────────────────');
     
     try {
+        // Set a fixed seed for deterministic behavior
+        const originalRandom = Math.random;
+        let seed = 12345;
+        Math.random = function() {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+        };
         const map = new GameMap(8, 6);
         const gameState = new GameState('objective-test', map, 15);
         
@@ -330,10 +337,15 @@ function testObjectiveAI(): boolean {
             console.log('   ❌ MISSING: AI objective-based strategy');
         }
         
+        // Restore original Math.random
+        Math.random = originalRandom;
+        
         return objectiveActions.length > 0 || objectiveOrientedMovement > 0;
         
     } catch (error) {
         console.log(`   ❌ ERROR: ${(error as Error).message}`);
+        // Restore original Math.random in case of error
+        Math.random = originalRandom;
         return false;
     }
 }
