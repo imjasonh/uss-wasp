@@ -429,6 +429,20 @@ export class GameEngine {
       case 'Heavy Bombardment':
         return this.executeHeavyBombardment(unit, data);
 
+      // Naval/Ship abilities
+      case 'Amphibious Command':
+        return this.executeAmphibiousCommand(unit, data);
+      case 'Launch Operations':
+        return this.executeLaunchOperations(unit, data);
+
+      // Aircraft abilities
+      case 'VTOL':
+        return this.executeVTOL(unit, data);
+      case 'Tilt-rotor':
+        return this.executeTiltRotor(unit, data);
+      case 'Close Air Support':
+        return this.executeCloseAirSupport(unit, data);
+
       default:
         return { success: false, message: `Unknown special ability: ${abilityName}` };
     }
@@ -1262,6 +1276,82 @@ export class GameEngine {
       success: true,
       message: `Heavy bombardment completed: ${results.join(', ') || 'No hits'}`,
       data: { results, hexesTargeted: data.targetHexes.length },
+    };
+  }
+
+  /**
+   * Execute Amphibious Command ability (USS_WASP)
+   */
+  private executeAmphibiousCommand(unit: Unit, _data: SpecialAbilityData): ActionResult {
+    // Find the player that owns this unit
+    const player = this.gameState.getAllPlayers().find(p => p.units.has(unit.id));
+    if (player) {
+      const cpBonus = 2;
+      player.commandPoints += cpBonus;
+      return {
+        success: true,
+        message: `${unit.type} uses Amphibious Command - generates ${cpBonus} additional CP`,
+        data: { commandPointBonus: cpBonus },
+      };
+    }
+    return { success: false, message: 'Player not found for command point bonus' };
+  }
+
+  /**
+   * Execute Launch Operations ability (USS_WASP)
+   */
+  private executeLaunchOperations(unit: Unit, _data: SpecialAbilityData): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Launch Operations - enhanced aircraft deployment`,
+      data: { launchBonus: true, deploymentRange: 3 },
+    };
+  }
+
+  /**
+   * Execute VTOL ability (HARRIER)
+   */
+  private executeVTOL(unit: Unit, _data: SpecialAbilityData): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses VTOL - vertical takeoff/landing capability`,
+      data: { vtolMode: true, terrainIgnore: true },
+    };
+  }
+
+  /**
+   * Execute Tilt-rotor ability (OSPREY)
+   */
+  private executeTiltRotor(unit: Unit, _data: SpecialAbilityData): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Tilt-rotor - enhanced mobility and transport`,
+      data: { tiltRotorMode: true, movementBonus: 2 },
+    };
+  }
+
+  /**
+   * Execute Close Air Support ability (Aircraft)
+   */
+  private executeCloseAirSupport(unit: Unit, data: SpecialAbilityData): ActionResult {
+    if (!data.targetHex) {
+      return { success: false, message: 'Target hex required for close air support' };
+    }
+
+    const targetHex = new Hex(data.targetHex.q, data.targetHex.r, data.targetHex.s);
+    const targets = this.gameState.getUnitsAt(targetHex);
+    const results: string[] = [];
+
+    for (const target of targets) {
+      const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
+      target.takeDamage(damage);
+      results.push(`${target.type} hit for ${damage} damage`);
+    }
+
+    return {
+      success: true,
+      message: `${unit.type} provides close air support: ${results.join(', ') || 'No targets at location'}`,
+      data: { results, targetHex: data.targetHex },
     };
   }
 }

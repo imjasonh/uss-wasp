@@ -11,6 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:ai": "npm run build && npx tsx tests/ai/run-comprehensive-ai-test.ts",
+    "test:ai:strict": "npm run build && node tests/ai/test-ai-strict.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",

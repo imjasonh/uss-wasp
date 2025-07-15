@@ -42,11 +42,11 @@ export class AIController {
   private isEnabled: boolean = true;
 
   public constructor(
-    aiPlayerId: string, 
+    aiPlayerId: string,
     configOrPersonality: AIDifficulty | AIPersonality | AIPersonalityType = AIDifficulty.VETERAN
   ) {
     this.aiPlayerId = aiPlayerId;
-    
+
     // Handle different constructor parameter types
     if (typeof configOrPersonality === 'string') {
       // It's either AIDifficulty or AIPersonalityType
@@ -57,7 +57,9 @@ export class AIController {
         this.decisionMaker = new AIDecisionMaker(this.difficulty);
       } else {
         // Personality type - create personality from factory
-        this.personality = PersonalityFactory.createPersonality(configOrPersonality as AIPersonalityType);
+        this.personality = PersonalityFactory.createPersonality(
+          configOrPersonality as AIPersonalityType
+        );
         this.difficulty = this.personality.difficulty;
         this.decisionMaker = new AIDecisionMaker(this.personality);
       }
@@ -266,10 +268,11 @@ export class AIController {
         case TurnPhase.DEPLOYMENT:
         case TurnPhase.MOVEMENT:
           // Movement phases - movement and logistics actions
-          isAppropriate = decision.type === AIDecisionType.MOVE_UNIT || 
-                          decision.type === AIDecisionType.WITHDRAW ||
-                          decision.type === AIDecisionType.LOAD_TRANSPORT ||
-                          decision.type === AIDecisionType.UNLOAD_TRANSPORT;
+          isAppropriate =
+            decision.type === AIDecisionType.MOVE_UNIT ||
+            decision.type === AIDecisionType.WITHDRAW ||
+            decision.type === AIDecisionType.LOAD_TRANSPORT ||
+            decision.type === AIDecisionType.UNLOAD_TRANSPORT;
           break;
         case TurnPhase.ACTION:
           // Action phase - combat, special abilities, and logistics
@@ -320,12 +323,18 @@ export class AIController {
     switch (decision.type) {
       case AIDecisionType.MOVE_UNIT:
         if (decision.unitId && decision.targetPosition) {
-          return {
-            type: ActionType.MOVE,
-            playerId: this.aiPlayerId,
-            unitId: decision.unitId,
-            targetPosition: decision.targetPosition,
-          };
+          // Validate unit can actually move before generating action
+          const unit = _gameState.getUnit(decision.unitId);
+          if (unit?.stats.mv && unit.stats.mv > 0) {
+            return {
+              type: ActionType.MOVE,
+              playerId: this.aiPlayerId,
+              unitId: decision.unitId,
+              targetPosition: decision.targetPosition,
+            };
+          }
+          // If unit can't move, don't generate action
+          return null;
         }
         break;
 
@@ -342,12 +351,27 @@ export class AIController {
 
       case AIDecisionType.HIDE_UNIT:
         if (decision.unitId) {
-          return {
-            type: ActionType.SPECIAL_ABILITY,
-            playerId: this.aiPlayerId,
-            unitId: decision.unitId,
-            data: { abilityName: 'hide' },
-          };
+          // Find a hiding-related ability the unit actually has
+          const unit = _gameState.getUnit(decision.unitId);
+          if (unit) {
+            const hideAbility = unit.specialAbilities.find(
+              ability =>
+                ability.name.toLowerCase().includes('hide') ||
+                ability.name.toLowerCase().includes('stealth') ||
+                ability.name.toLowerCase().includes('conceal')
+            );
+
+            if (hideAbility) {
+              return {
+                type: ActionType.SPECIAL_ABILITY,
+                playerId: this.aiPlayerId,
+                unitId: decision.unitId,
+                data: { abilityName: hideAbility.name },
+              };
+            }
+          }
+          // If unit has no hide ability, don't generate action
+          return null;
         }
         break;
 
@@ -578,19 +602,18 @@ export class AIController {
   private assessSupplyLines(gameState: GameState): number {
     // Assess supply line security and efficiency
     let supplyLineHealth = 1.0;
-    
+
     try {
       // Check if supply units (USS Wasp, transports) are operational
       const allUnits = gameState.getAllUnits();
-      const supplyUnits = allUnits.filter(unit => 
-        unit.type === UnitType.USS_WASP ||
-        unit.getCargoCapacity() > 0
+      const supplyUnits = allUnits.filter(
+        unit => unit.type === UnitType.USS_WASP || unit.getCargoCapacity() > 0
       );
-      
+
       if (supplyUnits.length === 0) {
         return 0.3; // Poor supply situation with no transport capacity
       }
-      
+
       // Assess health of supply units
       let supplyUnitHealth = 0;
       for (const unit of supplyUnits) {
@@ -598,31 +621,31 @@ export class AIController {
         supplyUnitHealth += healthPercent;
       }
       supplyUnitHealth = supplyUnitHealth / supplyUnits.length;
-      
+
       // Factor in enemy threats to supply lines
       const enemyUnits = allUnits.filter(unit => unit.side !== supplyUnits[0]?.side);
       let threatToSupply = 0;
-      
+
       for (const supplyUnit of supplyUnits) {
         for (const enemy of enemyUnits) {
           const distance = this.calculateDistance(supplyUnit.state.position, enemy.state.position);
-          if (distance <= 3) { // Enemy threatens supply within 3 hexes
+          if (distance <= 3) {
+            // Enemy threatens supply within 3 hexes
             threatToSupply += 0.1;
           }
         }
       }
-      
+
       // Calculate final supply line assessment
       supplyLineHealth = supplyUnitHealth * (1 - Math.min(0.5, threatToSupply));
-      
+
       // Ensure reasonable bounds
       supplyLineHealth = Math.max(0.2, Math.min(1.0, supplyLineHealth));
-      
     } catch (error) {
       // Fallback assessment if access to game state fails
       supplyLineHealth = 0.7;
     }
-    
+
     return supplyLineHealth;
   }
 
