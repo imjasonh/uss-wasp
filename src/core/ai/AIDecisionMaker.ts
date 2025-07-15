@@ -245,25 +245,25 @@ export class AIDecisionMaker {
   ): AIDecision[] {
     switch (priority) {
       case TacticalPriority.PRESERVE_FORCE:
-        return this.generateForcePreservationDecisions(context);
+        return this.generateForcePreservationDecisions(context, usedUnits);
       case TacticalPriority.DEFEND_OBJECTIVES:
-        return this.generateObjectiveDefenseDecisions(context);
+        return this.generateObjectiveDefenseDecisions(context, usedUnits);
       case TacticalPriority.DENY_TERRAIN:
-        return this.generateTerrainDenialDecisions(context);
+        return this.generateTerrainDenialDecisions(context, usedUnits);
       case TacticalPriority.INFLICT_CASUALTIES:
-        return this.generateCombatDecisions(context);
+        return this.generateCombatDecisions(context, usedUnits);
       case TacticalPriority.GATHER_INTELLIGENCE:
-        return this.generateIntelligenceDecisions(context);
+        return this.generateIntelligenceDecisions(context, usedUnits);
       case TacticalPriority.WASP_OPERATIONS:
-        return this.generateWaspOperationsDecisions(context);
+        return this.generateWaspOperationsDecisions(context, usedUnits);
       case TacticalPriority.HIDDEN_OPERATIONS:
-        return this.generateHiddenOperationsDecisions(context);
+        return this.generateHiddenOperationsDecisions(context, usedUnits);
       case TacticalPriority.MANAGE_LOGISTICS:
-        return this.generateLogisticsDecisions(context);
+        return this.generateLogisticsDecisions(context, usedUnits);
       case TacticalPriority.USE_SPECIAL_ABILITIES:
-        return this.generateSpecialAbilityDecisions(context);
+        return this.generateSpecialAbilityDecisions(context, usedUnits);
       case TacticalPriority.SECURE_OBJECTIVES:
-        return this.generateObjectiveSecuringDecisions(context);
+        return this.generateObjectiveSecuringDecisions(context, usedUnits);
       default:
         return [];
     }
@@ -272,10 +272,14 @@ export class AIDecisionMaker {
   /**
    * Generate decisions focused on preserving AI forces
    */
-  private generateForcePreservationDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateForcePreservationDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
 
     for (const unit of context.availableUnits) {
+      // Skip if unit is already used
+      if (usedUnits?.has(unit.id)) {
+        continue;
+      }
       // Check if unit is in immediate danger
       const threat = this.threatAssessments.get(unit.id);
       if (threat && threat.overallThreatLevel > 60) {
@@ -309,13 +313,14 @@ export class AIDecisionMaker {
   /**
    * Generate decisions for defending objectives
    */
-  private generateObjectiveDefenseDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateObjectiveDefenseDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
     const objectives = this.getThreatenedObjectives(context);
 
     for (const objective of objectives) {
-      // Find best defenders for this objective
-      const defenders = this.findBestDefenders(objective.position, context.availableUnits);
+      // Find best defenders for this objective, filtering out already used units
+      const availableDefenders = context.availableUnits.filter(unit => !usedUnits?.has(unit.id));
+      const defenders = this.findBestDefenders(objective.position, availableDefenders);
 
       for (const defender of defenders.slice(0, 2)) {
         // Limit to 2 defenders per objective
@@ -344,9 +349,9 @@ export class AIDecisionMaker {
   /**
    * Generate decisions for denying terrain to the enemy
    */
-  private generateTerrainDenialDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateTerrainDenialDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
-    const usedUnits = new Set<string>(); // Track units already assigned
+    const localUsedUnits = new Set<string>(); // Track units already assigned within this method
 
     // Find key terrain that enemy is likely to use
     const keyTerrain = this.identifyKeyTerrain(context);
@@ -356,13 +361,14 @@ export class AIDecisionMaker {
       const availableUnits = context.availableUnits.filter(
         unit =>
           !unit.state.hasMoved &&
-          !usedUnits.has(unit.id) &&
+          !usedUnits?.has(unit.id) &&
+          !localUsedUnits.has(unit.id) &&
           this.canUnitReachPosition(unit, terrain.position, context)
       );
 
       if (availableUnits.length > 0) {
         const bestUnit = this.selectBestUnitForPosition(availableUnits, terrain);
-        usedUnits.add(bestUnit.id); // Mark unit as used
+        localUsedUnits.add(bestUnit.id); // Mark unit as used
 
         decisions.push({
           type: AIDecisionType.MOVE_UNIT,
@@ -381,12 +387,12 @@ export class AIDecisionMaker {
   /**
    * Generate combat decisions to inflict casualties
    */
-  private generateCombatDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateCombatDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
 
-    // Find units that can attack
+    // Find units that can attack, excluding already used units
     const combatUnits = context.availableUnits.filter(
-      unit => unit.canAct() && !unit.state.hasActed
+      unit => unit.canAct() && !unit.state.hasActed && !usedUnits?.has(unit.id)
     );
 
     for (const unit of combatUnits) {
@@ -441,12 +447,12 @@ export class AIDecisionMaker {
   /**
    * Generate intelligence gathering decisions
    */
-  private generateIntelligenceDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateIntelligenceDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
 
-    // Find units suitable for reconnaissance
+    // Find units suitable for reconnaissance, excluding already used units
     const scoutUnits = context.availableUnits.filter(
-      unit => unit.hasCategory(UnitCategory.INFANTRY) && !unit.state.hasMoved
+      unit => unit.hasCategory(UnitCategory.INFANTRY) && !unit.state.hasMoved && !usedUnits?.has(unit.id)
     );
 
     // Identify areas where we need better intelligence
@@ -1742,11 +1748,11 @@ export class AIDecisionMaker {
   /**
    * Generate USS Wasp operations decisions
    */
-  private generateWaspOperationsDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateWaspOperationsDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
 
     for (const unit of context.availableUnits) {
-      if (unit.type === UnitType.USS_WASP) {
+      if (unit.type === UnitType.USS_WASP && !usedUnits?.has(unit.id)) {
         // Check if USS Wasp has embarked units to launch
         const embarkedUnits = unit.state.cargo || [];
         const launchableUnits = embarkedUnits.filter(
@@ -1790,10 +1796,15 @@ export class AIDecisionMaker {
   /**
    * Generate hidden unit tactical decisions
    */
-  private generateHiddenOperationsDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateHiddenOperationsDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
 
     for (const unit of context.availableUnits) {
+      // Skip if unit is already used
+      if (usedUnits?.has(unit.id)) {
+        continue;
+      }
+      
       // REVEAL DECISIONS - for hidden units
       if (unit.isHidden()) {
         // Find nearby enemies for ambush opportunities
@@ -2141,17 +2152,17 @@ export class AIDecisionMaker {
   /**
    * Generate logistics/transport decisions
    */
-  private generateLogisticsDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateLogisticsDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
-    const usedUnits = new Set<string>(); // Track units already assigned
+    const localUsedUnits = new Set<string>(); // Track units already assigned within this method
 
     // Find all transport units and infantry units
     const transportUnits = context.availableUnits.filter(
-      unit => unit.getCargoCapacity() > 0 && !usedUnits.has(unit.id)
+      unit => unit.getCargoCapacity() > 0 && !usedUnits?.has(unit.id) && !localUsedUnits.has(unit.id)
     );
 
     const infantryUnits = context.availableUnits.filter(
-      unit => unit.hasCategory(UnitCategory.INFANTRY) && !usedUnits.has(unit.id)
+      unit => unit.hasCategory(UnitCategory.INFANTRY) && !usedUnits?.has(unit.id) && !localUsedUnits.has(unit.id)
     );
 
     for (const transport of transportUnits) {
@@ -2166,13 +2177,13 @@ export class AIDecisionMaker {
             transport.state.position,
             infantry.state.position
           );
-          return distance <= 1 && !usedUnits.has(infantry.id); // Adjacent or same hex
+          return distance <= 1 && !localUsedUnits.has(infantry.id); // Adjacent or same hex
         });
 
         if (nearbyInfantry.length > 0) {
           const infantryToLoad = nearbyInfantry[0]; // Load first available
-          usedUnits.add(transport.id);
-          usedUnits.add(infantryToLoad.id);
+          localUsedUnits.add(transport.id);
+          localUsedUnits.add(infantryToLoad.id);
 
           decisions.push({
             type: AIDecisionType.LOAD_TRANSPORT,
@@ -2191,11 +2202,11 @@ export class AIDecisionMaker {
   /**
    * Generate special ability decisions
    */
-  private generateSpecialAbilityDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateSpecialAbilityDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
 
     for (const unit of context.availableUnits) {
-      if (unit.specialAbilities.length > 0 && unit.canAct()) {
+      if (unit.specialAbilities.length > 0 && unit.canAct() && !usedUnits?.has(unit.id)) {
         // Use first available special ability
         const ability = unit.specialAbilities[0];
         const abilityName = ability.name;
@@ -2217,16 +2228,16 @@ export class AIDecisionMaker {
   /**
    * Generate objective securing decisions
    */
-  private generateObjectiveSecuringDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateObjectiveSecuringDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
-    const usedUnits = new Set<string>(); // Track units already assigned
+    const localUsedUnits = new Set<string>(); // Track units already assigned within this method
 
     // Get map objectives from game state
     const mapObjectives = this.getMapObjectives(context);
 
     if (mapObjectives.length === 0) {
       // Fallback: Move toward center if no objectives found
-      return this.generateCenterMovementDecisions(context);
+      return this.generateCenterMovementDecisions(context, usedUnits);
     }
 
     // Determine player strategy based on side
@@ -2237,7 +2248,7 @@ export class AIDecisionMaker {
       const assaultDecisions = this.generateAssaultObjectiveDecisions(
         context,
         mapObjectives,
-        usedUnits
+        localUsedUnits
       );
       decisions.push(...assaultDecisions);
     } else {
@@ -2245,7 +2256,7 @@ export class AIDecisionMaker {
       const defenderDecisions = this.generateDefenderObjectiveDecisions(
         context,
         mapObjectives,
-        usedUnits
+        localUsedUnits
       );
       decisions.push(...defenderDecisions);
     }
@@ -2561,18 +2572,18 @@ export class AIDecisionMaker {
   /**
    * Fallback: Generate basic center movement decisions
    */
-  private generateCenterMovementDecisions(context: AIDecisionContext): AIDecision[] {
+  private generateCenterMovementDecisions(context: AIDecisionContext, usedUnits?: Set<string>): AIDecision[] {
     const decisions: AIDecision[] = [];
-    const usedUnits = new Set<string>();
+    const localUsedUnits = new Set<string>();
 
     for (const unit of context.availableUnits) {
-      if (!unit.state.hasMoved && !usedUnits.has(unit.id)) {
+      if (!unit.state.hasMoved && !usedUnits?.has(unit.id) && !localUsedUnits.has(unit.id)) {
         // Move toward center of map (fallback objective)
         const centerPos = new Hex(3, 3, -6);
         const distance = this.calculateDistance(unit.state.position, centerPos);
 
         if (distance > 1 && this.canUnitReachPosition(unit, centerPos, context)) {
-          usedUnits.add(unit.id);
+          localUsedUnits.add(unit.id);
           decisions.push({
             type: AIDecisionType.MOVE_UNIT,
             priority: 7,
