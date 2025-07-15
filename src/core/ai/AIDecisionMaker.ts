@@ -208,7 +208,7 @@ export class AIDecisionMaker {
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
       [TacticalPriority.MANAGE_LOGISTICS]: 5,
       [TacticalPriority.WASP_OPERATIONS]: 6,
-      [TacticalPriority.HIDDEN_OPERATIONS]: 5,
+      [TacticalPriority.HIDDEN_OPERATIONS]: 8,
       [TacticalPriority.USE_SPECIAL_ABILITIES]: 4,
     };
   }
@@ -1892,7 +1892,7 @@ export class AIDecisionMaker {
           });
         }
 
-        // Hide units for tactical positioning (lower priority)
+        // Enhanced tactical hiding decisions
         if (unit.hasCategory(UnitCategory.INFANTRY) && !unit.state.hasMoved) {
           const enemyDistance =
             context.enemyUnits.length > 0
@@ -1916,11 +1916,226 @@ export class AIDecisionMaker {
               },
             });
           }
+
+          // Enhanced: Hide units when enemies are present but not in immediate combat
+          if (context.enemyUnits.length > 0 && enemyDistance > 5) {
+            decisions.push({
+              type: AIDecisionType.HIDE_UNIT,
+              priority: 6,
+              unitId: unit.id,
+              reasoning: `Hiding ${unit.type} for defensive positioning (enemies at distance ${enemyDistance})`,
+              metadata: {
+                defensiveHide: true,
+                enemyDistance: enemyDistance,
+                enemyCount: context.enemyUnits.length,
+              },
+            });
+          }
+        }
+      }
+
+      // MOVEMENT DECISIONS - for fog of war navigation and positioning
+      if (unit.canAct() && !unit.state.hasMoved && unit.stats.mv > 0) {
+        // Generate movement decisions for better positioning
+        const bestPosition = this.findBestTacticalPosition(unit, context);
+        if (bestPosition) {
+          const distance = this.calculateDistance(unit.state.position, bestPosition);
+          
+          // Only move if it's a meaningful improvement
+          if (distance > 0 && distance <= unit.stats.mv) {
+            decisions.push({
+              type: AIDecisionType.MOVE_UNIT,
+              priority: 5,
+              unitId: unit.id,
+              targetPosition: bestPosition,
+              reasoning: `Moving ${unit.type} to better tactical position for stealth operations`,
+              metadata: {
+                tacticalMovement: true,
+                distance: distance,
+              },
+            });
+          }
+        }
+
+        // Fog of war exploration movement
+        if (context.enemyUnits.length === 0 || context.enemyUnits.length < 3) {
+          const explorationPosition = this.findExplorationPosition(unit, context);
+          if (explorationPosition) {
+            decisions.push({
+              type: AIDecisionType.MOVE_UNIT,
+              priority: 4,
+              unitId: unit.id,
+              targetPosition: explorationPosition,
+              reasoning: `Moving ${unit.type} for reconnaissance and area exploration`,
+              metadata: {
+                exploration: true,
+                fogOfWar: true,
+              },
+            });
+          }
         }
       }
     }
 
     return decisions;
+  }
+
+  /**
+   * Find the best tactical position for a unit (for stealth operations)
+   */
+  private findBestTacticalPosition(unit: Unit, context: AIDecisionContext): Hex | null {
+    const currentPosition = unit.state.position;
+    const candidates: { position: Hex; score: number }[] = [];
+
+    // Search in a radius around the current position
+    for (let dq = -unit.stats.mv; dq <= unit.stats.mv; dq++) {
+      for (let dr = -unit.stats.mv; dr <= unit.stats.mv; dr++) {
+        if (Math.abs(dq) + Math.abs(dr) <= unit.stats.mv) {
+          const candidatePosition = new Hex(
+            currentPosition.q + dq,
+            currentPosition.r + dr
+          );
+
+          // Check if position is valid and unoccupied
+          if (this.isValidPosition(candidatePosition, context)) {
+            const score = this.evaluateTacticalPosition(candidatePosition, unit, context);
+            candidates.push({ position: candidatePosition, score });
+          }
+        }
+      }
+    }
+
+    // Return the best position
+    if (candidates.length > 0) {
+      const best = candidates.reduce((best, candidate) => 
+        candidate.score > best.score ? candidate : best
+      );
+      
+      // Only return if it's actually better than current position
+      const currentScore = this.evaluateTacticalPosition(new Hex(currentPosition.q, currentPosition.r), unit, context);
+      if (best.score > currentScore) {
+        return best.position;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find an exploration position for fog of war navigation
+   */
+  private findExplorationPosition(unit: Unit, context: AIDecisionContext): Hex | null {
+    const currentPosition = unit.state.position;
+    const candidates: { position: Hex; score: number }[] = [];
+
+    // Search in a radius around the current position
+    for (let dq = -unit.stats.mv; dq <= unit.stats.mv; dq++) {
+      for (let dr = -unit.stats.mv; dr <= unit.stats.mv; dr++) {
+        if (Math.abs(dq) + Math.abs(dr) <= unit.stats.mv) {
+          const candidatePosition = new Hex(
+            currentPosition.q + dq,
+            currentPosition.r + dr
+          );
+
+          // Check if position is valid and unoccupied
+          if (this.isValidPosition(candidatePosition, context)) {
+            const score = this.evaluateExplorationPosition(candidatePosition, unit, context);
+            candidates.push({ position: candidatePosition, score });
+          }
+        }
+      }
+    }
+
+    // Return the best exploration position
+    if (candidates.length > 0) {
+      const best = candidates.reduce((best, candidate) => 
+        candidate.score > best.score ? candidate : best
+      );
+      
+      // Only return if it's a meaningful move (distance > 0)
+      const distance = this.calculateDistance(currentPosition, best.position);
+      if (distance > 0) {
+        return best.position;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Evaluate a tactical position for stealth operations
+   */
+  private evaluateTacticalPosition(position: Hex, unit: Unit, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Base score for cover (simple heuristic)
+    score += (position.q + position.r) % 2 === 0 ? 2 : 0;
+
+    // Distance from enemies (prefer positions not too close, not too far)
+    if (context.enemyUnits.length > 0) {
+      const avgEnemyDistance = context.enemyUnits.reduce((sum, enemy) => 
+        sum + this.calculateDistance(position, enemy.state.position), 0
+      ) / context.enemyUnits.length;
+
+      // Optimal distance is 3-5 hexes for hiding
+      if (avgEnemyDistance >= 3 && avgEnemyDistance <= 5) {
+        score += 3;
+      } else if (avgEnemyDistance > 5) {
+        score += 1;
+      }
+    }
+
+    // Prefer positions that allow hiding
+    if (unit.canBeHidden()) {
+      score += 2;
+    }
+
+    return score;
+  }
+
+  /**
+   * Evaluate an exploration position for fog of war navigation
+   */
+  private evaluateExplorationPosition(position: Hex, unit: Unit, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Prefer positions that spread out from other units
+    const friendlyUnits = context.availableUnits.filter(u => u.id !== unit.id);
+    if (friendlyUnits.length > 0) {
+      const avgFriendlyDistance = friendlyUnits.reduce((sum, friendly) => 
+        sum + this.calculateDistance(position, friendly.state.position), 0
+      ) / friendlyUnits.length;
+
+      // Prefer positions that spread out (distance 2-4 is good)
+      if (avgFriendlyDistance >= 2 && avgFriendlyDistance <= 4) {
+        score += 3;
+      } else if (avgFriendlyDistance > 1) {
+        score += 1;
+      }
+    }
+
+    // Prefer forward positions (higher q + r values for exploration)
+    score += Math.floor((position.q + position.r) / 2);
+
+    return score;
+  }
+
+  /**
+   * Check if a position is valid for movement
+   */
+  private isValidPosition(position: Hex, context: AIDecisionContext): boolean {
+    // Check map boundaries (simple check)
+    if (position.q < 0 || position.r < 0 || position.q >= 20 || position.r >= 20) {
+      return false;
+    }
+
+    // Check if position is occupied by another unit
+    const occupiedPositions = new Set(
+      [...context.availableUnits, ...context.enemyUnits]
+        .map(u => `${u.state.position.q},${u.state.position.r}`)
+    );
+
+    return !occupiedPositions.has(`${position.q},${position.r}`);
   }
 
   /**

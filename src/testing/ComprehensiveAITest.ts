@@ -18,7 +18,7 @@ import { GameState, GameAction } from '../core/game/GameState';
 import { GameEngine, ActionResult } from '../core/game/GameEngine';
 import { Player } from '../core/game/Player';
 import { GameMap } from '../core/game/Map';
-import { PlayerSide, UnitType, ActionType } from '../core/game/types';
+import { PlayerSide, UnitType, ActionType, TurnPhase } from '../core/game/types';
 import { createTestUnit, createTestUnits } from './UnitTestHelper';
 import { Hex } from '../core/hex';
 
@@ -743,9 +743,16 @@ export class ComprehensiveAITest {
 
         // Test both players' AI decisions
         gameState.setActivePlayerBySide(PlayerSide.Assault);
+        gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+        
+        // Initialize command points for players
+        assaultPlayer.commandPoints = 10;
+        defenderPlayer.commandPoints = 10;
+        
         const assaultActions = gameEngine.updateAI();
 
         gameState.setActivePlayerBySide(PlayerSide.Defender);
+        gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
         const defenderActions = gameEngine.updateAI();
 
         const allActions = [...assaultActions, ...defenderActions];
@@ -902,6 +909,12 @@ export class ComprehensiveAITest {
       // Test AI hiding decisions
       console.log('     🔍 Testing AI stealth positioning decisions...');
 
+      gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+      
+      // Initialize command points for players
+      defenderPlayer.commandPoints = 10;
+      assaultPlayer.commandPoints = 10;
+      
       const aiActions = gameEngine.updateAI();
 
       // Count units that can be hidden
@@ -1047,6 +1060,12 @@ export class ComprehensiveAITest {
       // Test AI counter-stealth tactics
       console.log('     🔍 Testing AI counter-stealth operations...');
 
+      gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+      
+      // Initialize command points for players
+      assaultPlayer.commandPoints = 10;
+      defenderPlayer.commandPoints = 10;
+      
       const assaultActions = gameEngine.updateAI();
 
       // Analyze counter-stealth actions
@@ -1176,6 +1195,11 @@ export class ComprehensiveAITest {
       // Test AI fog of war navigation
       console.log('     🌫️ Testing AI fog of war navigation...');
 
+      gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+      
+      // Initialize command points for players
+      assaultPlayer.commandPoints = 10;
+      
       const aiActions = gameEngine.updateAI();
 
       // Analyze fog of war behavior

@@ -285,7 +285,8 @@ export class AIController {
             decision.type === AIDecisionType.RECOVER_TO_WASP ||
             decision.type === AIDecisionType.LOAD_TRANSPORT ||
             decision.type === AIDecisionType.UNLOAD_TRANSPORT ||
-            decision.type === AIDecisionType.SECURE_OBJECTIVE;
+            decision.type === AIDecisionType.SECURE_OBJECTIVE ||
+            decision.type === AIDecisionType.MOVE_UNIT;
           break;
         default:
           isAppropriate = false;
@@ -305,7 +306,7 @@ export class AIController {
   private convertDecisionsToActions(decisions: AIDecision[], gameState: GameState): GameAction[] {
     const actions: GameAction[] = [];
 
-    for (const decision of decisions.slice(0, 5)) {
+    for (const decision of decisions.slice(0, 8)) {
       // Limit actions per turn
       const action = this.convertDecisionToAction(decision, gameState);
       if (action) {
