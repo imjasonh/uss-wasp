@@ -45,6 +45,7 @@ export class AIDecisionMaker {
    */
   public makeDecisions(context: AIDecisionContext): AIDecision[] {
     const decisions: AIDecision[] = [];
+    const usedUnits = new Set<string>(); // Track units that already have decisions
 
     // Update threat assessments
     this.updateThreatAssessments(context);
@@ -52,10 +53,17 @@ export class AIDecisionMaker {
     // Analyze current tactical situation
     const tacticalPriorities = this.determineTacticalPriorities(context);
 
-    // Generate decisions based on priorities
+    // Generate decisions based on priorities, tracking used units
     for (const priority of tacticalPriorities) {
-      const priorityDecisions = this.generateDecisionsForPriority(priority, context);
+      const priorityDecisions = this.generateDecisionsForPriority(priority, context, usedUnits);
       decisions.push(...priorityDecisions);
+
+      // Track units used in these decisions
+      for (const decision of priorityDecisions) {
+        if (decision.unitId) {
+          usedUnits.add(decision.unitId);
+        }
+      }
     }
 
     // Apply difficulty-based filtering and mistakes
@@ -83,12 +91,12 @@ export class AIDecisionMaker {
     for (const [priority, baseWeight] of Object.entries(baseWeights)) {
       const situationalWeight = situationalModifiers[priority as TacticalPriority] || 1.0;
       const finalWeight = baseWeight * situationalWeight;
-      
+
       // Only include priorities that meet minimum threshold
       if (finalWeight >= 1.0) {
-        priorities.push({ 
-          priority: priority as TacticalPriority, 
-          weight: finalWeight 
+        priorities.push({
+          priority: priority as TacticalPriority,
+          weight: finalWeight,
         });
       }
     }
@@ -105,7 +113,9 @@ export class AIDecisionMaker {
   /**
    * Calculate situational modifiers for tactical priorities
    */
-  private calculateSituationalModifiers(context: AIDecisionContext): Record<TacticalPriority, number> {
+  private calculateSituationalModifiers(
+    context: AIDecisionContext
+  ): Record<TacticalPriority, number> {
     const modifiers: Record<TacticalPriority, number> = {} as Record<TacticalPriority, number>;
 
     // Force preservation - higher when units are damaged
@@ -133,8 +143,10 @@ export class AIDecisionMaker {
     modifiers[TacticalPriority.MANAGE_LOGISTICS] = hasTransports ? 1.0 : 0.0;
 
     const hasHiddenUnits = context.availableUnits.some(unit => unit.isHidden());
-    const canHideUnits = context.availableUnits.some(unit => unit.canBeHidden() && !unit.isHidden());
-    modifiers[TacticalPriority.HIDDEN_OPERATIONS] = (hasHiddenUnits || canHideUnits) ? 1.0 : 0.0;
+    const canHideUnits = context.availableUnits.some(
+      unit => unit.canBeHidden() && !unit.isHidden()
+    );
+    modifiers[TacticalPriority.HIDDEN_OPERATIONS] = hasHiddenUnits || canHideUnits ? 1.0 : 0.0;
 
     const hasSpecialAbilities = context.availableUnits.some(
       unit => unit.specialAbilities.length > 0 && unit.canAct()
@@ -150,11 +162,16 @@ export class AIDecisionMaker {
   /**
    * Apply urgency bonuses based on personality and situation
    */
-  private applyUrgencyBonuses(priorities: { priority: TacticalPriority; weight: number }[], context: AIDecisionContext): void {
+  private applyUrgencyBonuses(
+    priorities: { priority: TacticalPriority; weight: number }[],
+    context: AIDecisionContext
+  ): void {
     // Combat urgency - aggressive personalities get massive bonus for immediate combat
     const unitsInRange = this.countUnitsInCombatRange(context);
     if (unitsInRange > 0) {
-      const combatPriority = priorities.find(p => p.priority === TacticalPriority.INFLICT_CASUALTIES);
+      const combatPriority = priorities.find(
+        p => p.priority === TacticalPriority.INFLICT_CASUALTIES
+      );
       if (combatPriority) {
         const aggressionBonus = this.personality?.aggression ?? 3;
         combatPriority.weight += aggressionBonus * 4; // Significant bonus for aggressive personalities
@@ -167,9 +184,9 @@ export class AIDecisionMaker {
       const planningPriorities = [
         TacticalPriority.GATHER_INTELLIGENCE,
         TacticalPriority.MANAGE_LOGISTICS,
-        TacticalPriority.DEFEND_OBJECTIVES
+        TacticalPriority.DEFEND_OBJECTIVES,
       ];
-      
+
       priorities.forEach(p => {
         if (planningPriorities.includes(p.priority)) {
           p.weight += forwardLooking * 0.5;
@@ -202,8 +219,16 @@ export class AIDecisionMaker {
   private countUnitsInCombatRange(context: AIDecisionContext): number {
     return context.availableUnits.filter(unit => {
       return context.enemyUnits.some(enemy => {
-        const unitHex = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
-        const enemyHex = new Hex(enemy.state.position.q, enemy.state.position.r, enemy.state.position.s);
+        const unitHex = new Hex(
+          unit.state.position.q,
+          unit.state.position.r,
+          unit.state.position.s
+        );
+        const enemyHex = new Hex(
+          enemy.state.position.q,
+          enemy.state.position.r,
+          enemy.state.position.s
+        );
         const distance = unitHex.distanceTo(enemyHex);
         return distance <= 1; // Adjacent combat range
       });
@@ -215,7 +240,8 @@ export class AIDecisionMaker {
    */
   private generateDecisionsForPriority(
     priority: TacticalPriority,
-    context: AIDecisionContext
+    context: AIDecisionContext,
+    usedUnits?: Set<string>
   ): AIDecision[] {
     switch (priority) {
       case TacticalPriority.PRESERVE_FORCE:
@@ -605,34 +631,37 @@ export class AIDecisionMaker {
     try {
       // Scan map for objectives and assess threats
       const map = context.gameState.map;
-      
+
       for (let q = 0; q < 8; q++) {
         for (let r = 0; r < 6; r++) {
           const hex = map.getHex(new Hex(q, r, -q - r));
           if (hex?.objective) {
             objectiveCount++;
             const objectivePos = new Hex(q, r, -q - r);
-            
+
             // Check for enemy units near this objective
             let nearbyEnemies = 0;
             let enemyThreatStrength = 0;
-            
+
             for (const enemy of context.enemyUnits) {
               const distance = this.calculateDistance(enemy.state.position, objectivePos);
-              
+
               // Enemies within 3 hexes are threatening
               if (distance <= 3) {
                 nearbyEnemies++;
-                
+
                 // Weight threat by proximity and unit strength
                 const proximityMultiplier = (4 - distance) / 4; // Closer = higher threat
                 enemyThreatStrength += (enemy.stats.atk + enemy.stats.def) * proximityMultiplier;
               }
             }
-            
+
             // Calculate threat level for this objective (0-1 scale)
             if (nearbyEnemies > 0) {
-              const objectiveThreat = Math.min(1.0, (nearbyEnemies * 0.3) + (enemyThreatStrength * 0.1));
+              const objectiveThreat = Math.min(
+                1.0,
+                nearbyEnemies * 0.3 + enemyThreatStrength * 0.1
+              );
               threatLevel += objectiveThreat;
             }
           }
@@ -700,18 +729,14 @@ export class AIDecisionMaker {
     for (let dq = -moveRange; dq <= moveRange; dq++) {
       for (let dr = -moveRange; dr <= moveRange; dr++) {
         const ds = -dq - dr;
-        
+
         // Check if position is within movement range (hex distance)
         const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
         if (distance > moveRange || distance === 0) {
           continue;
         }
 
-        const candidatePos = new Hex(
-          unitPos.q + dq,
-          unitPos.r + dr,
-          unitPos.s + ds
-        );
+        const candidatePos = new Hex(unitPos.q + dq, unitPos.r + dr, unitPos.s + ds);
 
         // Skip positions outside reasonable map bounds
         if (candidatePos.q < 0 || candidatePos.q > 7 || candidatePos.r < 0 || candidatePos.r > 5) {
@@ -725,11 +750,11 @@ export class AIDecisionMaker {
 
         // Calculate threat level at this position
         let positionThreat = 0;
-        
+
         for (const enemy of context.enemyUnits) {
           const distanceToEnemy = this.calculateDistance(candidatePos, enemy.state.position);
           const enemyRange = this.getUnitRange(enemy);
-          
+
           // Immediate threat if enemy can attack this position
           if (distanceToEnemy <= enemyRange) {
             positionThreat += enemy.stats.atk * 2; // High weight for immediate threats
@@ -746,7 +771,7 @@ export class AIDecisionMaker {
           for (const threat of currentThreat.immediateThreats) {
             const currentDistance = this.calculateDistance(unitPos, threat.state.position);
             const newDistance = this.calculateDistance(candidatePos, threat.state.position);
-            
+
             // Bonus for moving away from current threats
             if (newDistance > currentDistance) {
               positionThreat -= 10; // Reward for increasing distance from threats
@@ -763,7 +788,8 @@ export class AIDecisionMaker {
     }
 
     // Only return position if it's actually safer than current position
-    if (safestPosition.position && safestPosition.threatLevel < 50) { // Reasonable safety threshold
+    if (safestPosition.position && safestPosition.threatLevel < 50) {
+      // Reasonable safety threshold
       return safestPosition.position;
     }
 
@@ -777,21 +803,21 @@ export class AIDecisionMaker {
 
     try {
       const map = context.gameState.map;
-      
+
       // Scan map for objectives
       for (let q = 0; q < 8; q++) {
         for (let r = 0; r < 6; r++) {
           const hex = map.getHex(new Hex(q, r, -q - r));
           if (hex?.objective) {
             const objectivePos = new Hex(q, r, -q - r);
-            
+
             // Check if this objective is threatened by enemies
             let isThreatenedByEnemies = false;
             let threateningDistance = Infinity;
-            
+
             for (const enemy of context.enemyUnits) {
               const distance = this.calculateDistance(enemy.state.position, objectivePos);
-              
+
               // Enemy is threatening if within 2 hexes (can reach and attack/secure)
               if (distance <= 2) {
                 isThreatenedByEnemies = true;
@@ -799,17 +825,18 @@ export class AIDecisionMaker {
                 break;
               }
             }
-            
+
             // Also check if objective is currently undefended by our units
             let isDefended = false;
             for (const unit of context.availableUnits) {
               const distance = this.calculateDistance(unit.state.position, objectivePos);
-              if (distance <= 1) { // Our unit is defending if adjacent or on objective
+              if (distance <= 1) {
+                // Our unit is defending if adjacent or on objective
                 isDefended = true;
                 break;
               }
             }
-            
+
             // Objective is threatened if enemies are close and we're not defending it
             if (isThreatenedByEnemies && !isDefended) {
               threatenedObjectives.push({
@@ -818,7 +845,7 @@ export class AIDecisionMaker {
                 id: hex.objective.id || `obj_${q}_${r}`,
               });
             }
-            
+
             // Also include objectives that enemies are approaching (distance 3-4)
             if (!isDefended && threateningDistance <= 4 && threateningDistance > 2) {
               threatenedObjectives.push({
@@ -833,17 +860,22 @@ export class AIDecisionMaker {
     } catch (error) {
       // Fallback: identify critical positions around our units that might need defense
       const criticalPositions = new Set<string>();
-      
+
       for (const unit of context.availableUnits) {
         // Check if any enemies are approaching this unit's position
         for (const enemy of context.enemyUnits) {
           const distance = this.calculateDistance(unit.state.position, enemy.state.position);
-          if (distance <= 3) { // Enemy is approaching
+          if (distance <= 3) {
+            // Enemy is approaching
             const posKey = `${unit.state.position.q},${unit.state.position.r}`;
             if (!criticalPositions.has(posKey)) {
               criticalPositions.add(posKey);
               threatenedObjectives.push({
-                position: new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s),
+                position: new Hex(
+                  unit.state.position.q,
+                  unit.state.position.r,
+                  unit.state.position.s
+                ),
                 type: 'defensive_position',
                 id: `def_${unit.state.position.q}_${unit.state.position.r}`,
               });
@@ -893,10 +925,11 @@ export class AIDecisionMaker {
         defenseScore += healthPercent * 5;
 
         // Special defensive abilities bonus
-        const hasDefensiveAbilities = unit.specialAbilities.some(ability => 
-          ability.name.toLowerCase().includes('entrench') ||
-          ability.name.toLowerCase().includes('defense') ||
-          ability.name.toLowerCase().includes('fortify')
+        const hasDefensiveAbilities = unit.specialAbilities.some(
+          ability =>
+            ability.name.toLowerCase().includes('entrench') ||
+            ability.name.toLowerCase().includes('defense') ||
+            ability.name.toLowerCase().includes('fortify')
         );
         if (hasDefensiveAbilities) {
           defenseScore += 15;
@@ -917,33 +950,33 @@ export class AIDecisionMaker {
   ): Hex | null {
     // Try positions adjacent to the objective first
     const adjacentPositions = this.getAdjacentPositions(objective);
-    
+
     let bestPosition: Hex | null = null;
     let bestScore = -Infinity;
-    
+
     // Evaluate adjacent positions
     for (const position of adjacentPositions) {
       if (!this.canUnitReachPosition(unit, position, context)) {
         continue;
       }
-      
+
       let score = 0;
-      
+
       // Score based on defensive value
       // - Cover from terrain (simplified)
       // - Distance from threatening enemies
       // - Ability to defend multiple approach routes
-      
+
       for (const enemy of context.enemyUnits) {
         const distanceToEnemy = this.calculateDistance(position, enemy.state.position);
-        
+
         // Prefer positions that are not too close to enemies
         if (distanceToEnemy >= 2) {
           score += 5;
         } else {
           score -= 10; // Penalty for being too exposed
         }
-        
+
         // Bonus for being able to intercept enemy approaches
         const enemyToObjective = this.calculateDistance(enemy.state.position, objective);
         const positionToEnemy = distanceToEnemy;
@@ -951,18 +984,18 @@ export class AIDecisionMaker {
           score += 8; // Good interception position
         }
       }
-      
+
       if (score > bestScore) {
         bestScore = score;
         bestPosition = position;
       }
     }
-    
+
     // If no adjacent position works, try the objective itself
     if (!bestPosition && this.canUnitReachPosition(unit, objective, context)) {
       return objective;
     }
-    
+
     return bestPosition;
   }
 
@@ -1044,17 +1077,17 @@ export class AIDecisionMaker {
     if (units.length === 0) {
       throw new Error('No units provided for position selection');
     }
-    
+
     // Score units based on suitability for the terrain type
     const scoredUnits = units.map(unit => {
       let score = 0;
-      
+
       // Base mobility score - faster units can reach better
       score += unit.stats.mv * 2;
-      
+
       // Combat effectiveness
       score += unit.stats.atk + unit.stats.def;
-      
+
       // Terrain-specific bonuses
       switch (terrain.type) {
         case 'advance_position':
@@ -1066,7 +1099,7 @@ export class AIDecisionMaker {
             score += 15; // Infantry are versatile
           }
           break;
-          
+
         case 'defensive_position':
           // Prefer defensive units
           score += unit.stats.def * 2;
@@ -1074,25 +1107,25 @@ export class AIDecisionMaker {
             score += 12;
           }
           break;
-          
+
         default:
           // General versatility - prefer infantry
           if (unit.hasCategory(UnitCategory.INFANTRY)) {
             score += 8;
           }
       }
-      
+
       // Distance penalty - closer units preferred
       const distance = this.calculateDistance(unit.state.position, terrain.position);
       score -= distance * 3;
-      
+
       // Health bonus
       const healthPercent = unit.state.currentHP / unit.stats.hp;
       score += healthPercent * 5;
-      
+
       return { unit, score };
     });
-    
+
     // Return best scoring unit
     scoredUnits.sort((a, b) => b.score - a.score);
     return scoredUnits[0].unit;
@@ -1162,30 +1195,36 @@ export class AIDecisionMaker {
     const defenderPower = target.stats.def;
     const targetHP = target.state.currentHP;
     const attackerHP = attacker.state.currentHP;
-    
+
     // Estimate damage to defender
     const baseDamageToDefender = Math.max(0, attackerPower - defenderPower);
     const expectedDefenderLosses = Math.min(targetHP, baseDamageToDefender + 1);
-    
+
     // Estimate counter-attack damage if defender survives
     let expectedAttackerLosses = 0;
-    const defenderSurvives = (targetHP - expectedDefenderLosses) > 0;
-    
+    const defenderSurvives = targetHP - expectedDefenderLosses > 0;
+
     if (defenderSurvives && target.canAct()) {
       const counterAttackPower = target.stats.atk;
       const attackerDefense = attacker.stats.def;
       const counterDamage = Math.max(0, counterAttackPower - attackerDefense);
       expectedAttackerLosses = Math.min(attackerHP, counterDamage);
     }
-    
+
     // Add some randomness factor (combat uncertainty)
     const uncertainty = 0.2;
     const defenderLossVariance = expectedDefenderLosses * uncertainty;
     const attackerLossVariance = expectedAttackerLosses * uncertainty;
-    
+
     return {
-      attackerLosses: Math.max(0, Math.round(expectedAttackerLosses + (Math.random() - 0.5) * attackerLossVariance)),
-      defenderLosses: Math.max(0, Math.round(expectedDefenderLosses + (Math.random() - 0.5) * defenderLossVariance))
+      attackerLosses: Math.max(
+        0,
+        Math.round(expectedAttackerLosses + (Math.random() - 0.5) * attackerLossVariance)
+      ),
+      defenderLosses: Math.max(
+        0,
+        Math.round(expectedDefenderLosses + (Math.random() - 0.5) * defenderLossVariance)
+      ),
     };
   }
 
@@ -1205,10 +1244,10 @@ export class AIDecisionMaker {
     if (units.length === 0) {
       return null;
     }
-    
+
     let nearestUnit: Unit | null = null;
     let shortestDistance = Infinity;
-    
+
     for (const unit of units) {
       const distance = this.calculateDistance(unit.state.position, position);
       if (distance < shortestDistance) {
@@ -1216,7 +1255,7 @@ export class AIDecisionMaker {
         nearestUnit = unit;
       }
     }
-    
+
     return nearestUnit;
   }
 
@@ -1228,39 +1267,39 @@ export class AIDecisionMaker {
     const moveRange = unit.stats.mv;
     let bestPosition: Hex | null = null;
     let bestScore = -Infinity;
-    
+
     // Search positions within movement range
     for (let dq = -moveRange; dq <= moveRange; dq++) {
       for (let dr = -moveRange; dr <= moveRange; dr++) {
         const ds = -dq - dr;
         const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
-        
+
         if (distance > moveRange || distance === 0) {
           continue;
         }
-        
+
         const candidatePos = new Hex(
           unit.state.position.q + dq,
           unit.state.position.r + dr,
           unit.state.position.s + ds
         );
-        
+
         // Check bounds and reachability
         if (candidatePos.q < 0 || candidatePos.q > 7 || candidatePos.r < 0 || candidatePos.r > 5) {
           continue;
         }
-        
+
         if (!this.canUnitReachPosition(unit, candidatePos, context)) {
           continue;
         }
-        
+
         let score = 0;
-        
+
         // Score based on observation value
         // Distance to target area (closer is better for observation)
         const distanceToArea = this.calculateDistance(candidatePos, area);
         score -= distanceToArea * 2;
-        
+
         // Safety from enemies (further from enemies is better for scouts)
         let safetyScore = 0;
         for (const enemy of context.enemyUnits) {
@@ -1272,31 +1311,31 @@ export class AIDecisionMaker {
           }
         }
         score += safetyScore;
-        
+
         // Prefer positions that provide good visibility (simplified)
         // Assume central positions have better visibility
         const mapCenter = new Hex(4, 3, -7);
         const centralityBonus = 8 - this.calculateDistance(candidatePos, mapCenter);
         score += centralityBonus;
-        
+
         if (score > bestScore) {
           bestScore = score;
           bestPosition = candidatePos;
         }
       }
     }
-    
+
     return bestPosition;
   }
 
   private limitCoordination(decisions: AIDecision[]): AIDecision[] {
     // Limit simultaneous complex operations based on AI difficulty
     const coordinationLimit = Math.floor(this.config.coordinationLevel * 10);
-    
+
     // Categorize decisions by complexity
     const complexDecisions: AIDecision[] = [];
     const simpleDecisions: AIDecision[] = [];
-    
+
     for (const decision of decisions) {
       // Complex decisions require coordination
       if (
@@ -1310,12 +1349,12 @@ export class AIDecisionMaker {
         simpleDecisions.push(decision);
       }
     }
-    
+
     // Limit complex decisions based on coordination capability
     const allowedComplexDecisions = complexDecisions
       .sort((a, b) => b.priority - a.priority)
       .slice(0, coordinationLimit);
-    
+
     // Combine with simple decisions (always allowed)
     return [...allowedComplexDecisions, ...simpleDecisions];
   }
@@ -1324,45 +1363,46 @@ export class AIDecisionMaker {
     if (this.config.mistakeFrequency <= 0 || decisions.length === 0) {
       return decisions;
     }
-    
+
     const mistakeChance = this.config.mistakeFrequency;
     const modifiedDecisions: AIDecision[] = [];
-    
+
     for (const decision of decisions) {
       if (Math.random() < mistakeChance) {
         // Introduce a mistake
         const mistakeType = Math.floor(Math.random() * 3);
-        
+
         switch (mistakeType) {
           case 0:
             // Wrong target selection
             if (decision.type === AIDecisionType.ATTACK_TARGET && context.enemyUnits.length > 1) {
-              const randomEnemy = context.enemyUnits[Math.floor(Math.random() * context.enemyUnits.length)];
+              const randomEnemy =
+                context.enemyUnits[Math.floor(Math.random() * context.enemyUnits.length)];
               modifiedDecisions.push({
                 ...decision,
                 targetUnitId: randomEnemy.id,
                 reasoning: `${decision.reasoning} (targeting error)`,
-                priority: Math.max(1, decision.priority - 2)
+                priority: Math.max(1, decision.priority - 2),
               });
             } else {
               modifiedDecisions.push(decision);
             }
             break;
-            
+
           case 1:
             // Reduced priority (hesitation)
             modifiedDecisions.push({
               ...decision,
               priority: Math.max(1, decision.priority - 3),
-              reasoning: `${decision.reasoning} (hesitation)`
+              reasoning: `${decision.reasoning} (hesitation)`,
             });
             break;
-            
+
           case 2:
             // Skip decision entirely (indecision)
             // Don't add this decision to the modified list
             break;
-            
+
           default:
             modifiedDecisions.push(decision);
         }
@@ -1371,7 +1411,7 @@ export class AIDecisionMaker {
         modifiedDecisions.push(decision);
       }
     }
-    
+
     return modifiedDecisions;
   }
 
@@ -1439,7 +1479,6 @@ export class AIDecisionMaker {
 
     return adjacent;
   }
-
 
   /**
    * Find the nearest enemy unit to a given unit
@@ -1711,37 +1750,40 @@ export class AIDecisionMaker {
     const usedUnits = new Set<string>(); // Track units already assigned
 
     // Find all transport units and infantry units
-    const transportUnits = context.availableUnits.filter(unit => 
-      unit.getCargoCapacity() > 0 && !usedUnits.has(unit.id)
+    const transportUnits = context.availableUnits.filter(
+      unit => unit.getCargoCapacity() > 0 && !usedUnits.has(unit.id)
     );
-    
-    const infantryUnits = context.availableUnits.filter(unit => 
-      unit.hasCategory(UnitCategory.INFANTRY) && !usedUnits.has(unit.id)
+
+    const infantryUnits = context.availableUnits.filter(
+      unit => unit.hasCategory(UnitCategory.INFANTRY) && !usedUnits.has(unit.id)
     );
 
     for (const transport of transportUnits) {
       const currentCargo = transport.state.cargo.length;
       const capacity = transport.getCargoCapacity();
-      
+
       // LOAD OPERATIONS - if transport has space and infantry available
       if (currentCargo < capacity && infantryUnits.length > 0) {
         // Find nearby infantry that can be loaded
         const nearbyInfantry = infantryUnits.filter(infantry => {
-          const distance = this.calculateDistance(transport.state.position, infantry.state.position);
+          const distance = this.calculateDistance(
+            transport.state.position,
+            infantry.state.position
+          );
           return distance <= 1 && !usedUnits.has(infantry.id); // Adjacent or same hex
         });
-        
+
         if (nearbyInfantry.length > 0) {
           const infantryToLoad = nearbyInfantry[0]; // Load first available
           usedUnits.add(transport.id);
           usedUnits.add(infantryToLoad.id);
-          
+
           decisions.push({
             type: AIDecisionType.LOAD_TRANSPORT,
             priority: 7,
             unitId: transport.id,
             targetUnitId: infantryToLoad.id,
-            reasoning: `Loading ${infantryToLoad.type} into ${transport.type} for tactical deployment`
+            reasoning: `Loading ${infantryToLoad.type} into ${transport.type} for tactical deployment`,
           });
         }
       }
@@ -2124,7 +2166,7 @@ export class AIDecisionMaker {
         const centerPos = new Hex(3, 3, -6);
         const distance = this.calculateDistance(unit.state.position, centerPos);
 
-        if (distance > 1) {
+        if (distance > 1 && this.canUnitReachPosition(unit, centerPos, context)) {
           usedUnits.add(unit.id);
           decisions.push({
             type: AIDecisionType.MOVE_UNIT,
