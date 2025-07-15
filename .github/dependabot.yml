@@ -56,16 +56,6 @@ updates:
         patterns:
           - "jest"
           - "@jest/*"
-          - "playwright"
-          - "@playwright/*"
-        update-types:
-          - "minor"
-          - "patch"
-      webpack-tooling:
-        patterns:
-          - "webpack*"
-          - "*-loader"
-          - "html-webpack-plugin"
         update-types:
           - "minor"
           - "patch"

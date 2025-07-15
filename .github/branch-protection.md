@@ -10,7 +10,7 @@ The following status checks should be required before merging:
 - `ci / ci` - Comprehensive CI checks including:
   - Linting and formatting validation
   - TypeScript type checking
-  - Build verification (both Node.js and web)
+  - Build verification (TypeScript compilation)
   - Unit tests with coverage
   - Security audit
   - Large file detection
