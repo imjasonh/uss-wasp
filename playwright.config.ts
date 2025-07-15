@@ -8,8 +8,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  workers: process.env.CI ? 4 : undefined, // Increased workers for faster CI
+  reporter: process.env.CI ? 'github' : 'html',
   timeout: 30000,
   expect: {
     timeout: 5000
@@ -29,25 +29,28 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
+    // Run additional browsers when not in CI or when specifically requested
+    ...(!process.env.CI || process.env.ALL_BROWSERS ? [
+      {
+        name: 'firefox',
+        use: { ...devices['Desktop Firefox'] },
+      },
 
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+      {
+        name: 'webkit',
+        use: { ...devices['Desktop Safari'] },
+      },
 
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+      /* Test against mobile viewports. */
+      {
+        name: 'Mobile Chrome',
+        use: { ...devices['Pixel 5'] },
+      },
+      {
+        name: 'Mobile Safari',
+        use: { ...devices['iPhone 12'] },
+      },
+    ] : []),
 
     /* Test against branded browsers. */
     // {
@@ -66,5 +69,13 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    // Optimize for CI performance
+    ...(process.env.CI && {
+      env: {
+        NODE_ENV: 'test',
+        // Disable some webpack features that slow down builds
+        DISABLE_ESLINT_PLUGIN: 'true',
+      },
+    }),
   },
 });

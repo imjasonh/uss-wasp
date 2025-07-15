@@ -62,7 +62,7 @@ jobs:
           playwright-${{ runner.os }}-
     
     - name: Run E2E tests
-      run: npm run test:e2e -- --project=chromium
+      run: npm run test:e2e -- --project=chromium --workers=4
       env:
         CI: true
     

@@ -15,6 +15,7 @@
     "test:ai:gaps": "npm run build && npx tsx tests/ai/test-ai-system-gaps.ts",
     "test:ai:comprehensive": "npm run test:ai && npm run test:ai:strict && npm run test:ai:gaps",
     "test:e2e": "playwright test",
+    "test:e2e:all": "ALL_BROWSERS=true playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
