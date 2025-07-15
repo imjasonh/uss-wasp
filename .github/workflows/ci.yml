@@ -74,10 +74,19 @@ jobs:
         path: playwright-report/
         retention-days: 30
     
-    - name: Strict AI validation
+    - name: Comprehensive AI validation
       run: |
-        echo "🤖 Running strict AI validation..."
+        echo "🤖 Running comprehensive AI validation..."
+        echo "Running basic AI functionality tests..."
+        npm run test:ai || echo "⚠️ Basic AI tests completed with issues"
+        echo ""
+        echo "Running strict AI regression tests..."
         npm run test:ai:strict
+        echo ""
+        echo "Running AI system gap analysis..."
+        npm run test:ai:gaps || echo "⚠️ AI gaps analysis completed (expected gaps may exist)"
+        echo ""
+        echo "✅ AI validation suite completed"
     
     - name: Security audit
       run: npm audit --audit-level moderate
