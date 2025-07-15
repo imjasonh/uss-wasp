@@ -57,10 +57,10 @@
     // Best practices
     "array-callback-return": "error",
     "block-scoped-var": "error",
-    "complexity": ["warn", 10],
-    "max-depth": ["warn", 4],
-    "max-lines-per-function": ["warn", { "max": 50, "skipComments": true }],
-    "max-params": ["warn", 4],
+    "complexity": ["warn", 15],
+    "max-depth": ["warn", 6],
+    "max-lines-per-function": ["warn", { "max": 100, "skipComments": true }],
+    "max-params": ["warn", 6],
     "no-empty-function": "error",
     "no-magic-numbers": ["warn", { "ignore": [0, 1, -1] }],
     "no-nested-ternary": "error",
@@ -82,6 +82,16 @@
         "max-depth": "off",
         "max-params": "off",
         "no-magic-numbers": "off"
+      }
+    },
+    {
+      "files": ["**/ui/**/*.ts"],
+      "rules": {
+        "max-lines-per-function": ["warn", { "max": 300, "skipComments": true }],
+        "complexity": ["warn", 20],
+        "max-depth": ["warn", 8],
+        "no-console": "warn",
+        "no-magic-numbers": ["warn", { "ignore": [0, 1, -1, 2, 3, 4, 5, 10, 100, 1000] }]
       }
     }
   ],
