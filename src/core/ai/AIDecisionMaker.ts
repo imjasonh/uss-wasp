@@ -56,15 +56,43 @@ export class AIDecisionMaker {
     // Generate decisions based on priorities, tracking used units
     for (const priority of tacticalPriorities) {
       const priorityDecisions = this.generateDecisionsForPriority(priority, context, usedUnits);
-      decisions.push(...priorityDecisions);
+      
+      // Filter out any decisions for units that are already used (safety check)
+      const filteredPriorityDecisions = priorityDecisions.filter(decision => {
+        if (decision.unitId && usedUnits.has(decision.unitId)) {
+          return false; // Skip decisions for already used units
+        }
+        return true;
+      });
+      
+      decisions.push(...filteredPriorityDecisions);
 
       // Track units used in these decisions
-      for (const decision of priorityDecisions) {
+      for (const decision of filteredPriorityDecisions) {
         if (decision.unitId) {
           usedUnits.add(decision.unitId);
         }
       }
     }
+
+    // Final deduplication pass - ensure no unit has multiple decisions
+    const finalDecisions: AIDecision[] = [];
+    const finalUsedUnits = new Set<string>();
+    
+    for (const decision of decisions) {
+      if (decision.unitId && finalUsedUnits.has(decision.unitId)) {
+        // Skip duplicate decisions for the same unit
+        continue;
+      }
+      finalDecisions.push(decision);
+      if (decision.unitId) {
+        finalUsedUnits.add(decision.unitId);
+      }
+    }
+    
+    // Use the deduplicated decisions
+    decisions.length = 0;
+    decisions.push(...finalDecisions);
 
     // Apply difficulty-based filtering and mistakes
     const filteredDecisions = this.applyDifficultyModifiers(decisions, context);
