@@ -8,7 +8,7 @@ import { GameState, GameAction } from './GameState';
 import { CombatSystem } from './Combat';
 import { AIController } from '../ai/AIController';
 import { Player } from './Player';
-import { ActionType, UnitType, UnitCategory, PlayerSide } from './types';
+import { ActionType, UnitType, UnitCategory, PlayerSide, TerrainType } from './types';
 import { AIDifficulty, AIState, AIPerformanceMetrics } from '../ai/types';
 import { GameLogger, LogCategory, LogLevel, getGameLogger } from '../logging/GameLogger';
 import { GameStateManager } from '../logging/GameStateManager';
@@ -201,7 +201,7 @@ export class GameEngine {
    */
   private executeAttack(action: GameAction): ActionResult {
     const attacker = this.gameState.getUnit(action.unitId);
-    const defender = this.gameState.getUnit(action.targetId || '');
+    const defender = this.gameState.getUnit(action.targetId ?? '');
 
     if (!attacker || !defender) {
       return { success: false, message: 'Invalid attack parameters' };
@@ -257,7 +257,7 @@ export class GameEngine {
    */
   private executeLoad(action: GameAction): ActionResult {
     const transport = this.gameState.getUnit(action.unitId);
-    const cargo = this.gameState.getUnit(action.targetId || '');
+    const cargo = this.gameState.getUnit(action.targetId ?? '');
 
     if (!transport || !cargo) {
       return { success: false, message: 'Invalid load parameters' };
@@ -376,7 +376,11 @@ export class GameEngine {
   /**
    * Execute specific unit abilities
    */
-  private executeSpecificAbility(unit: Unit, abilityName: string, data: SpecialAbilityData): ActionResult {
+  private executeSpecificAbility(
+    unit: Unit,
+    abilityName: string,
+    data: SpecialAbilityData
+  ): ActionResult {
     switch (abilityName) {
       case 'Artillery Barrage':
         return this.executeArtilleryBarrage(unit, data);
@@ -386,7 +390,7 @@ export class GameEngine {
         return this.executeSeaSparrow(unit, data);
       case 'Breaching Charge':
         return this.executeBreachingCharge(unit, data);
-      
+
       // Vehicle abilities
       case 'Fast Reconnaissance':
         return this.executeFastReconnaissance(unit, data);
@@ -396,7 +400,7 @@ export class GameEngine {
         return this.executeMobility(unit, data);
       case 'Improvised':
         return this.executeImprovised(unit, data);
-      
+
       // Infantry abilities
       case 'Urban Specialists':
         return this.executeUrbanSpecialists(unit, data);
@@ -406,7 +410,7 @@ export class GameEngine {
         return this.executeEntrench(unit, data);
       case 'Amphibious Training':
         return this.executeAmphibiousTraining(unit, data);
-      
+
       // Combat specialist abilities
       case 'Anti-Vehicle Specialist':
         return this.executeAntiVehicleSpecialist(unit, data);
@@ -416,7 +420,7 @@ export class GameEngine {
         return this.executeAntiAirFocus(unit, data);
       case 'Anti-Tank':
         return this.executeAntiTank(unit, data);
-      
+
       // Support abilities
       case 'Indirect Fire':
         return this.executeIndirectFire(unit, data);
@@ -424,7 +428,7 @@ export class GameEngine {
         return this.executeLocalKnowledge(unit, data);
       case 'Heavy Bombardment':
         return this.executeHeavyBombardment(unit, data);
-      
+
       default:
         return { success: false, message: `Unknown special ability: ${abilityName}` };
     }
@@ -540,7 +544,12 @@ export class GameEngine {
     // LCAC high-speed amphibious
     if (unit.type === UnitType.LCAC) {
       const toHex = this.gameState.map.getHex(to);
-      if (toHex && ['deep_water', 'shallow_water', 'beach'].includes(toHex.terrain)) {
+      if (
+        toHex &&
+        [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER, TerrainType.BEACH].includes(
+          toHex.terrain as TerrainType
+        )
+      ) {
         return 1;
       }
     }
@@ -548,10 +557,10 @@ export class GameEngine {
     // AAV amphibious movement
     if (unit.type === UnitType.AAV_7) {
       const toHex = this.gameState.map.getHex(to);
-      if (toHex?.terrain === 'shallow_water') {
+      if (toHex?.terrain === TerrainType.SHALLOW_WATER) {
         return 1;
       }
-      if (toHex?.terrain === 'deep_water') {
+      if (toHex?.terrain === TerrainType.DEEP_WATER) {
         return 2;
       }
     }
@@ -580,7 +589,7 @@ export class GameEngine {
 
     // Ground units cannot move into deep water
     if (
-      targetHex.terrain === 'deep_water' &&
+      targetHex.terrain === TerrainType.DEEP_WATER &&
       !unit.hasCategory(UnitCategory.AMPHIBIOUS) &&
       !unit.hasCategory(UnitCategory.AIRCRAFT) &&
       !unit.hasCategory(UnitCategory.SHIP)
@@ -799,6 +808,9 @@ export class GameEngine {
     // Get units to launch
     const unitsToLaunch: Unit[] = [];
     for (const unitId of action.data.unitIds) {
+      if (typeof unitId !== 'string') {
+        return { success: false, message: 'Invalid unit ID format' };
+      }
       const unit = this.gameState.getUnit(unitId);
       if (!unit) {
         return { success: false, message: `Unit ${unitId} not found` };
@@ -827,6 +839,9 @@ export class GameEngine {
     // Get units to recover
     const unitsToRecover: Unit[] = [];
     for (const unitId of action.data.unitIds) {
+      if (typeof unitId !== 'string') {
+        return { success: false, message: 'Invalid unit ID format' };
+      }
       const unit = this.gameState.getUnit(unitId);
       if (!unit) {
         return { success: false, message: `Unit ${unitId} not found` };
@@ -869,8 +884,8 @@ export class GameEngine {
       data: {
         cardId,
         effectsApplied: result.effectsApplied,
-        ...result.data
-      }
+        ...result.data,
+      },
     };
   }
 
@@ -1021,12 +1036,12 @@ export class GameEngine {
    */
   public executeAIActions(actions: GameAction[]): ActionResult[] {
     const results: ActionResult[] = [];
-    
+
     for (const action of actions) {
       const result = this.executeAction(action);
       results.push(result);
     }
-    
+
     return results;
   }
 
@@ -1038,12 +1053,12 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Fast Reconnaissance - enhanced mobility and scouting`,
-      data: { movementBonus: 2, scoutingRange: 3 }
+      data: { movementBonus: 2, scoutingRange: 3 },
     };
   }
 
   /**
-   * Execute Fast Ambush ability (TECHNICAL)  
+   * Execute Fast Ambush ability (TECHNICAL)
    */
   private executeFastAmbush(unit: Unit, _data: SpecialAbilityData): ActionResult {
     // Allow movement after attacking if unit was hidden
@@ -1051,12 +1066,12 @@ export class GameEngine {
       return {
         success: true,
         message: `${unit.type} uses Fast Ambush - can move after attacking`,
-        data: { canMoveAfterAttack: true }
+        data: { canMoveAfterAttack: true },
       };
     }
     return {
       success: false,
-      message: 'Fast Ambush requires starting position to be hidden'
+      message: 'Fast Ambush requires starting position to be hidden',
     };
   }
 
@@ -1067,7 +1082,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Mobility - enhanced movement capability`,
-      data: { movementBonus: 1 }
+      data: { movementBonus: 1 },
     };
   }
 
@@ -1078,7 +1093,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Improvised tactics - low cost mobility`,
-      data: { improvised: true }
+      data: { improvised: true },
     };
   }
 
@@ -1089,7 +1104,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Urban Specialists - bonus in urban terrain`,
-      data: { urbanBonus: true, attackBonus: 1 }
+      data: { urbanBonus: true, attackBonus: 1 },
     };
   }
 
@@ -1102,7 +1117,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} takes Defensive Position - improved defense`,
-      data: { defenseBonus: 1, suppressionReduced: true }
+      data: { defenseBonus: 1, suppressionReduced: true },
     };
   }
 
@@ -1113,7 +1128,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} entrenches - defensive bonus applied`,
-      data: { defenseBonus: 1, entrenched: true }
+      data: { defenseBonus: 1, entrenched: true },
     };
   }
 
@@ -1124,7 +1139,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Amphibious Training - water movement bonus`,
-      data: { amphibiousBonus: true }
+      data: { amphibiousBonus: true },
     };
   }
 
@@ -1135,7 +1150,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Anti-Vehicle Specialist - bonus vs vehicles`,
-      data: { antiVehicleBonus: 2 }
+      data: { antiVehicleBonus: 2 },
     };
   }
 
@@ -1146,7 +1161,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Anti-Aircraft - bonus vs aircraft`,
-      data: { antiAircraftBonus: 2 }
+      data: { antiAircraftBonus: 2 },
     };
   }
 
@@ -1157,7 +1172,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Anti-Air Focus - enhanced air defense`,
-      data: { antiAircraftBonus: 2, range: 3 }
+      data: { antiAircraftBonus: 2, range: 3 },
     };
   }
 
@@ -1168,7 +1183,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Anti-Tank - bonus vs armored vehicles`,
-      data: { antiTankBonus: 2 }
+      data: { antiTankBonus: 2 },
     };
   }
 
@@ -1194,7 +1209,7 @@ export class GameEngine {
     // Hit units at target location
     const targets = this.gameState.getUnitsAt(targetHex);
     const results: string[] = [];
-    
+
     for (const target of targets) {
       const damage = Math.floor(Math.random() * 3); // 0-2 damage
       if (damage > 0) {
@@ -1206,7 +1221,7 @@ export class GameEngine {
     return {
       success: true,
       message: `Indirect fire at (${targetHex.q},${targetHex.r}): ${results.join(', ') || 'No hits'}`,
-      data: { results, range: distance }
+      data: { results, range: distance },
     };
   }
 
@@ -1217,7 +1232,7 @@ export class GameEngine {
     return {
       success: true,
       message: `${unit.type} uses Local Knowledge - terrain movement bonus`,
-      data: { terrainBonus: true, movementBonus: 1 }
+      data: { terrainBonus: true, movementBonus: 1 },
     };
   }
 
@@ -1246,7 +1261,7 @@ export class GameEngine {
     return {
       success: true,
       message: `Heavy bombardment completed: ${results.join(', ') || 'No hits'}`,
-      data: { results, hexesTargeted: data.targetHexes.length }
+      data: { results, hexesTargeted: data.targetHexes.length },
     };
   }
 }
