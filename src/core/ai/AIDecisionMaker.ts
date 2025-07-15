@@ -126,7 +126,7 @@ export class AIDecisionMaker {
 
     // Apply personality-based weights with situational modifiers
     for (const [priority, baseWeight] of Object.entries(baseWeights)) {
-      const situationalWeight = situationalModifiers[priority as TacticalPriority] || 1.0;
+      const situationalWeight = situationalModifiers[priority as TacticalPriority] ?? 1.0;
       const finalWeight = baseWeight * situationalWeight;
 
       // Only include priorities that meet minimum threshold
@@ -1685,11 +1685,7 @@ export class AIDecisionMaker {
   }
   private calculateDistance(pos1: HexCoordinate, pos2: HexCoordinate): number {
     // Hex distance calculation using cube coordinates - MUST MATCH Combat.ts distanceTo()
-    return Math.max(
-      Math.abs(pos1.q - pos2.q),
-      Math.abs(pos1.r - pos2.r),
-      Math.abs(pos1.s - pos2.s)
-    );
+    return (Math.abs(pos1.q - pos2.q) + Math.abs(pos1.r - pos2.r) + Math.abs(pos1.s - pos2.s)) / 2;
   }
 
   private getUnitRange(unit: Unit): number {
@@ -1913,16 +1909,20 @@ export class AIDecisionMaker {
             ambushValue += enemy.stats.atk + enemy.stats.def; // Higher for stronger units
           }
 
+          // Enhanced ambush opportunity analysis
+          const ambushOpportunityScore = this.evaluateRevealOpportunity(unit, nearbyEnemies, context);
+          
           // Reveal if ambush opportunity is good
-          if (ambushValue >= 6 || nearbyEnemies.length >= 2) {
+          if (ambushOpportunityScore >= 6 || nearbyEnemies.length >= 2) {
             decisions.push({
               type: AIDecisionType.REVEAL_UNIT,
-              priority: 9, // High priority for ambushes
+              priority: Math.min(10, 6 + Math.floor(ambushOpportunityScore / 2)), // Dynamic priority
               unitId: unit.id,
-              reasoning: `Revealing ${unit.type} for ambush on ${nearbyEnemies.length} enemies (value: ${ambushValue})`,
+              reasoning: `Revealing ${unit.type} for ambush on ${nearbyEnemies.length} enemies (score: ${ambushOpportunityScore})`,
               metadata: {
                 ambushTargets: nearbyEnemies.map(e => e.id),
                 ambushValue: ambushValue,
+                ambushScore: ambushOpportunityScore,
               },
             });
           }
@@ -1944,21 +1944,30 @@ export class AIDecisionMaker {
           });
         }
 
-        // Fallback: Reveal if no specific conditions met but enemies are present (testing)
+        // Fallback: Reveal only if no good tactical positioning and enemies are very close
         if (
           context.enemyUnits.length > 0 &&
           decisions.filter(d => d.unitId === unit.id).length === 0
         ) {
-          decisions.push({
-            type: AIDecisionType.REVEAL_UNIT,
-            priority: 10, // Higher priority than special abilities
-            unitId: unit.id,
-            reasoning: `Revealing ${unit.type} - tactical decision with enemies present`,
-            metadata: {
-              fallbackReveal: true,
-              enemyCount: context.enemyUnits.length,
-            },
-          });
+          // Check if enemies are close enough to warrant immediate reveal
+          const nearestEnemyDistance = Math.min(
+            ...context.enemyUnits.map(e => this.calculateDistance(unit.state.position, e.state.position))
+          );
+          
+          // Only reveal if enemies are within 2 hexes (immediate threat)
+          if (nearestEnemyDistance <= 2) {
+            decisions.push({
+              type: AIDecisionType.REVEAL_UNIT,
+              priority: 6, // Lower priority than movement to allow tactical positioning
+              unitId: unit.id,
+              reasoning: `Revealing ${unit.type} - immediate threat at distance ${nearestEnemyDistance}`,
+              metadata: {
+                fallbackReveal: true,
+                enemyCount: context.enemyUnits.length,
+                nearestEnemyDistance: nearestEnemyDistance,
+              },
+            });
+          }
         }
       }
 
@@ -2049,7 +2058,7 @@ export class AIDecisionMaker {
           if (distance > 0 && distance <= unit.stats.mv) {
             decisions.push({
               type: AIDecisionType.MOVE_UNIT,
-              priority: 5,
+              priority: 7, // Higher priority than reveal decisions to prioritize tactical positioning
               unitId: unit.id,
               targetPosition: bestPosition,
               reasoning: `Moving ${unit.type} to better tactical position for stealth operations`,
@@ -2091,10 +2100,16 @@ export class AIDecisionMaker {
     const currentPosition = unit.state.position;
     const candidates: { position: Hex; score: number }[] = [];
 
+    // Enhanced search pattern based on unit type and tactical situation
+    const searchRadius = this.getOptimalSearchRadius(unit, context);
+    
     // Search in a radius around the current position
-    for (let dq = -unit.stats.mv; dq <= unit.stats.mv; dq++) {
-      for (let dr = -unit.stats.mv; dr <= unit.stats.mv; dr++) {
-        if (Math.abs(dq) + Math.abs(dr) <= unit.stats.mv) {
+    for (let dq = -searchRadius; dq <= searchRadius; dq++) {
+      for (let dr = -searchRadius; dr <= searchRadius; dr++) {
+        const distance = Math.abs(dq) + Math.abs(dr);
+        
+        // Use movement-based constraints but allow tactical positioning beyond immediate movement
+        if (distance <= Math.max(unit.stats.mv, searchRadius)) {
           const candidatePosition = new Hex(
             currentPosition.q + dq,
             currentPosition.r + dr
@@ -2103,26 +2118,84 @@ export class AIDecisionMaker {
           // Check if position is valid and unoccupied
           if (this.isValidPosition(candidatePosition, context)) {
             const score = this.evaluateTacticalPosition(candidatePosition, unit, context);
-            candidates.push({ position: candidatePosition, score });
+            
+            // Apply movement cost penalty for positions requiring multiple turns
+            let adjustedScore = score;
+            if (distance > unit.stats.mv) {
+              const movementPenalty = (distance - unit.stats.mv) * 0.5;
+              adjustedScore -= movementPenalty;
+            }
+            
+            candidates.push({ position: candidatePosition, score: adjustedScore });
           }
         }
       }
     }
 
-    // Return the best position
+    // Return the best position with enhanced selection logic
     if (candidates.length > 0) {
-      const best = candidates.reduce((best, candidate) => 
-        candidate.score > best.score ? candidate : best
-      );
-      
-      // Only return if it's actually better than current position
+      // Filter out positions that are only marginally better to avoid unnecessary movement
       const currentScore = this.evaluateTacticalPosition(new Hex(currentPosition.q, currentPosition.r), unit, context);
-      if (best.score > currentScore) {
+      const minImprovement = this.getMinimumImprovementThreshold(unit, context);
+      
+      const viableCandidates = candidates.filter(c => c.score > currentScore + minImprovement);
+      
+      if (viableCandidates.length > 0) {
+        const best = viableCandidates.reduce((best, candidate) => 
+          candidate.score > best.score ? candidate : best
+        );
+        
         return best.position;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Get optimal search radius for tactical positioning
+   */
+  private getOptimalSearchRadius(unit: Unit, context: AIDecisionContext): number {
+    let radius = unit.stats.mv;
+    
+    // Infantry units should search wider for cover
+    if (unit.hasCategory(UnitCategory.INFANTRY)) {
+      radius = Math.min(6, radius + 2);
+    }
+    
+    // Under high threat, search more aggressively for better positions
+    const threat = this.calculateThreatLevel(unit, context);
+    if (threat.overallThreatLevel > 50) {
+      radius = Math.min(8, radius + 1);
+    }
+    
+    return radius;
+  }
+
+  /**
+   * Get minimum improvement threshold to avoid unnecessary movement
+   */
+  private getMinimumImprovementThreshold(unit: Unit, context: AIDecisionContext): number {
+    let threshold = 0.5; // Lower base threshold for more movement
+    
+    // For hidden units, use even lower threshold to encourage tactical positioning
+    if (unit.isHidden()) {
+      threshold = 0.2;
+    }
+    
+    // Higher threshold for healthy units (less likely to move unless significant improvement)
+    const healthPercent = unit.state.currentHP / unit.stats.hp;
+    if (healthPercent > 0.8 && !unit.isHidden()) {
+      threshold = 1.0; // Reduced from 2.0
+    }
+    
+    // Lower threshold for units under threat (more willing to move)
+    const threat = this.calculateThreatLevel(unit, context);
+    if (threat.overallThreatLevel > 50) {
+      threshold = 0.1;
+    }
+    
+    return threshold;
   }
 
   /**
@@ -2172,22 +2245,27 @@ export class AIDecisionMaker {
   private evaluateTacticalPosition(position: Hex, unit: Unit, context: AIDecisionContext): number {
     let score = 0;
 
-    // Base score for cover (simple heuristic)
-    score += (position.q + position.r) % 2 === 0 ? 2 : 0;
+    // Enhanced cover evaluation based on position complexity
+    const coverScore = this.evaluateCoverPosition(position, context);
+    score += coverScore;
 
-    // Distance from enemies (prefer positions not too close, not too far)
+    // Unit-specific distance optimization
     if (context.enemyUnits.length > 0) {
-      const avgEnemyDistance = context.enemyUnits.reduce((sum, enemy) => 
-        sum + this.calculateDistance(position, enemy.state.position), 0
-      ) / context.enemyUnits.length;
-
-      // Optimal distance is 3-5 hexes for hiding
-      if (avgEnemyDistance >= 3 && avgEnemyDistance <= 5) {
-        score += 3;
-      } else if (avgEnemyDistance > 5) {
-        score += 1;
-      }
+      const distanceScore = this.evaluateStealthDistance(position, unit, context.enemyUnits);
+      score += distanceScore;
     }
+
+    // Ambush opportunity assessment
+    const ambushScore = this.evaluateAmbushOpportunity(position, unit, context);
+    score += ambushScore;
+
+    // Terrain and line-of-sight advantage
+    const terrainScore = this.evaluateTerrainAdvantage(position, unit, context);
+    score += terrainScore;
+
+    // Threat avoidance evaluation
+    const threatScore = this.evaluateThreatAvoidance(position, unit, context);
+    score += threatScore;
 
     // Prefer positions that allow hiding
     if (unit.canBeHidden()) {
@@ -2195,6 +2273,271 @@ export class AIDecisionMaker {
     }
 
     return score;
+  }
+
+  /**
+   * Evaluate cover quality of a position
+   */
+  private evaluateCoverPosition(position: Hex, context: AIDecisionContext): number {
+    let score = 0;
+    
+    // Improved cover heuristic - consider surrounding terrain complexity
+    const surroundingPositions = [
+      new Hex(position.q + 1, position.r),
+      new Hex(position.q - 1, position.r),
+      new Hex(position.q, position.r + 1),
+      new Hex(position.q, position.r - 1),
+      new Hex(position.q + 1, position.r - 1),
+      new Hex(position.q - 1, position.r + 1),
+    ];
+    
+    // Score based on terrain variation (more varied = better cover)
+    let terrainVariation = 0;
+    let validPositions = 0;
+    
+    for (const pos of surroundingPositions) {
+      if (this.isValidMapPosition(pos, context)) {
+        validPositions++;
+        // Use position coordinates as terrain proxy
+        terrainVariation += Math.abs(pos.q % 3) + Math.abs(pos.r % 3);
+      }
+    }
+    
+    if (validPositions > 0) {
+      score += Math.min(5, terrainVariation / validPositions);
+    }
+    
+    // Prefer positions near map edges (natural cover)
+    const mapSize = 10; // Approximate map size
+    const edgeDistance = Math.min(
+      position.q, position.r, 
+      mapSize - position.q, mapSize - position.r
+    );
+    
+    if (edgeDistance <= 2) {
+      score += 3; // Edge positions provide good cover
+    } else if (edgeDistance <= 4) {
+      score += 1; // Near-edge positions provide some cover
+    }
+    
+    return score;
+  }
+
+  /**
+   * Evaluate stealth distance based on unit capabilities
+   */
+  private evaluateStealthDistance(position: Hex, unit: Unit, enemies: Unit[]): number {
+    let score = 0;
+    
+    // Calculate unit-specific optimal engagement range
+    const unitRange = this.getUnitRange(unit);
+    const optimalMinDistance = Math.max(2, unitRange - 1); // Just outside enemy range
+    const optimalMaxDistance = Math.min(8, unitRange + 2); // Within effective range
+    
+    for (const enemy of enemies) {
+      const distance = this.calculateDistance(position, enemy.state.position);
+      const enemyRange = this.getUnitRange(enemy);
+      
+      // Prefer positions just outside enemy range but within our range
+      if (distance > enemyRange && distance <= optimalMaxDistance) {
+        score += 4; // Excellent positioning
+      } else if (distance >= optimalMinDistance && distance <= optimalMaxDistance) {
+        score += 2; // Good positioning
+      } else if (distance > optimalMaxDistance) {
+        score += 1; // Acceptable but distant
+      }
+      // Penalty for being too close (within enemy range)
+      else if (distance <= enemyRange) {
+        score -= 2;
+      }
+    }
+    
+    return score;
+  }
+
+  /**
+   * Evaluate ambush opportunity potential
+   */
+  private evaluateAmbushOpportunity(position: Hex, unit: Unit, context: AIDecisionContext): number {
+    let score = 0;
+    
+    // Look for potential ambush positions
+    const unitRange = this.getUnitRange(unit);
+    
+    for (const enemy of context.enemyUnits) {
+      const distance = this.calculateDistance(position, enemy.state.position);
+      
+      // Good ambush range - close enough to attack, far enough to hide
+      if (distance <= unitRange + 1 && distance >= 2) {
+        // Higher value for more dangerous enemies
+        const enemyValue = enemy.stats.atk + enemy.stats.def + enemy.stats.hp;
+        score += Math.min(3, enemyValue / 4);
+        
+        // Bonus for flanking positions (enemies facing away)
+        if (this.isFlankingPosition(position, enemy)) {
+          score += 2;
+        }
+      }
+    }
+    
+    return score;
+  }
+
+  /**
+   * Evaluate terrain advantages
+   */
+  private evaluateTerrainAdvantage(position: Hex, unit: Unit, context: AIDecisionContext): number {
+    let score = 0;
+    
+    // Infantry units benefit from complex terrain
+    if (unit.hasCategory(UnitCategory.INFANTRY)) {
+      // Prefer positions with varied surrounding terrain
+      const terrainComplexity = (position.q + position.r + position.s) % 4;
+      score += terrainComplexity;
+      
+      // Bonus for positions that provide defensive advantages
+      if (unit.hasCategory(UnitCategory.ARTILLERY)) {
+        // Artillery units prefer elevated or concealed positions
+        score += (position.q % 2 === 0) ? 2 : 0;
+      }
+    }
+    
+    // Vehicle units prefer open terrain for mobility
+    if (unit.hasCategory(UnitCategory.VEHICLE)) {
+      const openTerrain = (position.q + position.r) % 3 === 0;
+      score += openTerrain ? 1 : -1;
+    }
+    
+    return score;
+  }
+
+  /**
+   * Evaluate threat avoidance
+   */
+  private evaluateThreatAvoidance(position: Hex, unit: Unit, context: AIDecisionContext): number {
+    let score = 0;
+    
+    // Assess threats from enemy units
+    for (const enemy of context.enemyUnits) {
+      const distance = this.calculateDistance(position, enemy.state.position);
+      const enemyRange = this.getUnitRange(enemy);
+      
+      // Significant penalty for being in direct threat range
+      if (distance <= enemyRange) {
+        const threat = enemy.stats.atk * 2;
+        score -= Math.min(5, threat / 3);
+      }
+      
+      // Moderate penalty for being in potential threat range
+      else if (distance <= enemyRange + 1) {
+        score -= 1;
+      }
+    }
+    
+    // Avoid positions that cluster with friendly units (reduce splash damage)
+    let friendlyNearby = 0;
+    for (const friendly of context.availableUnits) {
+      if (friendly.id !== unit.id) {
+        const distance = this.calculateDistance(position, friendly.state.position);
+        if (distance <= 2) {
+          friendlyNearby++;
+        }
+      }
+    }
+    
+    // Penalty for clustering (makes group vulnerable)
+    if (friendlyNearby > 2) {
+      score -= 3;
+    } else if (friendlyNearby > 1) {
+      score -= 1;
+    }
+    
+    return score;
+  }
+
+  /**
+   * Check if position provides flanking advantage
+   */
+  private isFlankingPosition(position: Hex, enemy: Unit): boolean {
+    // Simple heuristic - position is flanking if it's behind the enemy
+    // (This is a simplified check - a full implementation would consider facing direction)
+    const enemyPos = enemy.state.position;
+    const deltaQ = position.q - enemyPos.q;
+    const deltaR = position.r - enemyPos.r;
+    
+    // Consider flanking if approaching from different angle
+    return Math.abs(deltaQ) > Math.abs(deltaR) || Math.abs(deltaR) > Math.abs(deltaQ);
+  }
+
+  /**
+   * Evaluate reveal opportunity for ambush attacks
+   */
+  private evaluateRevealOpportunity(unit: Unit, nearbyEnemies: Unit[], context: AIDecisionContext): number {
+    let score = 0;
+    
+    // Base score from enemy values
+    for (const enemy of nearbyEnemies) {
+      const enemyValue = enemy.stats.atk + enemy.stats.def + enemy.stats.hp;
+      score += enemyValue / 4; // Normalize enemy value
+      
+      // Bonus for damaged enemies (easier targets)
+      const enemyHealthPercent = enemy.state.currentHP / enemy.stats.hp;
+      if (enemyHealthPercent <= 0.5) {
+        score += 3; // Prioritize finishing off damaged enemies
+      }
+      
+      // Bonus for high-value targets
+      if (enemy.hasCategory(UnitCategory.VEHICLE) || enemy.hasCategory(UnitCategory.AIRCRAFT)) {
+        score += 2; // Vehicles and aircraft are high-value targets
+      }
+    }
+    
+    // Tactical positioning bonuses
+    const unitPosition = new Hex(unit.state.position.q, unit.state.position.r);
+    for (const enemy of nearbyEnemies) {
+      if (this.isFlankingPosition(unitPosition, enemy)) {
+        score += 2; // Flanking bonus
+      }
+      
+      // Distance optimization
+      const distance = this.calculateDistance(unitPosition, enemy.state.position);
+      const unitRange = this.getUnitRange(unit);
+      
+      if (distance <= unitRange) {
+        score += 3; // Within attack range
+      } else if (distance <= unitRange + 1) {
+        score += 1; // Can attack after minimal movement
+      }
+    }
+    
+    // Consider unit's health and capability
+    const unitHealthPercent = unit.state.currentHP / unit.stats.hp;
+    if (unitHealthPercent < 0.3) {
+      score -= 3; // Penalize revealing very damaged units
+    } else if (unitHealthPercent > 0.8) {
+      score += 1; // Bonus for healthy units
+    }
+    
+    // Special unit bonuses
+    if (unit.hasCategory(UnitCategory.ARTILLERY) && 
+        nearbyEnemies.some(e => e.hasCategory(UnitCategory.VEHICLE))) {
+      score += 3; // Artillery units vs vehicles
+    }
+    
+    if (unit.hasCategory(UnitCategory.INFANTRY) && 
+        nearbyEnemies.some(e => e.hasCategory(UnitCategory.INFANTRY))) {
+      score += 1; // Infantry vs infantry
+    }
+    
+    // Threat assessment - avoid revealing if we'll be overwhelmed
+    const totalEnemyThreat = nearbyEnemies.reduce((sum, enemy) => sum + enemy.stats.atk, 0);
+    const unitSurvivability = unit.stats.def + unit.stats.hp;
+    
+    if (totalEnemyThreat > unitSurvivability * 1.5) {
+      score -= 4; // High risk of being destroyed
+    }
+    
+    return Math.max(0, score);
   }
 
   /**
