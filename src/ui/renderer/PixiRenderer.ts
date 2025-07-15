@@ -37,7 +37,7 @@ export class PixiRenderer {
       autoDensity: true,
     });
 
-    container.appendChild(this.app.view as HTMLCanvasElement);
+    container.appendChild(this.app.canvas);
 
     // Set up hex layout - position map to show properly
     // For a 12x8 map, we want to offset from center to show the full map
