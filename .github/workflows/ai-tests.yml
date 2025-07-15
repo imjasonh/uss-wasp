@@ -80,7 +80,6 @@ jobs:
 
   game-simulation:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     
     steps:
     - uses: actions/checkout@v4
@@ -103,7 +102,7 @@ jobs:
         timeout 1200 node tests/simulation/run-full-game-simulation.js || echo "Full simulation completed (may have timed out)"
     
     - name: Upload simulation results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: simulation-results
