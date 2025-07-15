@@ -103,7 +103,7 @@ jobs:
         timeout 1200 node tests/simulation/run-full-game-simulation.js || echo "Full simulation completed (may have timed out)"
     
     - name: Upload simulation results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: simulation-results

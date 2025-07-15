@@ -1,0 +1,97 @@
+# Dependabot configuration for USS Wasp project
+# Automatically manages and updates dependencies for security and maintenance
+
+version: 2
+updates:
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "imjasonh"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Node.js/TypeScript dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+    open-pull-requests-limit: 15
+    reviewers:
+      - "imjasonh"
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Group related updates together to reduce PR noise
+    groups:
+      typescript-tooling:
+        patterns:
+          - "typescript"
+          - "@types/*"
+          - "ts-*"
+          - "tsx"
+        update-types:
+          - "minor"
+          - "patch"
+      eslint-tooling:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+      testing-framework:
+        patterns:
+          - "jest"
+          - "@jest/*"
+          - "playwright"
+          - "@playwright/*"
+        update-types:
+          - "minor"
+          - "patch"
+      webpack-tooling:
+        patterns:
+          - "webpack*"
+          - "*-loader"
+          - "html-webpack-plugin"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-tools:
+        patterns:
+          - "husky"
+          - "lint-staged"
+          - "prettier"
+        update-types:
+          - "minor"
+          - "patch"
+    # Allow automatic merging for patch and minor updates to reduce maintenance overhead
+    # Major version updates will still require manual review
+    versioning-strategy: increase
+    # Ignore specific packages that might cause breaking changes
+    ignore:
+      # Ignore major Node.js version updates - these need careful testing
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # Ignore major ESLint updates - these often have breaking rule changes
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # Ignore major TypeScript updates - these need careful migration
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    # Security updates will always be created regardless of other settings
+    # This ensures critical security patches are not delayed
