@@ -1607,10 +1607,12 @@ export class GameController {
 
     // Filter launchable units
     const launchableUnits = aboardUnits.filter(unit => {
-      return unit.hasCategory(UnitCategory.AIRCRAFT) || 
-             unit.hasCategory(UnitCategory.HELICOPTER) ||
-             unit.type === UnitType.LCAC || 
-             unit.type === UnitType.AAV_7;
+      return (
+        unit.hasCategory(UnitCategory.AIRCRAFT) ||
+        unit.hasCategory(UnitCategory.HELICOPTER) ||
+        unit.type === UnitType.LCAC ||
+        unit.type === UnitType.AAV_7
+      );
     });
 
     if (launchableUnits.length === 0) {
@@ -1658,38 +1660,47 @@ export class GameController {
    */
   private getNearbyRecoverableUnits(waspUnit: Unit): Unit[] {
     const allUnits = this.gameState.getAllUnits();
-    const waspPosition = new Hex(waspUnit.state.position.q, waspUnit.state.position.r, waspUnit.state.position.s);
-    
+    const waspPosition = new Hex(
+      waspUnit.state.position.q,
+      waspUnit.state.position.r,
+      waspUnit.state.position.s
+    );
+
     return allUnits.filter(unit => {
       // Must be same side as USS Wasp
       if (unit.side !== waspUnit.side) {
         return false;
       }
-      
+
       // Must not be the USS Wasp itself
       if (unit.id === waspUnit.id) {
         return false;
       }
-      
+
       // Must not already be aboard USS Wasp
       if (waspUnit.state.cargo.some(cargoUnit => cargoUnit.id === unit.id)) {
         return false;
       }
-      
+
       // Must be a recoverable unit type
-      const isRecoverable = unit.hasCategory(UnitCategory.AIRCRAFT) || 
-                           unit.hasCategory(UnitCategory.HELICOPTER) ||
-                           unit.type === UnitType.LCAC || 
-                           unit.type === UnitType.AAV_7;
-      
+      const isRecoverable =
+        unit.hasCategory(UnitCategory.AIRCRAFT) ||
+        unit.hasCategory(UnitCategory.HELICOPTER) ||
+        unit.type === UnitType.LCAC ||
+        unit.type === UnitType.AAV_7;
+
       if (!isRecoverable) {
         return false;
       }
-      
+
       // Must be within recovery range (adjacent)
-      const unitPosition = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+      const unitPosition = new Hex(
+        unit.state.position.q,
+        unit.state.position.r,
+        unit.state.position.s
+      );
       const distance = waspPosition.distanceTo(unitPosition);
-      
+
       return distance <= 1;
     });
   }
@@ -1705,7 +1716,9 @@ export class GameController {
         <h3>USS Wasp Launch Operations</h3>
         <p>Select units to launch (${launchableUnits.length} available):</p>
         <div class="unit-selection">
-          ${launchableUnits.map(unit => `
+          ${launchableUnits
+            .map(
+              unit => `
             <div class="unit-item" data-unit-id="${unit.id}">
               <input type="checkbox" id="launch-${unit.id}" />
               <label for="launch-${unit.id}">
@@ -1714,7 +1727,9 @@ export class GameController {
                 <span class="unit-category">${this.getUnitCategoryDisplay(unit)}</span>
               </label>
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
         <div class="dialog-buttons">
           <button id="execute-launch">Launch Selected</button>
@@ -1727,7 +1742,7 @@ export class GameController {
     this.addWaspDialogStyles();
 
     // Handle dialog events
-    dialog.addEventListener('click', (e) => {
+    dialog.addEventListener('click', e => {
       const target = e.target as HTMLElement;
 
       if (target.id === 'execute-launch') {
@@ -1757,7 +1772,9 @@ export class GameController {
         <h3>USS Wasp Recovery Operations</h3>
         <p>Select units to recover (${recoverableUnits.length} in range):</p>
         <div class="unit-selection">
-          ${recoverableUnits.map(unit => `
+          ${recoverableUnits
+            .map(
+              unit => `
             <div class="unit-item" data-unit-id="${unit.id}">
               <input type="checkbox" id="recover-${unit.id}" />
               <label for="recover-${unit.id}">
@@ -1767,7 +1784,9 @@ export class GameController {
                 <span class="unit-health">HP: ${unit.state.currentHP}/${unit.stats.hp}</span>
               </label>
             </div>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
         <div class="dialog-buttons">
           <button id="execute-recovery">Recover Selected</button>
@@ -1777,7 +1796,7 @@ export class GameController {
     `;
 
     // Handle dialog events
-    dialog.addEventListener('click', (e) => {
+    dialog.addEventListener('click', e => {
       const target = e.target as HTMLElement;
 
       if (target.id === 'execute-recovery') {
@@ -1838,7 +1857,7 @@ export class GameController {
       type: ActionType.LAUNCH_FROM_WASP,
       playerId: this.gameState.getActivePlayer()?.id ?? '',
       unitId: this.getUSS_WaspUnit()?.id ?? '',
-      data: { unitIds: units.map(u => u.id) }
+      data: { unitIds: units.map(u => u.id) },
     };
 
     const result = this.gameEngine.executeAction(action);
@@ -1858,7 +1877,7 @@ export class GameController {
       type: ActionType.RECOVER_TO_WASP,
       playerId: this.gameState.getActivePlayer()?.id ?? '',
       unitId: this.getUSS_WaspUnit()?.id ?? '',
-      data: { unitIds: units.map(u => u.id) }
+      data: { unitIds: units.map(u => u.id) },
     };
 
     const result = this.gameEngine.executeAction(action);
