@@ -1459,17 +1459,17 @@ export class ComprehensiveAITest {
       console.log('\n   🎯 Scenario 1: Command Point Constraints');
       console.log('   ─────────────────────────────────────────');
       const cpConstraintResults = this.runCommandPointConstraintTest();
-      
+
       // Test 2: Cost-Benefit Analysis Testing
       console.log('\n   💲 Scenario 2: Cost-Benefit Analysis');
       console.log('   ───────────────────────────────────────');
       const costBenefitResults = this.runCostBenefitAnalysisTest();
-      
+
       // Test 3: Resource Optimization Testing
       console.log('\n   📊 Scenario 3: Resource Optimization');
       console.log('   ──────────────────────────────────────');
       const resourceOptResults = this.runResourceOptimizationTest();
-      
+
       // Test 4: Emergency Resource Testing
       console.log('\n   🚨 Scenario 4: Emergency Resource Response');
       console.log('   ────────────────────────────────────────────');
@@ -1477,12 +1477,18 @@ export class ComprehensiveAITest {
 
       // Analyze overall resource management performance
       const totalScenarios = 4;
-      const passedScenarios = [cpConstraintResults, costBenefitResults, resourceOptResults, emergencyResults]
-        .filter(result => result.success).length;
+      const passedScenarios = [
+        cpConstraintResults,
+        costBenefitResults,
+        resourceOptResults,
+        emergencyResults,
+      ].filter(result => result.success).length;
 
       console.log('\n📊 Resource Management Test Results:');
       console.log(`   ✅ Scenarios passed: ${passedScenarios}/${totalScenarios}`);
-      console.log(`   📈 AI Resource Management Score: ${Math.round((passedScenarios / totalScenarios) * 100)}%`);
+      console.log(
+        `   📈 AI Resource Management Score: ${Math.round((passedScenarios / totalScenarios) * 100)}%`
+      );
 
       // Determine test success
       if (passedScenarios >= 3) {
@@ -1490,18 +1496,21 @@ export class ComprehensiveAITest {
         console.log('   ✅ AI demonstrates competent resource management');
       } else {
         testResult.success = false;
-        testResult.errors.push(`AI failed ${totalScenarios - passedScenarios} resource management scenarios`);
+        testResult.errors.push(
+          `AI failed ${totalScenarios - passedScenarios} resource management scenarios`
+        );
         console.log('   ❌ AI shows significant resource management deficiencies');
       }
 
       // Aggregate warnings and errors from sub-tests
-      [cpConstraintResults, costBenefitResults, resourceOptResults, emergencyResults].forEach(result => {
-        testResult.warnings.push(...result.warnings);
-        testResult.errors.push(...result.errors);
-        testResult.gameEngineGaps.push(...result.gameEngineGaps);
-        testResult.aiProgrammingGaps.push(...result.aiProgrammingGaps);
-      });
-
+      [cpConstraintResults, costBenefitResults, resourceOptResults, emergencyResults].forEach(
+        result => {
+          testResult.warnings.push(...result.warnings);
+          testResult.errors.push(...result.errors);
+          testResult.gameEngineGaps.push(...result.gameEngineGaps);
+          testResult.aiProgrammingGaps.push(...result.aiProgrammingGaps);
+        }
+      );
     } catch (error) {
       testResult.errors.push(
         `Resource management test failed: ${error instanceof Error ? error.message : String(error)}`
@@ -1530,12 +1539,12 @@ export class ComprehensiveAITest {
       // Create a scenario with limited CP (1-2 points) and multiple units
       const map = new GameMap(10, 10);
       const gameState = new GameState('cp-constraint-test', map, 1); // Very limited CP
-      
+
       // Create assault player with limited CP
       const assaultPlayer = new Player('assault-ai', PlayerSide.Assault);
       assaultPlayer.commandPoints = 1; // Very limited CP
       gameState.addPlayer(assaultPlayer);
-      
+
       // Create multiple units that need actions
       const assaultUnits = createTestUnits([
         {
@@ -1557,7 +1566,7 @@ export class ComprehensiveAITest {
           position: new Hex(3, 1),
         },
       ]);
-      
+
       // Create defender units as targets
       const defenderUnits = createTestUnits([
         {
@@ -1567,80 +1576,89 @@ export class ComprehensiveAITest {
           position: new Hex(5, 5),
         },
       ]);
-      
+
       // Add units to players
       assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
-      
+
       const defenderPlayer = new Player('defender-ai', PlayerSide.Defender);
       gameState.addPlayer(defenderPlayer);
       defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
-      
+
       // Create game engine and add AI controller
       const gameEngine = new GameEngine(gameState);
       gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
-      
+
       // Set game state for action phase
       gameState.setActivePlayerBySide(PlayerSide.Assault);
       gameState.phase = TurnPhase.ACTION;
-      
+
       console.log(`     Setup: ${assaultPlayer.commandPoints} CP available, 3 units need actions`);
-      
+
       // Test AI decision making under CP constraints
       const startTime = Date.now();
       const actions = gameEngine.updateAI();
       const decisionTime = Date.now() - startTime;
-      
-      console.log(`     AI generated ${actions.length} actions with ${assaultPlayer.commandPoints} CP`);
+
+      console.log(
+        `     AI generated ${actions.length} actions with ${assaultPlayer.commandPoints} CP`
+      );
       console.log(`     Decision time: ${decisionTime}ms`);
-      
+
       // Analyze resource utilization
       const totalCPUsed = actions.length; // Each action typically uses 1 CP
       const efficiency = actions.length > 0 ? totalCPUsed / actions.length : 0;
-      
-      console.log(`     📊 CP utilization: ${totalCPUsed} used, efficiency: ${efficiency.toFixed(2)}`);
-      
+
+      console.log(
+        `     📊 CP utilization: ${totalCPUsed} used, efficiency: ${efficiency.toFixed(2)}`
+      );
+
       // Validate AI behavior under CP constraints
       const validationResults = {
         respectsCPLimits: totalCPUsed <= 1,
         generatesActions: actions.length > 0,
         prioritizesCorrectly: actions.length <= 2, // Should not generate more actions than CP allows
-        choosesWisely: actions.some(action => action.type === ActionType.ATTACK || action.type === ActionType.MOVE)
+        choosesWisely: actions.some(
+          action => action.type === ActionType.ATTACK || action.type === ActionType.MOVE
+        ),
       };
-      
+
       const validationsPassed = Object.values(validationResults).filter(Boolean).length;
-      
+
       console.log(`     ✅ Validations passed: ${validationsPassed}/4`);
-      
+
       if (validationResults.respectsCPLimits) {
         console.log('     ✅ AI respects CP limits');
       } else {
         console.log('     ❌ AI exceeds CP limits');
         testResult.errors.push('AI generates actions exceeding available CP');
       }
-      
+
       if (validationResults.generatesActions) {
         console.log('     ✅ AI generates actions with limited CP');
       } else {
         console.log('     ❌ AI generates no actions');
         testResult.warnings.push('AI fails to generate actions when CP is limited');
       }
-      
+
       if (validationResults.prioritizesCorrectly) {
         console.log('     ✅ AI prioritizes actions appropriately');
       } else {
         console.log('     ❌ AI generates too many actions for available CP');
         testResult.aiProgrammingGaps.push('AI action generation does not respect CP constraints');
       }
-      
+
       testResult.success = validationsPassed >= 3;
-      testResult.performance = { turnCount: 1, aiDecisionTime: decisionTime, totalGameTime: decisionTime };
-      
+      testResult.performance = {
+        turnCount: 1,
+        aiDecisionTime: decisionTime,
+        totalGameTime: decisionTime,
+      };
     } catch (error) {
       testResult.errors.push(
         `Command Point constraint test failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-    
+
     return testResult;
   }
 
@@ -1663,12 +1681,12 @@ export class ComprehensiveAITest {
       // Create scenario where AI can choose between expensive and cheap actions
       const map = new GameMap(10, 10);
       const gameState = new GameState('cost-benefit-test', map, 3); // Moderate CP
-      
+
       // Create assault player with moderate CP
       const assaultPlayer = new Player('assault-ai', PlayerSide.Assault);
       assaultPlayer.commandPoints = 3; // Moderate CP
       gameState.addPlayer(assaultPlayer);
-      
+
       // Create units with different action capabilities
       const assaultUnits = createTestUnits([
         {
@@ -1684,7 +1702,7 @@ export class ComprehensiveAITest {
           position: new Hex(3, 2),
         },
       ]);
-      
+
       // Create clustered enemies for artillery (high-value target)
       const defenderUnits = createTestUnits([
         {
@@ -1706,75 +1724,80 @@ export class ComprehensiveAITest {
           position: new Hex(7, 6),
         },
       ]);
-      
+
       // Add units to players
       assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
-      
+
       const defenderPlayer = new Player('defender-ai', PlayerSide.Defender);
       gameState.addPlayer(defenderPlayer);
       defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
-      
+
       // Create game engine and add AI controller
       const gameEngine = new GameEngine(gameState);
       gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
-      
+
       // Set game state for action phase
       gameState.setActivePlayerBySide(PlayerSide.Assault);
       gameState.phase = TurnPhase.ACTION;
-      
+
       console.log(`     Setup: ${assaultPlayer.commandPoints} CP, artillery vs clustered enemies`);
-      
+
       // Test AI cost-benefit analysis
       const startTime = Date.now();
       const actions = gameEngine.updateAI();
       const decisionTime = Date.now() - startTime;
-      
+
       console.log(`     AI generated ${actions.length} actions`);
-      
+
       // Analyze cost-benefit decisions
       const expensiveActions = actions.filter(action => action.type === ActionType.SPECIAL_ABILITY);
       const cheapActions = actions.filter(action => action.type === ActionType.MOVE);
       const specialAbilities = actions.filter(action => action.type === ActionType.SPECIAL_ABILITY);
-      
+
       console.log(`     💰 Expensive actions: ${expensiveActions.length}`);
       console.log(`     💲 Cheap actions: ${cheapActions.length}`);
       console.log(`     ⚡ Special abilities: ${specialAbilities.length}`);
-      
+
       // Validate cost-benefit analysis
       const validationResults = {
         makesDecisions: actions.length > 0,
         considersHighValue: expensiveActions.length > 0 || specialAbilities.length > 0,
         maintainsBalance: cheapActions.length > 0, // Should still use some cheap actions
-        showsDiscrimination: actions.length <= 3 // Should not use all available actions blindly
+        showsDiscrimination: actions.length <= 3, // Should not use all available actions blindly
       };
-      
+
       const validationsPassed = Object.values(validationResults).filter(Boolean).length;
-      
+
       console.log(`     ✅ Validations passed: ${validationsPassed}/4`);
-      
+
       if (validationResults.makesDecisions) {
         console.log('     ✅ AI makes cost-benefit decisions');
       } else {
         console.log('     ❌ AI fails to make decisions');
         testResult.errors.push('AI generates no actions in cost-benefit scenario');
       }
-      
+
       if (validationResults.considersHighValue) {
         console.log('     ✅ AI considers high-value actions');
       } else {
         console.log('     ❌ AI ignores high-value opportunities');
-        testResult.aiProgrammingGaps.push('AI does not prioritize high-value actions appropriately');
+        testResult.aiProgrammingGaps.push(
+          'AI does not prioritize high-value actions appropriately'
+        );
       }
-      
+
       testResult.success = validationsPassed >= 3;
-      testResult.performance = { turnCount: 1, aiDecisionTime: decisionTime, totalGameTime: decisionTime };
-      
+      testResult.performance = {
+        turnCount: 1,
+        aiDecisionTime: decisionTime,
+        totalGameTime: decisionTime,
+      };
     } catch (error) {
       testResult.errors.push(
         `Cost-benefit analysis test failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-    
+
     return testResult;
   }
 
@@ -1797,12 +1820,12 @@ export class ComprehensiveAITest {
       // Create scenario requiring resource optimization
       const map = new GameMap(10, 10);
       const gameState = new GameState('resource-opt-test', map, 2); // Limited CP requiring optimization
-      
+
       // Create assault player with limited CP
       const assaultPlayer = new Player('assault-ai', PlayerSide.Assault);
       assaultPlayer.commandPoints = 2; // Limited CP requiring optimization
       gameState.addPlayer(assaultPlayer);
-      
+
       // Create multiple units with different strategic values
       const assaultUnits = createTestUnits([
         {
@@ -1824,7 +1847,7 @@ export class ComprehensiveAITest {
           position: new Hex(3, 1),
         },
       ]);
-      
+
       // Create strategic targets at different distances
       const defenderUnits = createTestUnits([
         {
@@ -1840,76 +1863,81 @@ export class ComprehensiveAITest {
           position: new Hex(6, 6),
         },
       ]);
-      
+
       // Add units to players
       assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
-      
+
       const defenderPlayer = new Player('defender-ai', PlayerSide.Defender);
       gameState.addPlayer(defenderPlayer);
       defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
-      
+
       // Create game engine and add AI controller
       const gameEngine = new GameEngine(gameState);
       gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
-      
+
       // Set game state for action phase
       gameState.setActivePlayerBySide(PlayerSide.Assault);
       gameState.phase = TurnPhase.ACTION;
-      
-      console.log(`     Setup: ${assaultPlayer.commandPoints} CP, multiple units and strategic targets`);
-      
+
+      console.log(
+        `     Setup: ${assaultPlayer.commandPoints} CP, multiple units and strategic targets`
+      );
+
       // Test AI resource optimization
       const startTime = Date.now();
       const actions = gameEngine.updateAI();
       const decisionTime = Date.now() - startTime;
-      
+
       console.log(`     AI generated ${actions.length} actions`);
-      
+
       // Analyze resource optimization
       const totalCPUsed = actions.length; // Each action typically uses 1 CP
       const cpEfficiency = actions.length > 0 ? totalCPUsed / actions.length : 0;
       const actionTypes = actions.map(action => action.type);
       const uniqueUnits = new Set(actions.map(action => action.unitId)).size;
-      
+
       console.log(`     📊 CP efficiency: ${cpEfficiency.toFixed(2)}`);
       console.log(`     🎯 Unique units used: ${uniqueUnits}`);
       console.log(`     🔄 Action types: ${actionTypes.join(', ')}`);
-      
+
       // Validate resource optimization
       const validationResults = {
         utilizesCP: totalCPUsed > 0,
         optimizesActions: actions.length > 0 && actions.length <= 3,
         diversifiesUnits: uniqueUnits >= 2,
-        maintainsEfficiency: cpEfficiency >= 0.5
+        maintainsEfficiency: cpEfficiency >= 0.5,
       };
-      
+
       const validationsPassed = Object.values(validationResults).filter(Boolean).length;
-      
+
       console.log(`     ✅ Validations passed: ${validationsPassed}/4`);
-      
+
       if (validationResults.utilizesCP) {
         console.log('     ✅ AI utilizes available CP');
       } else {
         console.log('     ❌ AI fails to use CP effectively');
         testResult.warnings.push('AI does not utilize available Command Points');
       }
-      
+
       if (validationResults.optimizesActions) {
         console.log('     ✅ AI optimizes action selection');
       } else {
         console.log('     ❌ AI shows poor action optimization');
         testResult.aiProgrammingGaps.push('AI action optimization needs improvement');
       }
-      
+
       testResult.success = validationsPassed >= 3;
-      testResult.performance = { turnCount: 1, aiDecisionTime: decisionTime, totalGameTime: decisionTime };
-      
+      testResult.performance = {
+        turnCount: 1,
+        aiDecisionTime: decisionTime,
+        totalGameTime: decisionTime,
+      };
     } catch (error) {
       testResult.errors.push(
         `Resource optimization test failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-    
+
     return testResult;
   }
 
@@ -1932,12 +1960,12 @@ export class ComprehensiveAITest {
       // Create emergency scenario with units under threat
       const map = new GameMap(10, 10);
       const gameState = new GameState('emergency-test', map, 4); // Moderate CP for emergency response
-      
+
       // Create assault player with moderate CP
       const assaultPlayer = new Player('assault-ai', PlayerSide.Assault);
       assaultPlayer.commandPoints = 4; // Moderate CP for emergency response
       gameState.addPlayer(assaultPlayer);
-      
+
       // Create damaged/threatened units
       const assaultUnits = createTestUnits([
         {
@@ -1953,7 +1981,7 @@ export class ComprehensiveAITest {
           position: new Hex(4, 3),
         },
       ]);
-      
+
       // Create immediate threats
       const defenderUnits = createTestUnits([
         {
@@ -1969,79 +1997,85 @@ export class ComprehensiveAITest {
           position: new Hex(3, 4),
         },
       ]);
-      
+
       // Add units to players
       assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
-      
+
       const defenderPlayer = new Player('defender-ai', PlayerSide.Defender);
       gameState.addPlayer(defenderPlayer);
       defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
-      
+
       // Create game engine and add AI controller
       const gameEngine = new GameEngine(gameState);
       gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
-      
+
       // Set game state for action phase
       gameState.setActivePlayerBySide(PlayerSide.Assault);
       gameState.phase = TurnPhase.ACTION;
-      
-      console.log(`     Setup: ${assaultPlayer.commandPoints} CP, damaged units under immediate threat`);
-      
+
+      console.log(
+        `     Setup: ${assaultPlayer.commandPoints} CP, damaged units under immediate threat`
+      );
+
       // Test AI emergency resource response
       const startTime = Date.now();
       const actions = gameEngine.updateAI();
       const decisionTime = Date.now() - startTime;
-      
+
       console.log(`     AI generated ${actions.length} actions in emergency`);
-      
+
       // Analyze emergency response
       const totalCPUsed = actions.length; // Each action typically uses 1 CP
-      const emergencyActions = actions.filter(action => 
-        action.type === ActionType.ATTACK || 
-        action.type === ActionType.MOVE || 
-        action.type === ActionType.SPECIAL_ABILITY
+      const emergencyActions = actions.filter(
+        action =>
+          action.type === ActionType.ATTACK ||
+          action.type === ActionType.MOVE ||
+          action.type === ActionType.SPECIAL_ABILITY
       );
       const defensiveActions = actions.filter(action => action.type === ActionType.MOVE);
-      
+
       console.log(`     🚨 Emergency actions: ${emergencyActions.length}`);
       console.log(`     🛡️ Defensive actions: ${defensiveActions.length}`);
       console.log(`     💰 CP spent: ${totalCPUsed}/${assaultPlayer.commandPoints}`);
-      
+
       // Validate emergency response
       const validationResults = {
         respondsToThreat: actions.length > 0,
         spendsResourcesLiberal: totalCPUsed >= 2, // Should spend more CP in emergency
         prioritizesSurvival: emergencyActions.length > 0,
-        showsUrgency: actions.length >= 2 // Should take multiple actions in emergency
+        showsUrgency: actions.length >= 2, // Should take multiple actions in emergency
       };
-      
+
       const validationsPassed = Object.values(validationResults).filter(Boolean).length;
-      
+
       console.log(`     ✅ Validations passed: ${validationsPassed}/4`);
-      
+
       if (validationResults.respondsToThreat) {
         console.log('     ✅ AI responds to emergency threats');
       } else {
         console.log('     ❌ AI fails to respond to emergency');
         testResult.errors.push('AI does not respond to emergency threats');
       }
-      
+
       if (validationResults.spendsResourcesLiberal) {
         console.log('     ✅ AI spends resources liberally in emergency');
       } else {
         console.log('     ❌ AI is too conservative in emergency');
         testResult.aiProgrammingGaps.push('AI emergency resource spending needs improvement');
       }
-      
+
       testResult.success = validationsPassed >= 3;
-      testResult.performance = { turnCount: 1, aiDecisionTime: decisionTime, totalGameTime: decisionTime };
-      
+      testResult.performance = {
+        turnCount: 1,
+        aiDecisionTime: decisionTime,
+        totalGameTime: decisionTime,
+      };
     } catch (error) {
       testResult.errors.push(
         `Emergency resource test failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
-    
+
     return testResult;
   }
 
