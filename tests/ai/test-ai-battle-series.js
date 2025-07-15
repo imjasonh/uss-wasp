@@ -69,6 +69,9 @@ function runSingleGame(gameNumber) {
         gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
         gameEngine.addAIController(defenderPlayer.id, AIDifficulty.VETERAN);
 
+        // Initialize USS Wasp operations
+        gameState.initializeWaspOperations();
+        
         // Give both sides some command points
         assaultPlayer.commandPoints = 10;
         defenderPlayer.commandPoints = 8;

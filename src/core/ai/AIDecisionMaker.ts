@@ -286,18 +286,66 @@ export class AIDecisionMaker {
    * Get default priority weights for legacy compatibility
    */
   private getDefaultPriorityWeights(): Record<TacticalPriority, number> {
-    return {
+    // Base priority weights
+    const baseWeights = {
       [TacticalPriority.PRESERVE_FORCE]: 4,
       [TacticalPriority.INFLICT_CASUALTIES]: 6,
       [TacticalPriority.DENY_TERRAIN]: 5,
       [TacticalPriority.DEFEND_OBJECTIVES]: 7,
-      [TacticalPriority.SECURE_OBJECTIVES]: 8, // Increased for objective focus
+      [TacticalPriority.SECURE_OBJECTIVES]: 8,
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
-      [TacticalPriority.MANAGE_LOGISTICS]: 9, // High priority for transport operations
-      [TacticalPriority.WASP_OPERATIONS]: 10, // High priority for USS Wasp operations
-      [TacticalPriority.HIDDEN_OPERATIONS]: 10, // High priority for hidden unit operations
-      [TacticalPriority.USE_SPECIAL_ABILITIES]: 5, // Lower priority than specific operations
+      [TacticalPriority.MANAGE_LOGISTICS]: 9,
+      [TacticalPriority.WASP_OPERATIONS]: 10,
+      [TacticalPriority.HIDDEN_OPERATIONS]: 10,
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 5,
     };
+
+    // Apply difficulty-based modifications
+    const difficultyModifier = this.getDifficultyPriorityModifier();
+    const modifiedWeights = { ...baseWeights };
+
+    // Adjust weights based on difficulty
+    switch (this.config.difficulty) {
+      case AIDifficulty.NOVICE:
+        // Novice AI prioritizes basic operations
+        modifiedWeights[TacticalPriority.PRESERVE_FORCE] = 6; // Higher preservation
+        modifiedWeights[TacticalPriority.INFLICT_CASUALTIES] = 4; // Lower aggression
+        modifiedWeights[TacticalPriority.USE_SPECIAL_ABILITIES] = 2; // Avoid complexity
+        modifiedWeights[TacticalPriority.HIDDEN_OPERATIONS] = 6; // Simpler stealth
+        break;
+        
+      case AIDifficulty.VETERAN:
+        // Veteran AI uses standard weights
+        break;
+        
+      case AIDifficulty.ELITE:
+        // Elite AI prioritizes complex operations
+        modifiedWeights[TacticalPriority.INFLICT_CASUALTIES] = 8; // Higher aggression
+        modifiedWeights[TacticalPriority.USE_SPECIAL_ABILITIES] = 7; // More complex tactics
+        modifiedWeights[TacticalPriority.GATHER_INTELLIGENCE] = 5; // Better reconnaissance
+        modifiedWeights[TacticalPriority.HIDDEN_OPERATIONS] = 12; // Superior stealth ops
+        break;
+    }
+
+    return modifiedWeights;
+  }
+
+  /**
+   * Get difficulty-based priority modifier
+   */
+  private getDifficultyPriorityModifier(): number {
+    switch (this.config.difficulty) {
+      case AIDifficulty.NOVICE:
+        return 0.8; // Novice AI has reduced priority effectiveness
+      case AIDifficulty.VETERAN:
+        return 1.0; // Standard priority effectiveness
+      case AIDifficulty.ELITE:
+        return 1.2; // Elite AI has enhanced priority effectiveness
+      case AIDifficulty.ADAPTIVE:
+        return 1.0; // Adaptive uses standard as base
+      default:
+        return 1.0;
+    }
   }
 
   /**
@@ -587,12 +635,39 @@ export class AIDecisionMaker {
       filtered = this.introduceMistakes(filtered, context);
     }
 
-    // Limit decision complexity for novice AI
-    if (this.config.difficulty === AIDifficulty.NOVICE) {
-      filtered = filtered.filter(decision =>
-        [AIDecisionType.MOVE_UNIT, AIDecisionType.ATTACK_TARGET].includes(decision.type)
-      );
+    // Enhanced difficulty-based decision filtering
+    switch (this.config.difficulty) {
+      case AIDifficulty.NOVICE:
+        // Novice AI: Only basic actions, no complex tactics
+        filtered = filtered.filter(decision =>
+          [AIDecisionType.MOVE_UNIT, AIDecisionType.ATTACK_TARGET].includes(decision.type)
+        );
+        // Novice AI is conservative - reduce action count
+        filtered = filtered.slice(0, Math.max(1, Math.floor(filtered.length * 0.6)));
+        break;
+        
+      case AIDifficulty.VETERAN:
+        // Veteran AI: Standard capabilities with some limitations
+        filtered = filtered.filter(decision =>
+          decision.type !== AIDecisionType.SPECIAL_ABILITY || Math.random() < 0.7
+        );
+        break;
+        
+      case AIDifficulty.ELITE:
+        // Elite AI: Full capabilities with enhanced decision making
+        // Elite AI has better priority assessment
+        filtered = filtered.map(decision => ({
+          ...decision,
+          priority: decision.priority + (decision.priority > 7 ? 1 : 0)
+        }));
+        // Elite AI can make more decisions - increase action count
+        // No reduction in action count (unlike Novice AI)
+        break;
     }
+
+    // Apply difficulty-based action frequency modifiers
+    const actionFrequencyMultiplier = this.getDifficultyActionMultiplier();
+    const baseActionLimit = Math.max(1, Math.floor(filtered.length * actionFrequencyMultiplier));
 
     // Sort by priority and apply reaction time delays
     const sortedDecisions = filtered.sort((a, b) => b.priority - a.priority);
@@ -602,8 +677,26 @@ export class AIDecisionMaker {
     const emergencyComplexityBonus = emergencyLevel > 0.7 ? 2.0 : emergencyLevel > 0.4 ? 1.5 : 1.0;
     const adjustedComplexity = Math.min(1.0, this.config.tacticalComplexity * emergencyComplexityBonus);
     
-    const complexityLimit = filtered.length > 0 ? Math.max(1, Math.floor(filtered.length * adjustedComplexity)) : 0;
+    const complexityLimit = Math.max(1, Math.floor(baseActionLimit * adjustedComplexity));
     return sortedDecisions.slice(0, complexityLimit);
+  }
+
+  /**
+   * Get difficulty-based action frequency multiplier
+   */
+  private getDifficultyActionMultiplier(): number {
+    switch (this.config.difficulty) {
+      case AIDifficulty.NOVICE:
+        return 0.7; // Novice AI takes fewer actions
+      case AIDifficulty.VETERAN:
+        return 1.0; // Standard action count
+      case AIDifficulty.ELITE:
+        return 1.3; // Elite AI takes more actions
+      case AIDifficulty.ADAPTIVE:
+        return 1.0; // Adaptive uses standard as base
+      default:
+        return 1.0;
+    }
   }
 
   /**
@@ -1591,8 +1684,8 @@ export class AIDecisionMaker {
 
     for (const decision of decisions) {
       if (Math.random() < mistakeChance) {
-        // Introduce a mistake
-        const mistakeType = Math.floor(Math.random() * 3);
+        // Introduce a mistake based on difficulty
+        const mistakeType = Math.floor(Math.random() * 4);
 
         switch (mistakeType) {
           case 0:
