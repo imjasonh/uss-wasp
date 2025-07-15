@@ -22,6 +22,25 @@ import { PlayerSide, UnitType, ActionType } from '../core/game/types';
 import { createTestUnit, createTestUnits } from './UnitTestHelper';
 import { Hex } from '../core/hex';
 
+// Test constants to avoid magic numbers
+const TEST_CONSTANTS = {
+  MAP_SIZE: 8,
+  MAX_TURNS: 20,
+  TURN_TIMEOUT_MS: 5000,
+  DECISION_TIMEOUT_MS: 1000,
+  EXPECTED_MIN_ACTIONS: 1,
+  EXPECTED_MAX_ACTIONS: 10,
+  PERFORMANCE_THRESHOLD_MS: 100,
+  MIN_UNITS_PER_SIDE: 2,
+  MAX_UNITS_PER_SIDE: 6,
+  ASSAULT_START_X: 0,
+  ASSAULT_START_Y: 0,
+  DEFENDER_START_X: 6,
+  DEFENDER_START_Y: 6,
+  WASP_OFFSHORE_Y: 7,
+  ANALYSIS_SAMPLE_SIZE: 5,
+} as const;
+
 /**
  * Action analysis results
  */
@@ -111,8 +130,8 @@ export class ComprehensiveAITest {
       const startTime = Date.now();
 
       // Create game setup
-      const map = new GameMap(8, 8);
-      const gameState = new GameState('combat-test', map, 10);
+      const map = new GameMap(TEST_CONSTANTS.MAP_SIZE, TEST_CONSTANTS.MAP_SIZE);
+      const gameState = new GameState('combat-test', map, TEST_CONSTANTS.MAX_TURNS);
 
       const assaultPlayer = new Player('assault-ai', PlayerSide.Assault);
       const defenderPlayer = new Player('defender-ai', PlayerSide.Defender);
@@ -127,19 +146,19 @@ export class ComprehensiveAITest {
           id: 'assault-1',
           type: UnitType.MARINE_SQUAD,
           side: PlayerSide.Assault,
-          position: new Hex(0, 0),
+          position: new Hex(TEST_CONSTANTS.ASSAULT_START_X, TEST_CONSTANTS.ASSAULT_START_Y),
         },
         {
           id: 'assault-2',
           type: UnitType.MARINE_SQUAD,
           side: PlayerSide.Assault,
-          position: new Hex(1, 0),
+          position: new Hex(TEST_CONSTANTS.ASSAULT_START_X + 1, TEST_CONSTANTS.ASSAULT_START_Y),
         },
         {
           id: 'assault-3',
           type: UnitType.HUMVEE,
           side: PlayerSide.Assault,
-          position: new Hex(0, 1),
+          position: new Hex(TEST_CONSTANTS.ASSAULT_START_X, TEST_CONSTANTS.ASSAULT_START_Y + 1),
         },
       ]);
 
@@ -148,19 +167,19 @@ export class ComprehensiveAITest {
           id: 'defender-1',
           type: UnitType.INFANTRY_SQUAD,
           side: PlayerSide.Defender,
-          position: new Hex(6, 6),
+          position: new Hex(TEST_CONSTANTS.DEFENDER_START_X, TEST_CONSTANTS.DEFENDER_START_Y),
         },
         {
           id: 'defender-2',
           type: UnitType.ATGM_TEAM,
           side: PlayerSide.Defender,
-          position: new Hex(7, 6),
+          position: new Hex(TEST_CONSTANTS.DEFENDER_START_X + 1, TEST_CONSTANTS.DEFENDER_START_Y),
         },
         {
           id: 'defender-3',
           type: UnitType.TECHNICAL,
           side: PlayerSide.Defender,
-          position: new Hex(6, 7),
+          position: new Hex(TEST_CONSTANTS.DEFENDER_START_X, TEST_CONSTANTS.DEFENDER_START_Y + 1),
         },
       ]);
 
@@ -207,7 +226,7 @@ export class ComprehensiveAITest {
 
       // Run game simulation
       let turnCount = 0;
-      const maxTurns = 20;
+      const maxTurns = TEST_CONSTANTS.MAX_TURNS;
       let aiDecisionTotalTime = 0;
 
       console.log('\n🎮 Starting AI vs AI Combat Simulation...\n');
