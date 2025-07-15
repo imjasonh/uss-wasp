@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * Quick test of USS Wasp UI operations functionality
+ * Quick test of USS Wasp operations functionality
  */
 
-const { GameState } = require('../dist/core/game/GameState');
-const { GameEngine } = require('../dist/core/game/GameEngine');
-const { Player } = require('../dist/core/game/Player');
-const { GameMap } = require('../dist/core/game/Map');
-const { PlayerSide, UnitType } = require('../dist/core/game/types');
-const { AIDifficulty } = require('../dist/core/ai/types');
-const { createTestUnits } = require('../dist/testing/UnitTestHelper');
-const { Hex } = require('../dist/core/hex');
+import { GameState } from '../src/core/game/GameState';
+import { GameEngine } from '../src/core/game/GameEngine';
+import { Player } from '../src/core/game/Player';
+import { GameMap } from '../src/core/game/Map';
+import { PlayerSide, UnitType } from '../src/core/game/types';
+import { AIDifficulty } from '../src/core/ai/types';
+import { createTestUnits } from '../src/testing/UnitTestHelper';
+import { Hex } from '../src/core/hex';
 
-console.log('🚢 USS WASP UI OPERATIONS TEST');
-console.log('===============================\n');
+console.log('🚢 USS WASP OPERATIONS TEST');
+console.log('============================\n');
 
 async function testWaspOperations() {
   console.log('Creating test scenario with USS Wasp and embarked units...');
