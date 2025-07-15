@@ -17,7 +17,7 @@ import {
 } from './types';
 import { Unit } from '../game/Unit';
 import { Hex, HexCoordinate } from '../hex';
-import { UnitCategory, UnitType } from '../game/types';
+import { UnitCategory, UnitType, TerrainType } from '../game/types';
 
 /**
  * Core AI decision-making engine
@@ -1064,10 +1064,133 @@ export class AIDecisionMaker {
     return keyTerrain.slice(0, 5); // Return best movement options
   }
 
-  private canUnitReachPosition(unit: Unit, position: Hex, _context: AIDecisionContext): boolean {
-    // Simple movement range check
+  private canUnitReachPosition(unit: Unit, position: Hex, context: AIDecisionContext): boolean {
+    // Quick distance check first
     const distance = this.calculateDistance(unit.state.position, position);
-    return distance <= unit.stats.mv && !unit.state.hasMoved;
+    if (distance > unit.stats.mv || unit.state.hasMoved) {
+      return false;
+    }
+
+    // Validate position is within map bounds
+    if (!this.isValidMapPosition(position, context)) {
+      return false;
+    }
+
+    // Quick terrain check for obvious restrictions
+    const targetHex = context.gameState.map.getHex(position);
+    if (!targetHex) {
+      return false;
+    }
+
+    // Check basic terrain restrictions (avoid expensive pathfinding for obvious failures)
+    if (this.isTerrainImpassableForUnit(unit, targetHex, context)) {
+      return false;
+    }
+
+    // For adjacent positions, skip pathfinding (direct movement)
+    if (distance <= 1) {
+      return true;
+    }
+
+    // For longer distances, do actual pathfinding validation
+    return this.validatePathExists(unit, position, context);
+  }
+
+  /**
+   * Check if terrain is obviously impassable for a unit type
+   */
+  private isTerrainImpassableForUnit(
+    unit: Unit,
+    targetHex: any,
+    _context: AIDecisionContext
+  ): boolean {
+    // Ground units cannot enter deep water (unless amphibious)
+    if (
+      targetHex.terrain === TerrainType.DEEP_WATER &&
+      !unit.hasCategory(UnitCategory.AMPHIBIOUS) &&
+      !unit.hasCategory(UnitCategory.AIRCRAFT) &&
+      !unit.hasCategory(UnitCategory.SHIP)
+    ) {
+      return true;
+    }
+
+    // Add other obvious impassable terrain checks here
+    return false;
+  }
+
+  /**
+   * Validate that a path actually exists using lightweight pathfinding
+   */
+  private validatePathExists(unit: Unit, position: Hex, context: AIDecisionContext): boolean {
+    try {
+      // Use a simplified pathfinding approach to avoid circular dependencies
+      return this.checkSimplifiedPath(unit, position, context);
+    } catch (error) {
+      // Pathfinding failed - assume unreachable
+      return false;
+    }
+  }
+
+  /**
+   * Simplified pathfinding check for reachability
+   */
+  private checkSimplifiedPath(unit: Unit, target: Hex, context: AIDecisionContext): boolean {
+    const start = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+    const maxMovement = unit.getEffectiveMovement();
+
+    // Use a simple BFS to check if target is reachable within movement range
+    const queue: Array<{ hex: Hex; cost: number }> = [{ hex: start, cost: 0 }];
+    const visited = new Set<string>();
+    visited.add(start.toKey());
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      
+      // Check if we reached the target
+      if (current.hex.equals(target)) {
+        return true;
+      }
+
+      // Skip if we've exceeded movement range
+      if (current.cost >= maxMovement) {
+        continue;
+      }
+
+      // Check all neighbors
+      for (const neighbor of current.hex.neighbors()) {
+        const neighborKey = neighbor.toKey();
+        
+        if (visited.has(neighborKey)) {
+          continue;
+        }
+
+        // Check if position is valid
+        if (!this.isValidMapPosition(neighbor, context)) {
+          continue;
+        }
+
+        // Get movement cost
+        const movementCost = context.gameState.map.getMovementCost(neighbor);
+        if (!isFinite(movementCost) || movementCost <= 0) {
+          continue; // Impassable terrain
+        }
+
+        // Check terrain restrictions
+        const targetHex = context.gameState.map.getHex(neighbor);
+        if (targetHex && this.isTerrainImpassableForUnit(unit, targetHex, context)) {
+          continue;
+        }
+
+        const newCost = current.cost + movementCost;
+        if (newCost <= maxMovement) {
+          visited.add(neighborKey);
+          queue.push({ hex: neighbor, cost: newCost });
+        }
+      }
+    }
+
+    // Target not reachable within movement range
+    return false;
   }
 
   private selectBestUnitForPosition(
@@ -1461,7 +1584,6 @@ export class AIDecisionMaker {
     // Last resort: return null if no valid position found
     return null;
   }
-
   private calculateDistance(pos1: HexCoordinate, pos2: HexCoordinate): number {
     // Hex distance calculation using cube coordinates - MUST MATCH Combat.ts distanceTo()
     return Math.max(
