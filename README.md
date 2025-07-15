@@ -1,9 +1,16 @@
 # USS Wasp (LHD-1) - Amphibious Assault Rules Engine
 
 [![CI](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml)
-[![AI Tests](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml)
 
-A TypeScript-based rules engine and simulation framework for the USS Wasp amphibious assault wargame. This project focuses on modeling realistic military operations, game balance, and AI behavior without the complexity of a user interface.
+This repo contains experimental [rules](./docs/rules.md) for a tabletop wargame on a hex grid, simulating an amphibious assault against entrenched defenders on land.
+
+One side plays the attackers, deploying from a [USS Wasp](https://en.wikipedia.org/wiki/USS_Wasp_(LHD-1)) amphibious assault ship with Marines, aircraft and landing craft.
+
+The other side plays the defenders, deployed in hidden locations on land with surface-to-air missles and basic military units.
+
+The repo contains a TypeScript-based rules engine and simulation framework for the game, in order to model the rules and hopefully achieve a balanced and fun gameplay experience.
+
+-----
 
 ## Overview
 
