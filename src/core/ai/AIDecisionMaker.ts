@@ -738,8 +738,8 @@ export class AIDecisionMaker {
 
         const candidatePos = new Hex(unitPos.q + dq, unitPos.r + dr, unitPos.s + ds);
 
-        // Skip positions outside reasonable map bounds
-        if (candidatePos.q < 0 || candidatePos.q > 7 || candidatePos.r < 0 || candidatePos.r > 5) {
+        // Skip positions outside map bounds
+        if (!this.isValidMapPosition(candidatePos, context)) {
           continue;
         }
 
@@ -1030,8 +1030,8 @@ export class AIDecisionMaker {
             unit.state.position.s + ds
           );
 
-          // Skip positions outside reasonable map bounds (0-5 range for 6x6 map)
-          if (targetPos.q < 0 || targetPos.q > 5 || targetPos.r < 0 || targetPos.r > 5) {
+          // Skip positions outside map bounds
+          if (!this.isValidMapPosition(targetPos, context)) {
             continue;
           }
 
@@ -1408,7 +1408,7 @@ export class AIDecisionMaker {
         );
 
         // Check bounds and reachability
-        if (candidatePos.q < 0 || candidatePos.q > 7 || candidatePos.r < 0 || candidatePos.r > 5) {
+        if (!this.isValidMapPosition(candidatePos, context)) {
           continue;
         }
 
@@ -1547,6 +1547,43 @@ export class AIDecisionMaker {
     return context.gameState.map.isValidHex(position);
   }
 
+  /**
+   * Generate a safe position within map bounds, with fallback if original is invalid
+   */
+  private constrainToMapBounds(
+    position: Hex,
+    fallbackPosition: Hex,
+    context: AIDecisionContext
+  ): Hex | null {
+    // First try the original position
+    if (this.isValidMapPosition(position, context)) {
+      return position;
+    }
+
+    // Try the fallback position
+    if (this.isValidMapPosition(fallbackPosition, context)) {
+      return fallbackPosition;
+    }
+
+    // If both fail, try to find a nearby valid position
+    const mapDimensions = context.gameState.map.getDimensions();
+    const maxQ = mapDimensions.width - 1;
+    const maxR = mapDimensions.height - 1;
+
+    // Clamp coordinates to map bounds
+    const clampedQ = Math.max(0, Math.min(position.q, maxQ));
+    const clampedR = Math.max(0, Math.min(position.r, maxR));
+    const clampedS = -(clampedQ + clampedR);
+
+    const clampedPosition = new Hex(clampedQ, clampedR, clampedS);
+
+    if (this.isValidMapPosition(clampedPosition, context)) {
+      return clampedPosition;
+    }
+
+    // Last resort: return null if no valid position found
+    return null;
+  }
   private calculateDistance(pos1: HexCoordinate, pos2: HexCoordinate): number {
     // Hex distance calculation using cube coordinates - MUST MATCH Combat.ts distanceTo()
     return Math.max(
@@ -1668,15 +1705,28 @@ export class AIDecisionMaker {
 
     const targetPosition = new Hex(unitPos.q + moveQ, unitPos.r + moveR, unitPos.s + moveS);
 
+    // Ensure target position is within map bounds with defensive fallback
+    const unitHex = new Hex(unitPos.q, unitPos.r, unitPos.s);
+    const constrainedPosition = this.constrainToMapBounds(
+      targetPosition,
+      unitHex, // Use current position as fallback
+      context
+    );
+
     // Check if position is valid and reachable
-    if (this.canUnitReachPosition(unit, targetPosition, context)) {
-      return targetPosition;
+    if (constrainedPosition && this.canUnitReachPosition(unit, constrainedPosition, context)) {
+      return constrainedPosition;
     }
 
     // If direct movement fails, try adjacent positions toward enemy
     const adjacentPositions = this.getAdjacentPositions(unitPos);
 
     for (const pos of adjacentPositions) {
+      // Skip positions outside map bounds
+      if (!this.isValidMapPosition(pos, context)) {
+        continue;
+      }
+
       const distanceToEnemy = this.calculateDistance(pos, enemyPos);
       const currentDistance = this.calculateDistance(unitPos, enemyPos);
 
@@ -2255,9 +2305,17 @@ export class AIDecisionMaker {
 
     const targetPosition = new Hex(unitPos.q + moveQ, unitPos.r + moveR, unitPos.s + moveS);
 
+    // Ensure target position is within map bounds
+    const unitHex = new Hex(unitPos.q, unitPos.r, unitPos.s);
+    const constrainedPosition = this.constrainToMapBounds(
+      targetPosition,
+      unitHex, // Use current position as fallback
+      context
+    );
+
     // Validate position is reachable
-    if (this.canUnitReachPosition(unit, targetPosition, context)) {
-      return targetPosition;
+    if (constrainedPosition && this.canUnitReachPosition(unit, constrainedPosition, context)) {
+      return constrainedPosition;
     }
 
     return null;
@@ -2275,7 +2333,8 @@ export class AIDecisionMaker {
     const adjacentPositions = this.getAdjacentPositions(objectivePos);
 
     for (const pos of adjacentPositions) {
-      if (this.canUnitReachPosition(unit, pos, context)) {
+      // Ensure position is within map bounds
+      if (this.isValidMapPosition(pos, context) && this.canUnitReachPosition(unit, pos, context)) {
         return pos;
       }
     }
