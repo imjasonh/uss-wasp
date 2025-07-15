@@ -555,11 +555,29 @@ export class GameEngine {
    * Get unit-specific movement cost
    */
   private getUnitMovementCost(unit: Unit, _from: Hex, to: Hex, baseCost: number): number {
+    const toHex = this.gameState.map.getHex(to);
+    if (!toHex) {
+      return Infinity; // Invalid hex
+    }
+
+    // Check terrain restrictions first - return Infinity to block pathfinding
+    if (
+      toHex.terrain === TerrainType.DEEP_WATER &&
+      !unit.hasCategory(UnitCategory.AMPHIBIOUS) &&
+      !unit.hasCategory(UnitCategory.AIRCRAFT) &&
+      !unit.hasCategory(UnitCategory.SHIP)
+    ) {
+      return Infinity; // Ground units cannot enter deep water
+    }
+
+    // Super Stallion requires clear LZ
+    if (unit.type === UnitType.SUPER_STALLION && !['clear', 'beach'].includes(toHex.terrain)) {
+      return Infinity; // Super Stallion requires clear landing zone
+    }
+
     // LCAC high-speed amphibious
     if (unit.type === UnitType.LCAC) {
-      const toHex = this.gameState.map.getHex(to);
       if (
-        toHex &&
         [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER, TerrainType.BEACH].includes(
           toHex.terrain as TerrainType
         )
@@ -570,11 +588,10 @@ export class GameEngine {
 
     // AAV amphibious movement
     if (unit.type === UnitType.AAV_7) {
-      const toHex = this.gameState.map.getHex(to);
-      if (toHex?.terrain === TerrainType.SHALLOW_WATER) {
+      if (toHex.terrain === TerrainType.SHALLOW_WATER) {
         return 1;
       }
-      if (toHex?.terrain === TerrainType.DEEP_WATER) {
+      if (toHex.terrain === TerrainType.DEEP_WATER) {
         return 2;
       }
     }
