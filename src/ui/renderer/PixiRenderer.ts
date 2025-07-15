@@ -26,16 +26,9 @@ export class PixiRenderer {
   private readonly uiContainer: PIXI.Container;
   private selectedHex?: Hex;
 
-  constructor(container: HTMLElement, config: RendererConfig) {
-    // Initialize Pixi application
-    this.app = new PIXI.Application({
-      width: config.width,
-      height: config.height,
-      backgroundColor: config.backgroundColor,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    });
+  constructor(container: HTMLElement, config: RendererConfig, app?: PIXI.Application) {
+    // Store the initialized application or create a new one
+    this.app = app || new PIXI.Application();
 
     container.appendChild(this.app.canvas);
 
@@ -69,6 +62,38 @@ export class PixiRenderer {
 
     // Set up camera controls
     this.setupCameraControls();
+  }
+
+  /**
+   * Initialize the PIXI application (must be called after construction)
+   */
+  public async init(config: RendererConfig): Promise<void> {
+    await this.app.init({
+      width: config.width,
+      height: config.height,
+      backgroundColor: config.backgroundColor,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true,
+    });
+  }
+
+  /**
+   * Create and initialize a PixiRenderer instance
+   */
+  public static async create(container: HTMLElement, config: RendererConfig): Promise<PixiRenderer> {
+    // Initialize Pixi application
+    const app = new PIXI.Application();
+    await app.init({
+      width: config.width,
+      height: config.height,
+      backgroundColor: config.backgroundColor,
+      antialias: true,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true,
+    });
+
+    return new PixiRenderer(container, config, app);
   }
 
   /**
@@ -418,7 +443,7 @@ export class PixiRenderer {
   /**
    * Convert screen coordinates to hex coordinates
    */
-  screenToHex(screenX: number, screenY: number): Hex {
+  public screenToHex(screenX: number, screenY: number): Hex {
     // Account for camera position and scale
     const worldX = (screenX - this.mapContainer.x) / this.mapContainer.scale.x;
     const worldY = (screenY - this.mapContainer.y) / this.mapContainer.scale.y;
@@ -429,21 +454,21 @@ export class PixiRenderer {
   /**
    * Get the Pixi application
    */
-  getApp(): PIXI.Application {
+  public getApp(): PIXI.Application {
     return this.app;
   }
 
   /**
    * Resize the renderer
    */
-  resize(width: number, height: number): void {
+  public resize(width: number, height: number): void {
     this.app.renderer.resize(width, height);
   }
 
   /**
    * Highlight hexes with specified type
    */
-  highlightHexes(hexes: Hex[], type: 'movement' | 'attack' | 'ability'): void {
+  public highlightHexes(hexes: Hex[], type: 'movement' | 'attack' | 'ability'): void {
     this.clearHighlights();
 
     const colors = {
@@ -479,7 +504,7 @@ export class PixiRenderer {
   /**
    * Clear all highlights
    */
-  clearHighlights(): void {
+  public clearHighlights(): void {
     const highlights = this.uiContainer.children.filter(
       child => child.name && child.name.startsWith('highlight_')
     );
@@ -492,7 +517,7 @@ export class PixiRenderer {
   /**
    * Clean up resources
    */
-  destroy(): void {
+  public destroy(): void {
     this.app.destroy(true, true);
   }
 }

@@ -20,14 +20,14 @@ class GameUI {
   private gameState!: GameState;
   private gameController!: GameController;
 
-  public initialize(): void {
+  public async initialize(): Promise<void> {
     console.log('🎮 Initializing USS Wasp Game UI...');
 
     // Initialize game state
     this.initializeGame();
 
     // Initialize renderer
-    this.initializeRenderer();
+    await this.initializeRenderer();
 
     // Initialize game controller
     this.gameController = new GameController(this.gameState, this.renderer, this.mapRenderer);
@@ -168,7 +168,7 @@ class GameUI {
     });
   }
 
-  private initializeRenderer(): void {
+  private async initializeRenderer(): Promise<void> {
     const gameCanvas = document.getElementById('game-canvas');
     if (!gameCanvas) {
       throw new Error('Game canvas element not found');
@@ -182,7 +182,7 @@ class GameUI {
     const width = Math.max(800, rect.width);
     const height = Math.max(600, rect.height);
 
-    this.renderer = new PixiRenderer(gameCanvas, {
+    this.renderer = await PixiRenderer.create(gameCanvas, {
       width: width,
       height: height,
       hexSize: 35, // Slightly larger hexes for better visibility
@@ -262,10 +262,11 @@ class GameUI {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', (): void => {
+  void (async (): Promise<void> => {
   const gameUI = new GameUI();
 
   try {
-    gameUI.initialize();
+    await gameUI.initialize();
   } catch (error) {
     console.error('Failed to initialize game UI:', error);
 
@@ -279,4 +280,5 @@ document.addEventListener('DOMContentLoaded', (): void => {
       `;
     }
   }
+  })();
 });

@@ -62,6 +62,7 @@ jest.mock('../ui/renderer/PixiRenderer', () => {
       clearHighlights: jest.fn(),
       resize: jest.fn(),
       destroy: jest.fn(),
+      init: jest.fn().mockResolvedValue(undefined),
     })),
   };
 });
@@ -97,7 +98,7 @@ describe('GameController', () => {
   let mockRenderer: PixiRenderer;
   let mockMapRenderer: MapRenderer;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Create test game state - use a simple map instead of MapRenderer.createDemoMap
     const map = new GameMap(8, 6);
     // Add some basic terrain
@@ -140,6 +141,12 @@ describe('GameController', () => {
 
     // Create mocked renderers
     mockRenderer = new PixiRenderer(document.createElement('div'), {
+      width: 800,
+      height: 600,
+      hexSize: 30,
+      backgroundColor: 0x000000,
+    });
+    await mockRenderer.init({
       width: 800,
       height: 600,
       hexSize: 30,
