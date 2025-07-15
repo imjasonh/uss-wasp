@@ -1592,11 +1592,397 @@ export class GameController {
   }
 
   public showWaspLaunchOptions(): void {
-    this.showMessage('USS Wasp launch operations not yet implemented', 'info');
+    const waspUnit = this.getUSS_WaspUnit();
+    if (!waspUnit) {
+      this.showMessage('USS Wasp not found or not controlled by current player', 'error');
+      return;
+    }
+
+    // Get units aboard USS Wasp
+    const aboardUnits = waspUnit.state.cargo;
+    if (aboardUnits.length === 0) {
+      this.showMessage('No units aboard USS Wasp to launch', 'info');
+      return;
+    }
+
+    // Filter launchable units
+    const launchableUnits = aboardUnits.filter(unit => {
+      return unit.hasCategory(UnitCategory.AIRCRAFT) || 
+             unit.hasCategory(UnitCategory.HELICOPTER) ||
+             unit.type === UnitType.LCAC || 
+             unit.type === UnitType.AAV_7;
+    });
+
+    if (launchableUnits.length === 0) {
+      this.showMessage('No launchable units aboard USS Wasp', 'info');
+      return;
+    }
+
+    // Create and show launch dialog
+    this.createWaspLaunchDialog(launchableUnits);
   }
 
   public showWaspRecoveryOptions(): void {
-    this.showMessage('USS Wasp recovery operations not yet implemented', 'info');
+    const waspUnit = this.getUSS_WaspUnit();
+    if (!waspUnit) {
+      this.showMessage('USS Wasp not found or not controlled by current player', 'error');
+      return;
+    }
+
+    // Get nearby units eligible for recovery
+    const nearbyUnits = this.getNearbyRecoverableUnits(waspUnit);
+    if (nearbyUnits.length === 0) {
+      this.showMessage('No recoverable units near USS Wasp', 'info');
+      return;
+    }
+
+    // Create and show recovery dialog
+    this.createWaspRecoveryDialog(nearbyUnits);
+  }
+
+  /**
+   * Get USS Wasp unit controlled by current player
+   */
+  private getUSS_WaspUnit(): Unit | null {
+    const currentPlayer = this.gameState.getActivePlayer();
+    if (!currentPlayer) {
+      return null;
+    }
+
+    const units = currentPlayer.getLivingUnits();
+    return units.find(unit => unit.type === UnitType.USS_WASP) ?? null;
+  }
+
+  /**
+   * Get units near USS Wasp that can be recovered
+   */
+  private getNearbyRecoverableUnits(waspUnit: Unit): Unit[] {
+    const allUnits = this.gameState.getAllUnits();
+    const waspPosition = new Hex(waspUnit.state.position.q, waspUnit.state.position.r, waspUnit.state.position.s);
+    
+    return allUnits.filter(unit => {
+      // Must be same side as USS Wasp
+      if (unit.side !== waspUnit.side) {
+        return false;
+      }
+      
+      // Must not be the USS Wasp itself
+      if (unit.id === waspUnit.id) {
+        return false;
+      }
+      
+      // Must not already be aboard USS Wasp
+      if (waspUnit.state.cargo.some(cargoUnit => cargoUnit.id === unit.id)) {
+        return false;
+      }
+      
+      // Must be a recoverable unit type
+      const isRecoverable = unit.hasCategory(UnitCategory.AIRCRAFT) || 
+                           unit.hasCategory(UnitCategory.HELICOPTER) ||
+                           unit.type === UnitType.LCAC || 
+                           unit.type === UnitType.AAV_7;
+      
+      if (!isRecoverable) {
+        return false;
+      }
+      
+      // Must be within recovery range (adjacent)
+      const unitPosition = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+      const distance = waspPosition.distanceTo(unitPosition);
+      
+      return distance <= 1;
+    });
+  }
+
+  /**
+   * Create and show USS Wasp launch dialog
+   */
+  private createWaspLaunchDialog(launchableUnits: Unit[]): void {
+    const dialog = document.createElement('div');
+    dialog.className = 'wasp-launch-dialog';
+    dialog.innerHTML = `
+      <div class="dialog-content">
+        <h3>USS Wasp Launch Operations</h3>
+        <p>Select units to launch (${launchableUnits.length} available):</p>
+        <div class="unit-selection">
+          ${launchableUnits.map(unit => `
+            <div class="unit-item" data-unit-id="${unit.id}">
+              <input type="checkbox" id="launch-${unit.id}" />
+              <label for="launch-${unit.id}">
+                <strong>${unit.type}</strong>
+                <span class="unit-details">${unit.id}</span>
+                <span class="unit-category">${this.getUnitCategoryDisplay(unit)}</span>
+              </label>
+            </div>
+          `).join('')}
+        </div>
+        <div class="dialog-buttons">
+          <button id="execute-launch">Launch Selected</button>
+          <button id="cancel-launch">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    // Add dialog styles
+    this.addWaspDialogStyles();
+
+    // Handle dialog events
+    dialog.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      if (target.id === 'execute-launch') {
+        const selectedUnits = this.getSelectedUnitsFromDialog(dialog, 'launch');
+        if (selectedUnits.length > 0) {
+          this.executeLaunchOperation(selectedUnits);
+        } else {
+          this.showMessage('No units selected for launch', 'error');
+        }
+        document.body.removeChild(dialog);
+      } else if (target.id === 'cancel-launch') {
+        document.body.removeChild(dialog);
+      }
+    });
+
+    document.body.appendChild(dialog);
+  }
+
+  /**
+   * Create and show USS Wasp recovery dialog
+   */
+  private createWaspRecoveryDialog(recoverableUnits: Unit[]): void {
+    const dialog = document.createElement('div');
+    dialog.className = 'wasp-recovery-dialog';
+    dialog.innerHTML = `
+      <div class="dialog-content">
+        <h3>USS Wasp Recovery Operations</h3>
+        <p>Select units to recover (${recoverableUnits.length} in range):</p>
+        <div class="unit-selection">
+          ${recoverableUnits.map(unit => `
+            <div class="unit-item" data-unit-id="${unit.id}">
+              <input type="checkbox" id="recover-${unit.id}" />
+              <label for="recover-${unit.id}">
+                <strong>${unit.type}</strong>
+                <span class="unit-details">${unit.id}</span>
+                <span class="unit-category">${this.getUnitCategoryDisplay(unit)}</span>
+                <span class="unit-health">HP: ${unit.state.currentHP}/${unit.stats.hp}</span>
+              </label>
+            </div>
+          `).join('')}
+        </div>
+        <div class="dialog-buttons">
+          <button id="execute-recovery">Recover Selected</button>
+          <button id="cancel-recovery">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    // Handle dialog events
+    dialog.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      if (target.id === 'execute-recovery') {
+        const selectedUnits = this.getSelectedUnitsFromDialog(dialog, 'recover');
+        if (selectedUnits.length > 0) {
+          this.executeRecoveryOperation(selectedUnits);
+        } else {
+          this.showMessage('No units selected for recovery', 'error');
+        }
+        document.body.removeChild(dialog);
+      } else if (target.id === 'cancel-recovery') {
+        document.body.removeChild(dialog);
+      }
+    });
+
+    document.body.appendChild(dialog);
+  }
+
+  /**
+   * Get display string for unit category
+   */
+  private getUnitCategoryDisplay(unit: Unit): string {
+    if (unit.hasCategory(UnitCategory.AIRCRAFT)) {
+      return 'Aircraft';
+    } else if (unit.hasCategory(UnitCategory.HELICOPTER)) {
+      return 'Helicopter';
+    } else if (unit.type === UnitType.LCAC) {
+      return 'Landing Craft';
+    } else if (unit.type === UnitType.AAV_7) {
+      return 'Amphibious Vehicle';
+    }
+    return 'Unknown';
+  }
+
+  /**
+   * Get selected units from dialog checkboxes
+   */
+  private getSelectedUnitsFromDialog(dialog: HTMLElement, operation: 'launch' | 'recover'): Unit[] {
+    const checkboxes = dialog.querySelectorAll(`input[id^="${operation}-"]:checked`);
+    const selectedUnits: Unit[] = [];
+
+    checkboxes.forEach(checkbox => {
+      const unitId = (checkbox as HTMLInputElement).id.replace(`${operation}-`, '');
+      const unit = this.gameState.getUnit(unitId);
+      if (unit) {
+        selectedUnits.push(unit);
+      }
+    });
+
+    return selectedUnits;
+  }
+
+  /**
+   * Execute launch operation
+   */
+  private executeLaunchOperation(units: Unit[]): void {
+    const action = {
+      type: ActionType.LAUNCH_FROM_WASP,
+      playerId: this.gameState.getActivePlayer()?.id ?? '',
+      unitId: this.getUSS_WaspUnit()?.id ?? '',
+      data: { unitIds: units.map(u => u.id) }
+    };
+
+    const result = this.gameEngine.executeAction(action);
+    if (result.success) {
+      this.showMessage(`✅ ${result.message}`, 'success');
+      this.updateWaspDisplay();
+    } else {
+      this.showMessage(`❌ ${result.message}`, 'error');
+    }
+  }
+
+  /**
+   * Execute recovery operation
+   */
+  private executeRecoveryOperation(units: Unit[]): void {
+    const action = {
+      type: ActionType.RECOVER_TO_WASP,
+      playerId: this.gameState.getActivePlayer()?.id ?? '',
+      unitId: this.getUSS_WaspUnit()?.id ?? '',
+      data: { unitIds: units.map(u => u.id) }
+    };
+
+    const result = this.gameEngine.executeAction(action);
+    if (result.success) {
+      this.showMessage(`✅ ${result.message}`, 'success');
+      this.updateWaspDisplay();
+    } else {
+      this.showMessage(`❌ ${result.message}`, 'error');
+    }
+  }
+
+  /**
+   * Add CSS styles for USS Wasp dialogs
+   */
+  private addWaspDialogStyles(): void {
+    if (document.getElementById('wasp-dialog-styles')) {
+      return; // Styles already added
+    }
+
+    const style = document.createElement('style');
+    style.id = 'wasp-dialog-styles';
+    style.textContent = `
+      .wasp-launch-dialog, .wasp-recovery-dialog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .wasp-launch-dialog .dialog-content, .wasp-recovery-dialog .dialog-content {
+        background: #2a2a2a;
+        border: 2px solid #444;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        color: #fff;
+      }
+
+      .wasp-launch-dialog h3, .wasp-recovery-dialog h3 {
+        margin-top: 0;
+        color: #4a9eff;
+        border-bottom: 1px solid #444;
+        padding-bottom: 10px;
+      }
+
+      .unit-selection {
+        margin: 15px 0;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .unit-item {
+        margin: 8px 0;
+        padding: 8px;
+        border: 1px solid #444;
+        border-radius: 4px;
+        background: #333;
+      }
+
+      .unit-item:hover {
+        background: #3a3a3a;
+      }
+
+      .unit-item label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      .unit-item input[type="checkbox"] {
+        margin: 0;
+      }
+
+      .unit-details {
+        color: #aaa;
+        font-size: 0.9em;
+      }
+
+      .unit-category, .unit-health {
+        color: #6a9eff;
+        font-size: 0.8em;
+        margin-left: auto;
+      }
+
+      .dialog-buttons {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .dialog-buttons button {
+        padding: 8px 16px;
+        border: 1px solid #444;
+        border-radius: 4px;
+        background: #4a4a4a;
+        color: #fff;
+        cursor: pointer;
+      }
+
+      .dialog-buttons button:hover {
+        background: #5a5a5a;
+      }
+
+      .dialog-buttons button:first-child {
+        background: #4a9eff;
+      }
+
+      .dialog-buttons button:first-child:hover {
+        background: #5aafff;
+      }
+    `;
+
+    document.head.appendChild(style);
   }
 
   /**
