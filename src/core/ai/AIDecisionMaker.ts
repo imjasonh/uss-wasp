@@ -46,6 +46,7 @@ export class AIDecisionMaker {
   public makeDecisions(context: AIDecisionContext): AIDecision[] {
     const decisions: AIDecision[] = [];
     const usedUnits = new Set<string>(); // Track units that already have decisions
+    let remainingCP = context.resourceStatus.commandPoints; // Track remaining CP
 
     // Update threat assessments
     this.updateThreatAssessments(context);
@@ -53,8 +54,12 @@ export class AIDecisionMaker {
     // Analyze current tactical situation
     const tacticalPriorities = this.determineTacticalPriorities(context);
 
-    // Generate decisions based on priorities, tracking used units
+    // Generate decisions based on priorities, tracking used units and CP
     for (const priority of tacticalPriorities) {
+      if (remainingCP <= 0) {
+        break; // No more CP available
+      }
+
       const priorityDecisions = this.generateDecisionsForPriority(priority, context, usedUnits);
       
       // Filter out any decisions for units that are already used (safety check)
@@ -65,10 +70,14 @@ export class AIDecisionMaker {
         return true;
       });
       
-      decisions.push(...filteredPriorityDecisions);
+      // Apply CP constraints - only take decisions we can afford
+      const cpConstrainedDecisions = filteredPriorityDecisions.slice(0, remainingCP);
+      
+      decisions.push(...cpConstrainedDecisions);
+      remainingCP -= cpConstrainedDecisions.length; // Each decision costs 1 CP
 
       // Track units used in these decisions
-      for (const decision of filteredPriorityDecisions) {
+      for (const decision of cpConstrainedDecisions) {
         if (decision.unitId) {
           usedUnits.add(decision.unitId);
         }
@@ -149,6 +158,19 @@ export class AIDecisionMaker {
     // Force preservation - higher when units are damaged
     const averageHealth = this.calculateAverageUnitHealth(context.availableUnits);
     modifiers[TacticalPriority.PRESERVE_FORCE] = averageHealth < 0.5 ? 2.0 : 1.0;
+
+    // Emergency resource scaling - increase priority weights in emergency situations
+    const emergencyLevel = this.calculateEmergencyLevel(context);
+    if (emergencyLevel > 0.7) {
+      // High emergency: boost aggressive actions
+      modifiers[TacticalPriority.INFLICT_CASUALTIES] = (modifiers[TacticalPriority.INFLICT_CASUALTIES] || 1.0) * 2.0;
+      modifiers[TacticalPriority.USE_SPECIAL_ABILITIES] = (modifiers[TacticalPriority.USE_SPECIAL_ABILITIES] || 1.0) * 1.8;
+      modifiers[TacticalPriority.DEFEND_OBJECTIVES] = (modifiers[TacticalPriority.DEFEND_OBJECTIVES] || 1.0) * 1.5;
+    } else if (emergencyLevel > 0.5) {
+      // Medium emergency: moderate boost to aggressive actions
+      modifiers[TacticalPriority.INFLICT_CASUALTIES] = (modifiers[TacticalPriority.INFLICT_CASUALTIES] || 1.0) * 1.5;
+      modifiers[TacticalPriority.USE_SPECIAL_ABILITIES] = (modifiers[TacticalPriority.USE_SPECIAL_ABILITIES] || 1.0) * 1.3;
+    }
 
     // Objective threats - higher when objectives are threatened
     const objectiveThreatLevel = this.assessObjectiveThreats(context);
@@ -573,9 +595,15 @@ export class AIDecisionMaker {
     }
 
     // Sort by priority and apply reaction time delays
-    return filtered
-      .sort((a, b) => b.priority - a.priority)
-      .slice(0, Math.floor(filtered.length * this.config.tacticalComplexity));
+    const sortedDecisions = filtered.sort((a, b) => b.priority - a.priority);
+    
+    // Apply emergency scaling to tactical complexity
+    const emergencyLevel = this.calculateEmergencyLevel(context);
+    const emergencyComplexityBonus = emergencyLevel > 0.7 ? 2.0 : emergencyLevel > 0.4 ? 1.5 : 1.0;
+    const adjustedComplexity = Math.min(1.0, this.config.tacticalComplexity * emergencyComplexityBonus);
+    
+    const complexityLimit = filtered.length > 0 ? Math.max(1, Math.floor(filtered.length * adjustedComplexity)) : 0;
+    return sortedDecisions.slice(0, complexityLimit);
   }
 
   /**
@@ -2284,6 +2312,34 @@ export class AIDecisionMaker {
             abilityName: abilityName,
           },
         });
+
+        // Add fallback options in case special ability fails
+        // Fallback 1: Move toward enemies if special ability fails
+        const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 5);
+        if (nearbyEnemies.length > 0) {
+          const targetPosition = this.findAdvancementPosition(unit, nearbyEnemies[0], context);
+          if (targetPosition) {
+            decisions.push({
+              type: AIDecisionType.MOVE_UNIT,
+              priority: 5, // Lower priority than special ability
+              unitId: unit.id,
+              targetPosition: targetPosition,
+              reasoning: `Fallback movement toward ${nearbyEnemies[0].type} if special ability fails`,
+            });
+          }
+        }
+
+        // Fallback 2: Basic attack if in range
+        const attackTargets = this.findValidTargets(unit, context.enemyUnits, context);
+        if (attackTargets.length > 0) {
+          decisions.push({
+            type: AIDecisionType.ATTACK_TARGET,
+            priority: 4, // Lower priority than movement
+            unitId: unit.id,
+            targetUnitId: attackTargets[0].id,
+            reasoning: `Fallback attack on ${attackTargets[0].type} if other actions fail`,
+          });
+        }
       }
     }
 
@@ -2661,5 +2717,94 @@ export class AIDecisionMaker {
     }
 
     return decisions;
+  }
+
+  /**
+   * Calculate emergency level based on unit health and threat proximity
+   */
+  private calculateEmergencyLevel(context: AIDecisionContext): number {
+    let emergencyScore = 0;
+    const totalUnits = context.availableUnits.length;
+    
+    if (totalUnits === 0) return 0;
+
+    // Factor 1: Unit health - more emergency if units are damaged
+    const averageHealth = this.calculateAverageUnitHealth(context.availableUnits);
+    const healthEmergency = 1.0 - averageHealth; // 0 = healthy, 1 = critical
+    emergencyScore += healthEmergency * 0.4;
+
+    // Factor 2: Threat proximity - more emergency if enemies are close
+    let threatsNearby = 0;
+    let immediateThreats = 0;
+    for (const unit of context.availableUnits) {
+      const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 3);
+      const adjacentEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 1);
+      if (nearbyEnemies.length > 0) {
+        threatsNearby++;
+      }
+      if (adjacentEnemies.length > 0) {
+        immediateThreats++;
+      }
+    }
+    const proximityEmergency = Math.min(threatsNearby / totalUnits, 1.0);
+    const immediateEmergency = Math.min(immediateThreats / totalUnits, 1.0);
+    emergencyScore += proximityEmergency * 0.3 + immediateEmergency * 0.3;
+
+    // Factor 3: Resource pressure - more emergency if CP is low
+    const cpRatio = context.resourceStatus.commandPoints / Math.max(totalUnits, 1);
+    const resourceEmergency = cpRatio < 0.5 ? 1.0 - cpRatio * 2 : 0;
+    emergencyScore += resourceEmergency * 0.2;
+
+    return Math.min(emergencyScore, 1.0);
+  }
+
+  /**
+   * Find nearby enemies within a given range
+   */
+  private findNearbyEnemies(unit: Unit, enemies: Unit[], maxRange: number): Unit[] {
+    const unitPosition = unit.state.position;
+    const nearbyEnemies: Unit[] = [];
+
+    for (const enemy of enemies) {
+      const distance = Math.abs(unitPosition.q - enemy.state.position.q) + 
+                      Math.abs(unitPosition.r - enemy.state.position.r);
+      if (distance <= maxRange) {
+        nearbyEnemies.push(enemy);
+      }
+    }
+
+    return nearbyEnemies;
+  }
+
+  /**
+   * Find advancement position toward a target enemy
+   */
+  private findAdvancementPosition(unit: Unit, target: Unit, context: AIDecisionContext): Hex | null {
+    const unitPos = unit.state.position;
+    const targetPos = target.state.position;
+
+    // Calculate direction toward target
+    const deltaQ = targetPos.q - unitPos.q;
+    const deltaR = targetPos.r - unitPos.r;
+
+    // Normalize to single hex step
+    let moveQ = 0;
+    let moveR = 0;
+
+    if (Math.abs(deltaQ) > Math.abs(deltaR)) {
+      moveQ = deltaQ > 0 ? 1 : -1;
+    } else {
+      moveR = deltaR > 0 ? 1 : -1;
+    }
+
+    const moveS = -(moveQ + moveR);
+    const targetPosition = new Hex(unitPos.q + moveQ, unitPos.r + moveR, unitPos.s + moveS);
+
+    // Check if position is valid
+    if (this.isValidMapPosition(targetPosition, context)) {
+      return targetPosition;
+    }
+
+    return null;
   }
 }
