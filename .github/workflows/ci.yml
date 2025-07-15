@@ -74,10 +74,10 @@ jobs:
         path: playwright-report/
         retention-days: 30
     
-    - name: Quick AI validation
+    - name: Strict AI validation
       run: |
-        echo "🤖 Running quick AI validation..."
-        timeout 120 npx tsx tests/simulation/quick-battle-test.ts || echo "AI validation completed (issues expected in CI environment)"
+        echo "🤖 Running strict AI validation..."
+        npm run test:ai:strict
     
     - name: Security audit
       run: npm audit --audit-level moderate
