@@ -762,8 +762,16 @@ export class AIDecisionMaker {
 
         const candidatePos = new Hex(unitPos.q + dq, unitPos.r + dr, unitPos.s + ds);
 
-        // Skip positions outside reasonable map bounds
-        if (candidatePos.q < 0 || candidatePos.q > 7 || candidatePos.r < 0 || candidatePos.r > 5) {
+        // Get actual map bounds from game state
+        const mapBounds = this.getMapBounds(context.gameState);
+
+        // Skip positions outside actual map bounds
+        if (
+          candidatePos.q < 0 ||
+          candidatePos.q >= mapBounds.width ||
+          candidatePos.r < 0 ||
+          candidatePos.r >= mapBounds.height
+        ) {
           continue;
         }
 
@@ -2235,7 +2243,7 @@ export class AIDecisionMaker {
         const centerPos = new Hex(3, 3, -6);
         const distance = this.calculateDistance(unit.state.position, centerPos);
 
-        if (distance > 1) {
+        if (distance > 1 && this.canUnitReachPosition(unit, centerPos, context)) {
           usedUnits.add(unit.id);
           decisions.push({
             type: AIDecisionType.MOVE_UNIT,
@@ -2249,5 +2257,38 @@ export class AIDecisionMaker {
     }
 
     return decisions;
+  }
+
+  /**
+   * Get actual map bounds from game state
+   */
+  private getMapBounds(gameState: unknown): { width: number; height: number } {
+    try {
+      // Try to access map dimensions from game state
+      if (
+        gameState &&
+        typeof gameState === 'object' &&
+        'map' in gameState &&
+        gameState.map &&
+        typeof gameState.map === 'object' &&
+        'width' in gameState.map &&
+        'height' in gameState.map &&
+        typeof gameState.map.width === 'number' &&
+        typeof gameState.map.height === 'number'
+      ) {
+        return {
+          width: gameState.map.width,
+          height: gameState.map.height,
+        };
+      }
+
+      // Fallback to reasonable default if map info not available
+      const DEFAULT_MAP_SIZE = 8;
+      return { width: DEFAULT_MAP_SIZE, height: DEFAULT_MAP_SIZE };
+    } catch (_error) {
+      // Safe fallback for any access errors
+      const DEFAULT_MAP_SIZE = 8;
+      return { width: DEFAULT_MAP_SIZE, height: DEFAULT_MAP_SIZE };
+    }
   }
 }
