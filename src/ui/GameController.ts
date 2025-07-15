@@ -119,6 +119,27 @@ export class GameController {
   }
 
   /**
+   * Get the current UI mode (for testing purposes)
+   */
+  public getCurrentUIMode(): UIMode {
+    return this.uiMode;
+  }
+
+  /**
+   * Get the currently selected unit (for testing purposes)
+   */
+  public getSelectedUnit(): Unit | undefined {
+    return this.selectedUnit;
+  }
+
+  /**
+   * Select a unit (for testing purposes)
+   */
+  public selectUnit(unit: Unit): void {
+    this.onUnitSelected(unit);
+  }
+
+  /**
    * Set up event listeners for game interactions
    */
   private setupGameEventListeners(): void {
@@ -359,7 +380,7 @@ export class GameController {
   /**
    * Update all game status displays
    */
-  private updateGameStatusDisplay(): void {
+  public updateGameStatusDisplay(): void {
     this.updateElement('turn-display', this.gameState.turn.toString());
     this.updateElement('phase-display', this.gameState.phase);
 
@@ -533,7 +554,7 @@ export class GameController {
   /**
    * Update USS Wasp status display
    */
-  private updateWaspDisplay(): void {
+  public updateWaspDisplay(): void {
     const assaultPlayer = this.gameState.getPlayerBySide(PlayerSide.Assault);
     if (!assaultPlayer) {
       return;
@@ -630,7 +651,7 @@ export class GameController {
   /**
    * Show message to user
    */
-  private showMessage(message: string, type: 'info' | 'success' | 'error'): void {
+  public showMessage(message: string, type: 'info' | 'success' | 'error'): void {
     console.log(`[${type.toUpperCase()}] ${message}`);
 
     // Display in UI message area
@@ -650,7 +671,7 @@ export class GameController {
   /**
    * Helper to update DOM element content
    */
-  private updateElement(id: string, content: string): void {
+  public updateElement(id: string, content: string): void {
     const element = document.getElementById(id);
     if (element) {
       element.innerHTML = content;
@@ -797,7 +818,7 @@ export class GameController {
   /**
    * Check if action is valid for current phase
    */
-  private isValidPhase(actionType: ActionType): boolean {
+  public isValidPhase(actionType: ActionType): boolean {
     switch (this.gameState.phase) {
       case TurnPhase.DEPLOYMENT:
         return actionType === ActionType.MOVE; // Launch from Wasp
@@ -820,7 +841,7 @@ export class GameController {
   /**
    * Check if unit can use ability
    */
-  private canUseAbility(unit: Unit, abilityName: string): boolean {
+  public canUseAbility(unit: Unit, abilityName: string): boolean {
     const ability = unit.specialAbilities.find(a => a.name === abilityName);
     if (!ability) {
       return false;
@@ -905,7 +926,7 @@ export class GameController {
   /**
    * Check if unit can load target unit
    */
-  private canUnitLoad(transport: Unit, target: Unit): boolean {
+  public canUnitLoad(transport: Unit, target: Unit): boolean {
     // Basic checks: transport has capacity and target is compatible
     if (transport.getCargoCapacity() === 0) {
       return false;
@@ -1290,7 +1311,7 @@ export class GameController {
   /**
    * Check victory conditions
    */
-  private checkVictoryConditions(): void {
+  public checkVictoryConditions(): void {
     // Check if game is already over
     if (this.gameState.isGameOver) {
       return;
@@ -1469,7 +1490,7 @@ export class GameController {
   /**
    * Calculate player score for victory determination
    */
-  private calculatePlayerScore(player: Player): number {
+  public calculatePlayerScore(player: Player): number {
     let score = 0;
 
     // Points for surviving units
@@ -2351,13 +2372,6 @@ export class GameController {
     ) {
       this.onFortificationTypeSelected(null);
     }
-  }
-
-  /**
-   * Get current UI mode
-   */
-  public getCurrentUIMode(): UIMode {
-    return this.uiMode;
   }
 
   /**
