@@ -7,9 +7,9 @@ This directory contains all test and debug files for the USS Wasp (LHD-1) projec
 ### 📁 `ai/`
 AI system tests and validation
 - `test-ai.js` - Basic AI functionality tests
-- `test-ai-system-gaps.js` - AI system gap analysis (CI-critical)
+- `test-ai-system-gaps.ts` - AI system gap analysis (CI-critical)
 - `test-ai-battle-series.js` - AI vs AI battle series (CI-critical)  
-- `run-comprehensive-ai-test.js` - Full AI validation suite (CI-critical)
+- `run-comprehensive-ai-test.ts` - Full AI validation suite (CI-critical)
 - `run-ai-battle-series.js` - AI battle series runner
 
 ### 📁 `combat/`
@@ -56,9 +56,9 @@ The following test files are critical for CI/CD pipelines and are referenced in 
 - `tests/simulation/quick-battle-test.js` - Quick AI validation
 
 ### AI Tests (`ai-tests.yml`)
-- `tests/ai/test-ai-system-gaps.js` - AI system gap analysis
+- `tests/ai/test-ai-system-gaps.ts` - AI system gap analysis
 - `tests/ai/test-ai-battle-series.js` - AI battle series tests
-- `tests/ai/run-comprehensive-ai-test.js` - Comprehensive AI validation
+- `tests/ai/run-comprehensive-ai-test.ts` - Comprehensive AI validation
 - `tests/simulation/quick-battle-test.js` - Performance benchmarks
 - `tests/combat/test-direct-combat.js` - Combat mechanics validation
 - `tests/combat/test-close-combat.js` - Close combat validation
@@ -71,7 +71,7 @@ The following test files are critical for CI/CD pipelines and are referenced in 
 
 ```bash
 # AI system tests
-node tests/ai/run-comprehensive-ai-test.js
+npx tsx tests/ai/run-comprehensive-ai-test.ts
 
 # Combat validation
 node tests/combat/test-direct-combat.js

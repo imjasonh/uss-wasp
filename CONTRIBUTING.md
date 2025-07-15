@@ -89,7 +89,7 @@ When working on AI features:
 
 1. **Test with gap analysis**:
    ```bash
-   node test-ai-system-gaps.js
+   npx tsx tests/ai/test-ai-system-gaps.ts
    ```
 
 2. **Validate with battle tests**:

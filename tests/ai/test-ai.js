@@ -14,7 +14,7 @@ console.log('==================================\n');
 console.log('📦 Building project...');
 const buildProcess = spawn('npm', ['run', 'build'], { 
   stdio: 'inherit',
-  cwd: __dirname 
+  cwd: path.join(__dirname, '..', '..') 
 });
 
 buildProcess.on('close', (code) => {
@@ -28,10 +28,10 @@ buildProcess.on('close', (code) => {
   // Run the comprehensive AI test
   console.log('🎮 Running Comprehensive AI vs AI Test...\n');
   
-  const testPath = path.join(__dirname, 'dist', 'testing', 'ComprehensiveAITest.js');
+  const testPath = path.join(__dirname, '..', '..', 'dist', 'testing', 'ComprehensiveAITest.js');
   const testProcess = spawn('node', [testPath], { 
     stdio: 'inherit',
-    cwd: __dirname 
+    cwd: path.join(__dirname, '..', '..') 
   });
   
   testProcess.on('close', (testCode) => {
