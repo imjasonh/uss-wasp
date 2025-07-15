@@ -166,7 +166,7 @@ export class AIDecisionMaker {
     priorities: { priority: TacticalPriority; weight: number }[],
     context: AIDecisionContext
   ): void {
-    // Combat urgency - aggressive personalities get massive bonus for immediate combat
+    // Combat urgency - aggressive personalities get moderate bonus for immediate combat
     const unitsInRange = this.countUnitsInCombatRange(context);
     if (unitsInRange > 0) {
       const combatPriority = priorities.find(
@@ -174,7 +174,7 @@ export class AIDecisionMaker {
       );
       if (combatPriority) {
         const aggressionBonus = this.personality?.aggression ?? 3;
-        combatPriority.weight += aggressionBonus * 4; // Significant bonus for aggressive personalities
+        combatPriority.weight += aggressionBonus * 2; // Moderate bonus to allow other priorities
       }
     }
 
@@ -193,6 +193,43 @@ export class AIDecisionMaker {
         }
       });
     }
+
+    // Special abilities urgency - boost when units have unused abilities
+    const hasUnusedAbilities = context.availableUnits.some(
+      unit => unit.specialAbilities.length > 0 && unit.canAct()
+    );
+    if (hasUnusedAbilities) {
+      const abilityPriority = priorities.find(
+        p => p.priority === TacticalPriority.USE_SPECIAL_ABILITIES
+      );
+      if (abilityPriority) {
+        abilityPriority.weight += 3; // Fixed bonus for special abilities
+      }
+    }
+
+    // Objective urgency - boost when objectives are nearby
+    const hasNearbyObjectives = this.getMapObjectives(context).length > 0;
+    if (hasNearbyObjectives) {
+      const objectivePriority = priorities.find(
+        p => p.priority === TacticalPriority.SECURE_OBJECTIVES
+      );
+      if (objectivePriority) {
+        objectivePriority.weight += 2; // Fixed bonus for objectives
+      }
+    }
+
+    // Transport urgency - boost when transports are available
+    const hasTransportsWithCargo = context.availableUnits.some(
+      unit => unit.getCargoCapacity() > 0
+    );
+    if (hasTransportsWithCargo) {
+      const logisticsPriority = priorities.find(
+        p => p.priority === TacticalPriority.MANAGE_LOGISTICS
+      );
+      if (logisticsPriority) {
+        logisticsPriority.weight += 2; // Fixed bonus for logistics
+      }
+    }
   }
 
   /**
@@ -204,12 +241,12 @@ export class AIDecisionMaker {
       [TacticalPriority.INFLICT_CASUALTIES]: 6,
       [TacticalPriority.DENY_TERRAIN]: 5,
       [TacticalPriority.DEFEND_OBJECTIVES]: 7,
-      [TacticalPriority.SECURE_OBJECTIVES]: 6,
+      [TacticalPriority.SECURE_OBJECTIVES]: 8, // Increased for objective focus
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
-      [TacticalPriority.MANAGE_LOGISTICS]: 5,
-      [TacticalPriority.WASP_OPERATIONS]: 6,
-      [TacticalPriority.HIDDEN_OPERATIONS]: 8,
-      [TacticalPriority.USE_SPECIAL_ABILITIES]: 4,
+      [TacticalPriority.MANAGE_LOGISTICS]: 9, // High priority for transport operations
+      [TacticalPriority.WASP_OPERATIONS]: 10, // High priority for USS Wasp operations
+      [TacticalPriority.HIDDEN_OPERATIONS]: 10, // High priority for hidden unit operations
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 5, // Lower priority than specific operations
     };
   }
 
