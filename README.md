@@ -1,23 +1,187 @@
-# USS Wasp (LHD-1)
+# USS Wasp (LHD-1) - Amphibious Assault Rules Engine
 
 [![CI](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ci.yml)
 [![AI Tests](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml/badge.svg)](https://github.com/imjasonh/uss-wasp/actions/workflows/ai-tests.yml)
 
-A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious assault gameplay.
+A TypeScript-based rules engine and simulation framework for the USS Wasp amphibious assault wargame. This project focuses on modeling realistic military operations, game balance, and AI behavior without the complexity of a user interface.
 
 ## Overview
 
-This project implements the USS Wasp (LHD-1) amphibious assault wargame as described in the rules documentation. The game features:
+The USS Wasp project simulates modern amphibious assault operations featuring:
 
-- **Assault Force**: USS Wasp (LHD-1) with aircraft, landing craft, and Marine units
-- **Defender Force**: Ground-based units with hidden deployment and fortifications
-- **Hex-based gameplay** with turn-based mechanics
-- **Simulation engine** for automated balance testing
-- **Web-based interface** for human players
+- **Asymmetric Warfare**: USS Wasp assault forces vs. entrenched defenders
+- **Complex Unit Interactions**: Aircraft, helicopters, landing craft, infantry, and vehicles
+- **Advanced AI**: Multiple difficulty levels with tactical decision-making
+- **Realistic Operations**: Launch/recovery, cargo transport, special abilities
+- **Balance Testing**: Comprehensive simulation framework for gameplay balance
 
-## Development Phases
+## Key Features
 
-This project follows a 6-phase development plan:
+### 🎯 Core Rules Engine
+- Hex-based tactical grid system
+- Turn-based gameplay with multiple phases
+- Unit stats, categories, and special abilities
+- Combat resolution with terrain modifiers
+- Victory conditions and scoring
+
+### 🤖 Advanced AI System
+- **Multi-layered AI**: Decision maker, state machine, and tactical priorities
+- **Difficulty Levels**: Novice, Veteran, Elite, and Adaptive
+- **Military Operations**: USS Wasp operations, artillery, special forces
+- **Tactical Behaviors**: Hidden units, ambush tactics, objective control
+
+### ⚖️ Balance Testing Framework
+- Automated game simulation
+- Statistical analysis of win rates
+- Performance metrics and balance assessment
+- AI vs AI battle testing
+
+### 🚢 USS Wasp Operations
+- Aircraft launch and recovery operations
+- Cargo capacity management
+- Damage states affecting operational capability
+- Integration with assault tactics
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+```bash
+git clone https://github.com/imjasonh/uss-wasp.git
+cd uss-wasp
+npm install
+```
+
+### Running Simulations
+```bash
+# Run basic game simulation
+npm run simulate
+
+# Run balance testing suite
+npm run test:balance
+
+# Run AI validation tests
+npm run test:ai:comprehensive
+
+# Run specific number of games with AI difficulty
+npm run simulate 50 elite detailed
+```
+
+### Development
+```bash
+# Run unit tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Build project
+npm run build
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+```
+
+## Architecture
+
+### Core Components
+
+```
+src/
+├── core/
+│   ├── game/           # Game state, rules, and engine
+│   ├── ai/             # AI controllers and decision making
+│   ├── hex/            # Hex grid system and utilities
+│   └── units/          # Unit definitions and behaviors
+├── simulation/         # Game simulation framework
+└── tests/              # Unit tests
+```
+
+### Key Classes
+
+- **GameEngine**: Core rules processing and action resolution
+- **GameState**: Game state management and player tracking
+- **AIController**: AI decision making and tactical planning
+- **Unit**: Individual unit behavior and capabilities
+- **GameMap**: Hex grid terrain and objectives
+
+## Game Rules
+
+### Turn Structure
+1. **Event Phase**: Random events and fog of war updates
+2. **Command Phase**: Generate command points
+3. **Deployment Phase**: Launch units and place hidden forces
+4. **Movement Phase**: Unit movement actions
+5. **Action Phase**: Combat, special abilities, objective control
+6. **End Phase**: Victory checks and cleanup
+
+### Unit Categories
+- **Aircraft**: Harrier, Osprey (air superiority, transport)
+- **Helicopters**: Super Stallion, Super Cobra (transport, attack)
+- **Landing Craft**: LCAC, LCU (amphibious assault)
+- **Ground Units**: Marines, MARSOC, Infantry (assault, defense)
+- **Vehicles**: Humvee, AAV-7, Technical (transport, support)
+- **Special Units**: USS Wasp, Artillery, ATGM teams
+
+### Victory Conditions
+- **Elimination**: Destroy all enemy units
+- **USS Wasp**: Sink the USS Wasp (defender victory)
+- **Objectives**: Control key terrain features
+- **Turn Limit**: Highest score after maximum turns
+
+## AI System
+
+### Decision Making
+The AI uses a utility-based system with tactical priorities:
+
+1. **Threat Assessment**: Evaluate unit vulnerabilities
+2. **Tactical Planning**: Generate context-aware decisions
+3. **Action Execution**: Convert decisions to game actions
+4. **Learning**: Track performance for adaptation
+
+### AI Subsystems
+- **USS Wasp Operations**: Launch/recovery planning
+- **Hidden Unit Tactics**: Ambush and stealth operations
+- **Special Abilities**: Artillery, air support, reconnaissance
+- **Objective Control**: Strategic point capture
+- **Transport Logistics**: Cargo management and deployment
+
+## Balance Testing
+
+### Test Categories
+- **Standard Balance**: Basic win rate analysis
+- **AI Difficulty**: Performance across skill levels
+- **Game Length**: Turn count and resolution speed
+- **Unit Effectiveness**: Individual unit performance
+
+### Metrics
+- Win rates by faction
+- Average game length
+- Unit survival rates
+- Objective control patterns
+- AI decision quality
+
+### Running Balance Tests
+```bash
+# Full balance suite
+npm run test:balance
+
+# Quick balance check
+npm run simulate 20 veteran minimal
+
+# Extended analysis
+npm run simulate 100 elite detailed
+```
+
+## Development History
+
+This project completed a 6-phase development plan:
 
 - **Phase 0**: ✅ Planning & Setup (hex grid, project structure)
 - **Phase 1**: ✅ Core Simulation Engine (headless game logic)
@@ -27,19 +191,6 @@ This project follows a 6-phase development plan:
 - **Phase 5**: ✅ USS Wasp Operations & Logistics (amphibious assault, aircraft)
 - **Phase 6**: ✅ Advanced AI Implementation (multi-layered AI opponent)
 
-### Current Status: ✅ COMPLETE - All 6 Phases Implemented
-
-**Phase 6 - Advanced AI Implementation (COMPLETE):**
-- ✅ Core AI decision-making framework with threat assessment
-- ✅ Multi-difficulty AI (Novice, Veteran, Elite, Adaptive)  
-- ✅ USS Wasp launch/recovery operations AI
-- ✅ Hidden unit tactical AI (reveal/hide decisions)
-- ✅ Special ability usage AI (artillery, reconnaissance, etc.)
-- ✅ Objective-focused strategic planning AI
-- ✅ Transport/logistics operations AI
-- ✅ AI learning and adaptation system
-- ✅ Comprehensive game logging and state management system
-
 **Final Implementation Results:**
 - 6/6 AI subsystems implemented (100% feature complete)
 - Comprehensive logging system with state snapshots and replay
@@ -47,98 +198,52 @@ This project follows a 6-phase development plan:
 - Advanced pathfinding and tactical movement systems
 - Complete rule enforcement and automated victory detection
 
-## CI/CD & Development Workflow
+## Testing
 
-This project uses GitHub Actions for continuous integration and automated testing:
-
-- **CI Pipeline**: Comprehensive checks including linting, type checking, tests, builds, security audits, and AI validation
-- **AI System Tests**: Extended AI validation and battle simulations (daily scheduled runs)
-- **Pre-commit Hooks**: Automatic code formatting and linting before commits
-
-### Development Commands
-
+### Unit Tests
 ```bash
-# Code quality
-npm run lint          # Run ESLint
-npm run lint:fix      # Fix linting issues
-npm run format        # Format code with Prettier
-npm run typecheck     # TypeScript type checking
-
-# Testing
-npm test              # Run unit tests
-npm test:watch        # Run tests in watch mode
-npm test:ai           # Run AI system tests
-
-# Build
-npm run build         # Build TypeScript
-npm run build:web     # Build web bundle
+npm test                    # Run all unit tests
+npm run test:watch          # Watch mode for development
 ```
 
-## Getting Started
-
-### Simulation Engine (Console)
+### AI Tests
 ```bash
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run AI vs AI gap analysis test  
-node test-ai-system-gaps.js
-
-# Run quick 3-unit battle tests (recommended)
-node quick-battle-test.js
-
-# Run 1v1 combat positioning test
-node combat-test.js
-
-# Run full 10-game battle series 
-node run-optimized-battles.js
-
-# Test comprehensive logging system
-node test-logging-system.js
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
+npm run test:ai             # Basic AI functionality
+npm run test:ai:strict      # Strict regression tests
+npm run test:ai:gaps        # System completeness check
 ```
 
-### Web Interface
+### Balance Tests
 ```bash
-# Start web development server
-npm run dev:web
-
-# Build web version
-npm run build:web
+npm run test:balance        # Full balance suite
+npm run simulate 50         # Custom simulation
 ```
 
-The web interface will be available at http://localhost:3000
+## Contributing
 
-## Project Structure
+### Development Workflow
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/new-rules`
+3. Make changes and add tests
+4. Run test suite: `npm test`
+5. Submit pull request
 
-```
-src/
-├── core/           # Core game engine
-│   ├── hex/        # Hexagon grid utilities  
-│   ├── game/       # Game state and logic
-│   ├── units/      # Unit definitions and abilities
-│   └── ai/         # Advanced AI system
-│       ├── AIController.ts      # Main AI coordinator
-│       ├── AIDecisionMaker.ts   # Tactical decision engine
-│       ├── AIStateMachine.ts    # Strategic state management
-│       └── types.ts             # AI types and interfaces
-├── simulation/     # AI testing and analysis
-├── testing/        # Test utilities and helpers
-├── ui/            # User interface components (Pixi.js)
-└── tests/         # Unit tests
-```
+### Code Standards
+- TypeScript strict mode
+- ESLint configuration enforced
+- Unit tests for new features
+- Balance tests for rule changes
+
+### Areas for Contribution
+- New unit types and abilities
+- Enhanced AI behaviors
+- Additional balance tests
+- Performance optimizations
+- Documentation improvements
 
 ## Documentation
 
-- [Game Rules](rules.md) - Complete game rules and mechanics (updated for current implementation)
+- [Game Rules](rules.md) - Complete game rules and mechanics
 - [Engineering Plan](docs/plan.md) - Development roadmap and technical details
 - [Balance Analysis](docs/balance.md) - Game balance considerations
 
@@ -147,4 +252,18 @@ src/
 - **TypeScript** for type-safe development
 - **Node.js** for the simulation engine
 - **Jest** for testing
-- **Pixi.js** (planned) for graphics rendering
+- **ESLint & Prettier** for code quality
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Military tactical doctrine and amphibious assault operations
+- Hex-based wargaming systems and conventions
+- AI and game balance research in strategy games
+
+---
+
+*This project focuses on the rules engine and simulation aspects of the USS Wasp wargame. The emphasis is on accurate modeling of military operations, sophisticated AI behavior, and comprehensive balance testing rather than graphical presentation.*

@@ -1,23 +1,19 @@
 {
   "name": "uss-wasp-game",
   "version": "0.1.0",
-  "description": "USS Wasp (LHD-1) - Amphibious Assault Wargame Simulation",
+  "description": "USS Wasp (LHD-1) - Amphibious Assault Wargame Rules Engine and Balance Simulation",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "build:web": "webpack --mode production",
     "dev": "ts-node src/index.ts",
-    "dev:web": "webpack serve --mode development",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:ai": "npm run build && npx tsx tests/ai/run-comprehensive-ai-test.ts",
     "test:ai:strict": "npm run build && npx tsx tests/ai/test-ai-strict.js",
     "test:ai:gaps": "npm run build && npx tsx tests/ai/test-ai-system-gaps.ts",
     "test:ai:comprehensive": "npm run test:ai && npm run test:ai:strict && npm run test:ai:gaps",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report",
+    "test:balance": "npm run build && npx tsx tests/balance/run-balance-tests.ts",
+    "simulate": "npm run build && npx tsx src/simulation/run-simulation.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
@@ -36,13 +32,15 @@
     "wargame",
     "amphibious-assault",
     "simulation",
+    "rules-engine",
+    "balance-testing",
     "typescript",
-    "hex-grid"
+    "hex-grid",
+    "ai"
   ],
   "author": "Jason",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "1.54.1",
     "@types/jest": "30.0.0",
     "@types/node": "20.19.8",
     "@typescript-eslint/eslint-plugin": "8.37.0",
@@ -51,24 +49,17 @@
     "eslint-config-standard": "17.1.0",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-node": "11.1.0",
-    "eslint-plugin-promise": "7.2.1",
-    "html-webpack-plugin": "5.6.3",
+    "eslint-plugin-promise": "^6.6.0",
     "husky": "9.1.7",
     "jest": "30.0.4",
     "lint-staged": "16.1.2",
     "prettier": "3.6.2",
     "ts-jest": "29.4.0",
-    "ts-loader": "9.5.2",
     "ts-node": "10.9.2",
     "tsx": "4.20.3",
-    "typescript": "5.8.3",
-    "webpack": "5.100.1",
-    "webpack-cli": "6.0.1",
-    "webpack-dev-server": "5.2.2"
+    "typescript": "5.8.3"
   },
-  "dependencies": {
-    "pixi.js": "7.4.3"
-  },
+  "dependencies": {},
   "lint-staged": {
     "src/**/*.ts": [
       "eslint --fix",

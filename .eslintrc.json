@@ -76,7 +76,17 @@
       "files": ["**/*.test.ts", "**/*.spec.ts", "**/tests/**/*.ts", "**/testing/**/*.ts"],
       "rules": {
         "@typescript-eslint/unbound-method": "off",
-        "no-console": "off"
+        "no-console": "off",
+        "max-lines-per-function": "off",
+        "complexity": "off",
+        "no-magic-numbers": "off"
+      }
+    },
+    {
+      "files": ["**/simulation/**/*.ts", "**/balance/**/*.ts"],
+      "rules": {
+        "no-console": "off",
+        "max-lines-per-function": ["warn", { "max": 100, "skipComments": true }]
       }
     }
   ],
