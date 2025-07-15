@@ -6,6 +6,8 @@ import * as PIXI from 'pixi.js';
 import { Hex } from '../../core/hex';
 import { HexLayout, POINTY_TOP_ORIENTATION, Point } from '../../core/hex/HexLayout';
 import { GameState } from '../../core/game';
+import { Unit } from '../../core/game/Unit';
+import { Fortification } from '../../core/game/Map';
 
 export interface RendererConfig {
   width: number;
@@ -26,9 +28,9 @@ export class PixiRenderer {
   private readonly uiContainer: PIXI.Container;
   private selectedHex?: Hex;
 
-  constructor(container: HTMLElement, config: RendererConfig, app?: PIXI.Application) {
+  public constructor(container: HTMLElement, config: RendererConfig, app?: PIXI.Application) {
     // Store the initialized application or create a new one
-    this.app = app || new PIXI.Application();
+    this.app = app ?? new PIXI.Application();
 
     container.appendChild(this.app.canvas);
 
@@ -285,7 +287,7 @@ export class PixiRenderer {
   /**
    * Create graphics for a fortification
    */
-  private createFortificationGraphics(fortification: any): PIXI.Graphics {
+  private createFortificationGraphics(fortification: Fortification): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
     const center = this.hexLayout.hexToPixel(fortification.position);
     
@@ -340,7 +342,7 @@ export class PixiRenderer {
   /**
    * Create graphics for a unit
    */
-  private createUnitGraphics(unit: any, isHidden: boolean = false): PIXI.Graphics {
+  private createUnitGraphics(unit: Unit, isHidden: boolean = false): PIXI.Graphics {
     const graphics = new PIXI.Graphics();
     const center = this.hexLayout.hexToPixel(unit.state.position);
 
@@ -414,13 +416,13 @@ export class PixiRenderer {
       militia_squad: '👤',
       long_range_artillery: '🎯',
     };
-    return symbols[unitType] || '?';
+    return symbols[unitType] ?? '?';
   }
 
   /**
    * Create HP bar for damaged units
    */
-  private createHPBar(unit: any, center: Point): PIXI.Graphics {
+  private createHPBar(unit: Unit, center: Point): PIXI.Graphics {
     const hpBar = new PIXI.Graphics();
     const barWidth = 30;
     const barHeight = 4;
@@ -432,7 +434,14 @@ export class PixiRenderer {
     hpBar.endFill();
 
     // HP fill
-    const hpColor = hpRatio > 0.5 ? 0x00ff00 : hpRatio > 0.25 ? 0xffff00 : 0xff0000;
+    let hpColor: number;
+    if (hpRatio > 0.5) {
+      hpColor = 0x00ff00;
+    } else if (hpRatio > 0.25) {
+      hpColor = 0xffff00;
+    } else {
+      hpColor = 0xff0000;
+    }
     hpBar.beginFill(hpColor);
     hpBar.drawRect(center.x - barWidth / 2, center.y + 25, barWidth * hpRatio, barHeight);
     hpBar.endFill();

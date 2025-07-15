@@ -88,3 +88,6 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Playwright test results
+test-results/
