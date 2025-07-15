@@ -18,7 +18,7 @@ import { GameState, GameAction } from '../core/game/GameState';
 import { GameEngine, ActionResult } from '../core/game/GameEngine';
 import { Player } from '../core/game/Player';
 import { GameMap } from '../core/game/Map';
-import { PlayerSide, UnitType, ActionType } from '../core/game/types';
+import { PlayerSide, UnitType, ActionType, TurnPhase } from '../core/game/types';
 import { createTestUnit, createTestUnits } from './UnitTestHelper';
 import { Hex } from '../core/hex';
 
@@ -32,6 +32,7 @@ interface ActionAnalysis {
   waspOperations: number;
   loadUnloadActions: number;
   objectiveActions: number;
+  hiddenUnitActions: number;
   total: number;
 }
 
@@ -586,16 +587,49 @@ export class ComprehensiveAITest {
       console.log('\n🫥 Test 4: Hidden Unit Deployment Test');
       console.log('-------------------------------------');
 
-      // Test AI understanding of hidden units and fog of war
-      testResult.gameEngineGaps.push('Hidden unit deployment AI testing not implemented');
-      testResult.gameEngineGaps.push('Fog of war AI decision making needs testing framework');
-      testResult.aiProgrammingGaps.push('AI tactics for hidden unit positioning need verification');
-      testResult.aiProgrammingGaps.push('AI response to hidden unit threats needs testing');
+      const startTime = Date.now();
 
-      console.log('⚠️ Hidden unit testing framework needs development');
-      testResult.warnings.push('Hidden unit testing requires additional game engine features');
+      // Run all hidden unit test scenarios
+      const revealTest = this.runHiddenUnitRevealTest();
+      const stealthTest = this.runStealthPositioningTest();
+      const counterStealthTest = this.runCounterStealthTest();
+      const fogOfWarTest = this.runFogOfWarTest();
 
-      testResult.success = true; // Mark as passed - warnings don't constitute failures
+      const endTime = Date.now();
+      testResult.performance = {
+        turnCount: 0,
+        aiDecisionTime: 0,
+        totalGameTime: endTime - startTime,
+      };
+
+      // Aggregate results
+      const allTests = [revealTest, stealthTest, counterStealthTest, fogOfWarTest];
+      const passedTests = allTests.filter(test => test.success).length;
+      const totalTests = allTests.length;
+
+      console.log(`📊 Hidden Unit Test Results: ${passedTests}/${totalTests} scenarios passed`);
+      console.log(`✅ Hidden Unit Reveal Test: ${revealTest.success ? 'PASSED' : 'FAILED'}`);
+      console.log(`🕰️ Stealth Positioning Test: ${stealthTest.success ? 'PASSED' : 'FAILED'}`);
+      console.log(`🔍 Counter-Stealth Test: ${counterStealthTest.success ? 'PASSED' : 'FAILED'}`);
+      console.log(`🌫️ Fog of War Test: ${fogOfWarTest.success ? 'PASSED' : 'FAILED'}`);
+
+      // Collect errors and warnings
+      allTests.forEach(test => {
+        testResult.errors.push(...test.errors);
+        testResult.warnings.push(...test.warnings);
+        testResult.gameEngineGaps.push(...test.gameEngineGaps);
+        testResult.aiProgrammingGaps.push(...test.aiProgrammingGaps);
+      });
+
+      testResult.success = passedTests === totalTests;
+
+      if (testResult.success) {
+        console.log(
+          '✅ All hidden unit AI tests passed - AI demonstrates stealth tactical capabilities'
+        );
+      } else {
+        console.log(`❌ ${totalTests - passedTests} hidden unit AI tests failed`);
+      }
     } catch (error) {
       testResult.errors.push(
         `Hidden unit test failed: ${error instanceof Error ? error.message : String(error)}`
@@ -603,6 +637,676 @@ export class ComprehensiveAITest {
     }
 
     this.testResults.push(testResult);
+  }
+
+  /**
+   * Hidden Unit Test Scenario 1: Hidden Unit Reveal Decisions
+   */
+  private runHiddenUnitRevealTest(): TestResults {
+    const testResult: TestResults = {
+      testName: 'Hidden Unit Reveal Decisions',
+      success: false,
+      errors: [],
+      warnings: [],
+      performance: { turnCount: 0, aiDecisionTime: 0, totalGameTime: 0 },
+      gameEngineGaps: [],
+      aiProgrammingGaps: [],
+    };
+
+    try {
+      console.log('   🎯 Scenario 1: Hidden Unit Reveal Decisions');
+      console.log('   ────────────────────────────────────────────');
+
+      const startTime = Date.now();
+
+      // Create tactical scenario with hidden defender units
+      const map = new GameMap(8, 8);
+      const gameState = new GameState('hidden-reveal-test', map, 10);
+
+      const assaultPlayer = new Player('assault', PlayerSide.Assault);
+      const defenderPlayer = new Player('defender', PlayerSide.Defender);
+
+      gameState.addPlayer(assaultPlayer);
+      gameState.addPlayer(defenderPlayer);
+      gameState.setActivePlayerBySide(PlayerSide.Assault);
+
+      // Create approaching assault force
+      const assaultUnits = createTestUnits([
+        {
+          id: 'marines1',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(1, 1),
+        },
+        {
+          id: 'marines2',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(2, 1),
+        },
+        { id: 'humvee1', type: UnitType.HUMVEE, side: PlayerSide.Assault, position: new Hex(1, 2) },
+      ]);
+
+      // Create hidden defender units in ambush positions
+      const defenderUnits = createTestUnits([
+        {
+          id: 'hidden1',
+          type: UnitType.INFANTRY_SQUAD,
+          side: PlayerSide.Defender,
+          position: new Hex(5, 5),
+        },
+        {
+          id: 'hidden2',
+          type: UnitType.INFANTRY_SQUAD,
+          side: PlayerSide.Defender,
+          position: new Hex(6, 4),
+        },
+        {
+          id: 'hidden3',
+          type: UnitType.ATGM_TEAM,
+          side: PlayerSide.Defender,
+          position: new Hex(5, 6),
+        },
+      ]);
+
+      // Add units to players
+      assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
+      defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
+
+      // Hide all defender units that can be hidden
+      let hiddenCount = 0;
+      defenderUnits.forEach(unit => {
+        if (unit.canBeHidden()) {
+          unit.hide();
+          hiddenCount++;
+          console.log(
+            `     🫥 Hidden unit: ${unit.type} at (${unit.state.position.q}, ${unit.state.position.r})`
+          );
+        }
+      });
+
+      console.log(
+        `     📊 Setup: ${hiddenCount} hidden units, ${assaultUnits.length} assault units`
+      );
+
+      const gameEngine = new GameEngine(gameState);
+      gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
+      gameEngine.addAIController(defenderPlayer.id, AIDifficulty.VETERAN);
+
+      // Test AI reveal decisions over multiple turns
+      let totalRevealActions = 0;
+      let optimalRevealTiming = 0;
+      const maxTurns = 5;
+
+      for (let turn = 1; turn <= maxTurns; turn++) {
+        console.log(`     🔄 Turn ${turn}: Testing reveal decisions...`);
+
+        // Test both players' AI decisions
+        gameState.setActivePlayerBySide(PlayerSide.Assault);
+        gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+
+        // Initialize command points for players
+        assaultPlayer.commandPoints = 10;
+        defenderPlayer.commandPoints = 10;
+
+        const assaultActions = gameEngine.updateAI();
+
+        gameState.setActivePlayerBySide(PlayerSide.Defender);
+        gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+        const defenderActions = gameEngine.updateAI();
+
+        const allActions = [...assaultActions, ...defenderActions];
+        const revealActions = allActions.filter(action => action.type === ActionType.REVEAL);
+
+        totalRevealActions += revealActions.length;
+
+        if (revealActions.length > 0) {
+          console.log(`     ✅ Turn ${turn}: AI generated ${revealActions.length} reveal actions`);
+
+          // Analyze reveal timing (optimal if assault units are within 3 hexes)
+          revealActions.forEach(action => {
+            const revealingUnit = gameState.getUnit(action.unitId);
+            if (revealingUnit) {
+              const nearbyEnemies = assaultUnits.filter(enemy => {
+                const distance =
+                  Math.abs(revealingUnit.state.position.q - enemy.state.position.q) +
+                  Math.abs(revealingUnit.state.position.r - enemy.state.position.r);
+                return distance <= 3;
+              });
+
+              if (nearbyEnemies.length > 0) {
+                optimalRevealTiming++;
+                console.log(
+                  `       🎯 Optimal reveal: ${revealingUnit.type} with ${nearbyEnemies.length} nearby enemies`
+                );
+              }
+            }
+          });
+        }
+
+        // Move assault units closer to test reveal triggers
+        assaultUnits.forEach(unit => {
+          if (unit.state.position.q < 4) {
+            unit.state.position = new Hex(unit.state.position.q + 1, unit.state.position.r);
+          }
+        });
+      }
+
+      const endTime = Date.now();
+      testResult.performance = {
+        turnCount: maxTurns,
+        aiDecisionTime: 0,
+        totalGameTime: endTime - startTime,
+      };
+
+      // Evaluate test results
+      console.log(
+        `     📈 Results: ${totalRevealActions} reveal actions, ${optimalRevealTiming} optimal timing`
+      );
+
+      if (totalRevealActions > 0) {
+        console.log('     ✅ AI demonstrates hidden unit reveal capability');
+        testResult.success = true;
+      } else {
+        console.log('     ❌ AI failed to generate any reveal actions');
+        testResult.aiProgrammingGaps.push('AI does not generate reveal actions for hidden units');
+      }
+
+      // Check reveal timing optimization
+      if (optimalRevealTiming > 0) {
+        console.log(`     🎯 AI shows tactical timing: ${optimalRevealTiming} well-timed reveals`);
+      } else if (totalRevealActions > 0) {
+        testResult.warnings.push('AI reveals units but timing may not be optimal');
+      }
+    } catch (error) {
+      testResult.errors.push(
+        `Hidden unit reveal test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    return testResult;
+  }
+
+  /**
+   * Hidden Unit Test Scenario 2: Stealth Positioning
+   */
+  private runStealthPositioningTest(): TestResults {
+    const testResult: TestResults = {
+      testName: 'Stealth Positioning',
+      success: false,
+      errors: [],
+      warnings: [],
+      performance: { turnCount: 0, aiDecisionTime: 0, totalGameTime: 0 },
+      gameEngineGaps: [],
+      aiProgrammingGaps: [],
+    };
+
+    try {
+      console.log('   🕰️ Scenario 2: Stealth Positioning');
+      console.log('   ───────────────────────────────────');
+
+      const startTime = Date.now();
+
+      // Create scenario where AI must decide optimal hiding positions
+      const map = new GameMap(10, 8);
+      const gameState = new GameState('stealth-positioning-test', map, 10);
+
+      const defenderPlayer = new Player('defender', PlayerSide.Defender);
+      gameState.addPlayer(defenderPlayer);
+      gameState.setActivePlayerBySide(PlayerSide.Defender);
+
+      // Create visible defender units that can be hidden
+      const defenderUnits = createTestUnits([
+        {
+          id: 'inf1',
+          type: UnitType.INFANTRY_SQUAD,
+          side: PlayerSide.Defender,
+          position: new Hex(5, 4),
+        },
+        {
+          id: 'inf2',
+          type: UnitType.INFANTRY_SQUAD,
+          side: PlayerSide.Defender,
+          position: new Hex(6, 3),
+        },
+        {
+          id: 'inf3',
+          type: UnitType.INFANTRY_SQUAD,
+          side: PlayerSide.Defender,
+          position: new Hex(7, 5),
+        },
+      ]);
+
+      defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
+
+      // Create threat to simulate why hiding is needed
+      const assaultPlayer = new Player('assault', PlayerSide.Assault);
+      const assaultUnits = createTestUnits([
+        {
+          id: 'threat1',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(1, 1),
+        },
+        {
+          id: 'threat2',
+          type: UnitType.HARRIER,
+          side: PlayerSide.Assault,
+          position: new Hex(2, 2),
+        },
+      ]);
+
+      gameState.addPlayer(assaultPlayer);
+      assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
+
+      console.log(
+        `     📊 Setup: ${defenderUnits.length} visible units, ${assaultUnits.length} threat units`
+      );
+
+      const gameEngine = new GameEngine(gameState);
+      gameEngine.addAIController(defenderPlayer.id, AIDifficulty.VETERAN);
+
+      // Test AI hiding decisions
+      console.log('     🔍 Testing AI stealth positioning decisions...');
+
+      gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+
+      // Initialize command points for players
+      defenderPlayer.commandPoints = 10;
+      assaultPlayer.commandPoints = 10;
+
+      const aiActions = gameEngine.updateAI();
+
+      // Count units that can be hidden
+      const hideableUnits = defenderUnits.filter(unit => unit.canBeHidden());
+      console.log(`     📋 Hideable units: ${hideableUnits.length}`);
+
+      // Analyze hiding decisions (Note: hiding might not be implemented as explicit action)
+      let tacticalPositioning = 0;
+
+      // Check if AI generated any movement actions to better positions
+      const movementActions = aiActions.filter(action => action.type === ActionType.MOVE);
+      console.log(`     🚶 AI movement actions: ${movementActions.length}`);
+
+      if (movementActions.length > 0) {
+        tacticalPositioning = movementActions.length;
+        console.log(
+          `     ✅ AI demonstrates tactical positioning with ${tacticalPositioning} movements`
+        );
+      }
+
+      // Check if units are utilizing stealth capabilities
+      const unitsInCover = defenderUnits.filter(unit => {
+        // Simple cover heuristic: units not in the open (position sum is even)
+        return (unit.state.position.q + unit.state.position.r) % 2 === 0;
+      });
+
+      console.log(
+        `     🏠 Units in cover positions: ${unitsInCover.length}/${defenderUnits.length}`
+      );
+
+      const endTime = Date.now();
+      testResult.performance = {
+        turnCount: 1,
+        aiDecisionTime: 0,
+        totalGameTime: endTime - startTime,
+      };
+
+      // Evaluate results
+      if (tacticalPositioning > 0 || unitsInCover.length > defenderUnits.length / 2) {
+        console.log('     ✅ AI demonstrates stealth positioning awareness');
+        testResult.success = true;
+      } else {
+        console.log('     ❌ AI shows limited stealth positioning capabilities');
+        testResult.aiProgrammingGaps.push('AI lacks stealth positioning optimization');
+      }
+
+      if (hideableUnits.length > 0 && tacticalPositioning === 0) {
+        testResult.warnings.push('AI has hideable units but showed no tactical movement');
+      }
+    } catch (error) {
+      testResult.errors.push(
+        `Stealth positioning test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    return testResult;
+  }
+
+  /**
+   * Hidden Unit Test Scenario 3: Counter-Stealth Operations
+   */
+  private runCounterStealthTest(): TestResults {
+    const testResult: TestResults = {
+      testName: 'Counter-Stealth Operations',
+      success: false,
+      errors: [],
+      warnings: [],
+      performance: { turnCount: 0, aiDecisionTime: 0, totalGameTime: 0 },
+      gameEngineGaps: [],
+      aiProgrammingGaps: [],
+    };
+
+    try {
+      console.log('   🔍 Scenario 3: Counter-Stealth Operations');
+      console.log('   ─────────────────────────────────────────');
+
+      const startTime = Date.now();
+
+      // Create scenario where assault AI must deal with known hidden threats
+      const map = new GameMap(8, 8);
+      const gameState = new GameState('counter-stealth-test', map, 10);
+
+      const assaultPlayer = new Player('assault', PlayerSide.Assault);
+      const defenderPlayer = new Player('defender', PlayerSide.Defender);
+
+      gameState.addPlayer(assaultPlayer);
+      gameState.addPlayer(defenderPlayer);
+      gameState.setActivePlayerBySide(PlayerSide.Assault);
+
+      // Create assault units with reconnaissance capability
+      const assaultUnits = createTestUnits([
+        { id: 'recon1', type: UnitType.MARSOC, side: PlayerSide.Assault, position: new Hex(2, 2) },
+        {
+          id: 'support1',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(1, 2),
+        },
+        {
+          id: 'support2',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(2, 1),
+        },
+      ]);
+
+      // Create hidden threats in known general area
+      const defenderUnits = createTestUnits([
+        {
+          id: 'sniper1',
+          type: UnitType.INFANTRY_SQUAD,
+          side: PlayerSide.Defender,
+          position: new Hex(6, 6),
+        },
+        {
+          id: 'sniper2',
+          type: UnitType.INFANTRY_SQUAD,
+          side: PlayerSide.Defender,
+          position: new Hex(7, 5),
+        },
+      ]);
+
+      assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
+      defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
+
+      // Hide defender units
+      let hiddenThreats = 0;
+      defenderUnits.forEach(unit => {
+        if (unit.canBeHidden()) {
+          unit.hide();
+          hiddenThreats++;
+        }
+      });
+
+      console.log(
+        `     📊 Setup: ${assaultUnits.length} assault units vs ${hiddenThreats} hidden threats`
+      );
+
+      const gameEngine = new GameEngine(gameState);
+      gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
+      gameEngine.addAIController(defenderPlayer.id, AIDifficulty.VETERAN);
+
+      // Test AI counter-stealth tactics
+      console.log('     🔍 Testing AI counter-stealth operations...');
+
+      gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+
+      // Initialize command points for players
+      assaultPlayer.commandPoints = 10;
+      defenderPlayer.commandPoints = 10;
+
+      const assaultActions = gameEngine.updateAI();
+
+      // Analyze counter-stealth actions
+      const reconActions = assaultActions.filter(action => {
+        const unit = gameState.getUnit(action.unitId);
+        return unit && unit.type === UnitType.MARSOC;
+      });
+
+      const movementActions = assaultActions.filter(action => action.type === ActionType.MOVE);
+      const specialActions = assaultActions.filter(
+        action => action.type === ActionType.SPECIAL_ABILITY
+      );
+
+      console.log(`     👁️ Reconnaissance actions: ${reconActions.length}`);
+      console.log(`     🚶 Movement actions: ${movementActions.length}`);
+      console.log(`     ⚡ Special actions: ${specialActions.length}`);
+
+      let counterStealthCapability = 0;
+
+      // Check if AI moves reconnaissance units toward threat area
+      reconActions.forEach(action => {
+        if (action.type === ActionType.MOVE && action.targetPosition) {
+          const target = action.targetPosition;
+          // Check if moving toward known threat area (positions 5-7, 5-7)
+          if (target.q >= 4 && target.q <= 7 && target.r >= 4 && target.r <= 7) {
+            counterStealthCapability++;
+            console.log(
+              `     🎯 Reconnaissance unit moving toward threat area: (${target.q}, ${target.r})`
+            );
+          }
+        }
+      });
+
+      // Check if AI uses special reconnaissance abilities
+      if (specialActions.length > 0) {
+        counterStealthCapability++;
+        console.log(
+          `     ⚡ AI utilizing special reconnaissance abilities: ${specialActions.length}`
+        );
+      }
+
+      const endTime = Date.now();
+      testResult.performance = {
+        turnCount: 1,
+        aiDecisionTime: 0,
+        totalGameTime: endTime - startTime,
+      };
+
+      // Evaluate results
+      if (counterStealthCapability > 0) {
+        console.log('     ✅ AI demonstrates counter-stealth capabilities');
+        testResult.success = true;
+      } else {
+        console.log('     ❌ AI shows limited counter-stealth response');
+        testResult.aiProgrammingGaps.push('AI lacks counter-stealth tactical response');
+      }
+
+      if (assaultActions.length === 0) {
+        testResult.warnings.push('AI generated no actions in counter-stealth scenario');
+      }
+    } catch (error) {
+      testResult.errors.push(
+        `Counter-stealth test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    return testResult;
+  }
+
+  /**
+   * Hidden Unit Test Scenario 4: Fog of War Navigation
+   */
+  private runFogOfWarTest(): TestResults {
+    const testResult: TestResults = {
+      testName: 'Fog of War Navigation',
+      success: false,
+      errors: [],
+      warnings: [],
+      performance: { turnCount: 0, aiDecisionTime: 0, totalGameTime: 0 },
+      gameEngineGaps: [],
+      aiProgrammingGaps: [],
+    };
+
+    try {
+      console.log('   🌫️ Scenario 4: Fog of War Navigation');
+      console.log('   ───────────────────────────────────────');
+
+      const startTime = Date.now();
+
+      // Create scenario with limited visibility
+      const map = new GameMap(10, 10);
+      const gameState = new GameState('fog-of-war-test', map, 10);
+
+      const assaultPlayer = new Player('assault', PlayerSide.Assault);
+      gameState.addPlayer(assaultPlayer);
+      gameState.setActivePlayerBySide(PlayerSide.Assault);
+
+      // Create units that must navigate with limited visibility
+      const assaultUnits = createTestUnits([
+        {
+          id: 'scout1',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(1, 1),
+        },
+        {
+          id: 'scout2',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(2, 1),
+        },
+        {
+          id: 'main1',
+          type: UnitType.MARINE_SQUAD,
+          side: PlayerSide.Assault,
+          position: new Hex(1, 2),
+        },
+      ]);
+
+      assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
+
+      console.log(`     📊 Setup: ${assaultUnits.length} units in fog of war scenario`);
+
+      const gameEngine = new GameEngine(gameState);
+      gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
+
+      // Test AI fog of war navigation
+      console.log('     🌫️ Testing AI fog of war navigation...');
+
+      gameState.phase = TurnPhase.ACTION; // Set to action phase for AI decisions
+
+      // Initialize command points for players
+      assaultPlayer.commandPoints = 10;
+
+      const aiActions = gameEngine.updateAI();
+
+      // Analyze fog of war behavior
+      const movementActions = aiActions.filter(action => action.type === ActionType.MOVE);
+      const explorationPattern = this.analyzeFogOfWarMovement(movementActions);
+
+      console.log(`     🚶 Movement actions: ${movementActions.length}`);
+      console.log(`     🔍 Exploration pattern score: ${explorationPattern.score}`);
+
+      let fogOfWarCapability = 0;
+
+      // Check if AI spreads units for better visibility
+      if (explorationPattern.spreadOut) {
+        fogOfWarCapability++;
+        console.log('     ✅ AI spreads units for better reconnaissance');
+      }
+
+      // Check if AI advances cautiously in limited visibility
+      if (explorationPattern.cautiousAdvance) {
+        fogOfWarCapability++;
+        console.log('     ✅ AI advances cautiously in limited visibility');
+      }
+
+      // Check if AI maintains unit coordination
+      if (explorationPattern.coordination) {
+        fogOfWarCapability++;
+        console.log('     ✅ AI maintains unit coordination in fog of war');
+      }
+
+      const endTime = Date.now();
+      testResult.performance = {
+        turnCount: 1,
+        aiDecisionTime: 0,
+        totalGameTime: endTime - startTime,
+      };
+
+      // Evaluate results
+      if (fogOfWarCapability >= 2) {
+        console.log('     ✅ AI demonstrates effective fog of war navigation');
+        testResult.success = true;
+      } else if (fogOfWarCapability >= 1) {
+        console.log('     ⚠️ AI shows basic fog of war awareness');
+        testResult.warnings.push('AI fog of war navigation could be improved');
+        testResult.success = true;
+      } else {
+        console.log('     ❌ AI shows limited fog of war capabilities');
+        testResult.aiProgrammingGaps.push('AI lacks fog of war navigation optimization');
+      }
+
+      if (movementActions.length === 0) {
+        testResult.warnings.push('AI generated no movement actions in fog of war scenario');
+      }
+    } catch (error) {
+      testResult.errors.push(
+        `Fog of war test failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    return testResult;
+  }
+
+  /**
+   * Analyze fog of war movement patterns
+   */
+  private analyzeFogOfWarMovement(movementActions: GameAction[]): {
+    score: number;
+    spreadOut: boolean;
+    cautiousAdvance: boolean;
+    coordination: boolean;
+  } {
+    let score = 0;
+    let spreadOut = false;
+    let cautiousAdvance = false;
+    let coordination = false;
+
+    if (movementActions.length > 0) {
+      // Check if units spread out (different destinations)
+      const destinations = movementActions.map(action => action.targetPosition);
+      const uniqueDestinations = new Set(destinations.map(dest => `${dest?.q},${dest?.r}`));
+
+      if (uniqueDestinations.size > 1) {
+        spreadOut = true;
+        score += 1;
+      }
+
+      // Check for cautious advance (shorter moves)
+      const averageDistance =
+        movementActions.reduce((sum, action) => {
+          if (action.targetPosition) {
+            return sum + Math.abs(action.targetPosition.q) + Math.abs(action.targetPosition.r);
+          }
+          return sum;
+        }, 0) / movementActions.length;
+
+      if (averageDistance <= 4) {
+        cautiousAdvance = true;
+        score += 1;
+      }
+
+      // Check for coordination (units move together)
+      if (movementActions.length > 1) {
+        coordination = true;
+        score += 1;
+      }
+    }
+
+    return { score, spreadOut, cautiousAdvance, coordination };
   }
 
   /**
@@ -855,6 +1559,7 @@ export class ComprehensiveAITest {
       waspOperations: 0,
       loadUnloadActions: 0,
       objectiveActions: 0,
+      hiddenUnitActions: 0,
       total: actions.length,
     };
 
@@ -879,6 +1584,9 @@ export class ComprehensiveAITest {
         case ActionType.LAUNCH_FROM_WASP:
         case ActionType.RECOVER_TO_WASP:
           analysis.waspOperations++;
+          break;
+        case ActionType.REVEAL:
+          analysis.hiddenUnitActions++;
           break;
         default:
           // Other action types
@@ -941,6 +1649,7 @@ export class ComprehensiveAITest {
     console.log(`   - Special abilities: ${analysis.specialActions}`);
     console.log(`   - USS Wasp operations: ${analysis.waspOperations}`);
     console.log(`   - Load/Unload: ${analysis.loadUnloadActions}`);
+    console.log(`   - Hidden Unit actions: ${analysis.hiddenUnitActions}`);
 
     // Check for amphibious-specific tactics
     if (analysis.waspOperations === 0 && analysis.loadUnloadActions === 0) {

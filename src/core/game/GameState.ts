@@ -409,6 +409,7 @@ export class GameState {
           ActionType.REVEAL,
           ActionType.LAUNCH_FROM_WASP,
           ActionType.RECOVER_TO_WASP,
+          ActionType.MOVE,
         ].includes(actionType);
       default:
         return false;
