@@ -108,7 +108,7 @@ export class PixiRenderer {
     });
 
     // Zoom with mouse wheel
-    (this.app.view as EventTarget).addEventListener('wheel', (event: Event) => {
+    (this.app.canvas as EventTarget).addEventListener('wheel', (event: Event) => {
       const wheelEvent = event as WheelEvent;
       wheelEvent.preventDefault();
 
@@ -185,7 +185,7 @@ export class PixiRenderer {
 
     // Emit custom event for game logic
     const event = new CustomEvent('hexSelected', { detail: hex });
-    this.app.view.dispatchEvent(event);
+    this.app.canvas.dispatchEvent(event);
   }
 
   /**
@@ -359,7 +359,7 @@ export class PixiRenderer {
     graphics.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
       event.stopPropagation();
       const unitEvent = new CustomEvent('unitSelected', { detail: unit });
-      this.app.view.dispatchEvent(unitEvent);
+      this.app.canvas.dispatchEvent(unitEvent);
     });
 
     return graphics;
