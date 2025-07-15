@@ -85,7 +85,7 @@ A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious
 ### AI Testing Framework
 
 #### Comprehensive Gap Analysis
-- **Automated Testing**: `test-ai-system-gaps.js` validates all AI subsystems
+- **Automated Testing**: `test-ai-system-gaps.ts` validates all AI subsystems
 - **6/6 Systems Tested**: USS Wasp, Hidden Units, Special Abilities, Objectives, Transport, Learning
 - **Decision Generation**: All systems successfully generate tactical decisions
 - **Action Conversion**: Decisions converted to executable game actions
@@ -157,7 +157,7 @@ A TypeScript-based tabletop wargame simulation featuring asymmetrical amphibious
 **Working Tests:**
 - ✅ `quick-battle-test.js` - 3-unit battles with successful positioning
 - ✅ `combat-test.js` - 1v1 controlled environment proving units reach combat range
-- ✅ `test-ai-system-gaps.js` - Comprehensive AI subsystem validation
+- ✅ `test-ai-system-gaps.ts` - Comprehensive AI subsystem validation
 
 **Problematic Tests:**
 - ❌ `test-ai-battle-series.js` - 10-game series gets stuck in pathfinding loops
