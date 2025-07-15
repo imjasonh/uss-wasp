@@ -27,7 +27,8 @@
     "start": "node dist/index.js",
     "prepare": "husky",
     "deps:pin": "node scripts/pin-dependencies.js",
-    "deps:audit": "npm audit && npm outdated"
+    "deps:audit": "npm audit && npm outdated",
+    "actions:pin": "node scripts/pin-github-actions.js"
   },
   "keywords": [
     "uss-wasp",

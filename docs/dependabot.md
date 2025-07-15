@@ -16,6 +16,24 @@ Dependabot is configured to automatically monitor and update dependencies for:
 - **GitHub Actions**: Weekly on Mondays at 9:00 AM UTC
 - **npm packages**: Weekly on Mondays at 10:00 AM UTC
 
+### GitHub Actions Security
+
+All GitHub Actions are pinned to **commit SHAs** rather than version tags for enhanced security:
+
+```yaml
+# ✅ Secure: Pinned to immutable commit hash with version comment
+- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+# ❌ Less secure: Version tags can be moved/compromised
+- uses: actions/checkout@v4.2.2
+```
+
+**Benefits of SHA pinning:**
+- **Immutable references** - Commit SHAs cannot be changed or moved
+- **Supply chain security** - Prevents tag tampering attacks
+- **Reproducible builds** - Exact same action code runs every time
+- **Dependabot support** - Automatically updates SHAs and version comments
+
 ### Dependency Grouping
 
 To reduce PR noise, related dependencies are grouped together:

@@ -19,6 +19,8 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
+    # Pin actions to commit SHAs for security and reproducibility
+    # Dependabot will automatically update these and bump version comments
 
   # Node.js/TypeScript dependencies
   - package-ecosystem: "npm"
