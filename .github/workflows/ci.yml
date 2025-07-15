@@ -49,113 +49,105 @@ jobs:
       run: npm run test -- --coverage --collectCoverageFrom="src/**/*.ts" --coverageReporters=text-summary
     
     
-    - name: Run all tests
+    - name: AI System Gap Analysis
       run: |
-        echo "🧪 Running comprehensive test suite..."
-        echo ""
-        
-        echo "🤖 AI System Tests"
-        echo "=================="
-        
-        echo "Running AI system gap analysis..."
+        echo "🤖 Running AI system gap analysis..."
         npx tsx tests/ai/test-ai-system-gaps.ts
-        echo ""
-        
-        echo "Running comprehensive AI validation..."
+
+    - name: AI Comprehensive Validation
+      run: |
+        echo "🧪 Running comprehensive AI validation..."
         npx tsx tests/ai/run-comprehensive-ai-test.ts
-        echo ""
-        
-        echo "Running AI battle series tests..."
+
+    - name: AI Battle Series Tests
+      run: |
+        echo "⚔️ Running AI battle series tests..."
         timeout 600 node tests/ai/test-ai-battle-series.js || echo "AI battle tests completed (may have timed out for performance)"
-        echo ""
-        
-        echo "Running strict AI regression tests..."
+
+    - name: AI Strict Regression Tests
+      run: |
+        echo "🔍 Running strict AI regression tests..."
         npx tsx tests/ai/test-ai-strict.js
-        echo ""
-        
-        echo "Running basic AI functionality tests..."
+
+    - name: Basic AI Functionality Tests
+      run: |
+        echo "🎯 Running basic AI functionality tests..."
         node tests/ai/test-ai.js
-        echo ""
-        
-        echo "⚔️ Combat System Tests"
-        echo "====================="
-        
-        echo "Testing direct combat mechanics..."
+
+    - name: Direct Combat Tests
+      run: |
+        echo "⚔️ Testing direct combat mechanics..."
         npx tsx tests/combat/test-direct-combat.ts
-        echo ""
-        
-        echo "Testing close combat mechanics..."
+
+    - name: Close Combat Tests
+      run: |
+        echo "🥊 Testing close combat mechanics..."
         node tests/combat/test-close-combat.js
-        echo ""
-        
-        echo "Testing basic combat functionality..."
+
+    - name: Basic Combat Tests
+      run: |
+        echo "💥 Testing basic combat functionality..."
         node tests/combat/combat-test.js
-        echo ""
-        
-        echo "Testing multi-turn combat scenarios..."
+
+    - name: Multi-turn Combat Tests
+      run: |
+        echo "🔄 Testing multi-turn combat scenarios..."
         node tests/combat/multi-turn-combat-test.js
-        echo ""
-        
-        echo "Testing quick engagement scenarios..."
+
+    - name: Quick Engagement Tests
+      run: |
+        echo "⚡ Testing quick engagement scenarios..."
         node tests/combat/quick-engagement-test.js
-        echo ""
-        
-        echo "🗺️ Core System Tests"
-        echo "==================="
-        
-        echo "Testing pathfinding core..."
+
+    - name: Pathfinding Core Tests
+      run: |
+        echo "🗺️ Testing pathfinding core..."
         npx tsx tests/core/test-pathfinding-core.ts
-        echo ""
-        
-        echo "Testing logging system..."
+
+    - name: Logging System Tests
+      run: |
+        echo "📝 Testing logging system..."
         node tests/core/test-logging-system.js
-        echo ""
-        
-        echo "Testing game balance..."
+
+    - name: Game Balance Tests
+      run: |
+        echo "⚖️ Testing game balance..."
         node tests/core/balance-test.js
-        echo ""
-        
-        echo "🎮 Simulation Tests"
-        echo "=================="
-        
-        echo "Running quick battle simulations..."
+
+    - name: Quick Battle Simulations
+      run: |
+        echo "🎮 Running quick battle simulations..."
         npx tsx tests/simulation/quick-battle-test.ts
-        echo ""
-        
-        echo "Running optimized battle scenarios..."
+
+    - name: Optimized Battle Scenarios
+      run: |
+        echo "🚀 Running optimized battle scenarios..."
         timeout 600 node tests/simulation/run-optimized-battles.js || echo "Optimized battles completed (may have timed out)"
-        echo ""
-        
-        echo "Running full game simulations..."
+
+    - name: Full Game Simulations
+      run: |
+        echo "🎯 Running full game simulations..."
         timeout 1200 node tests/simulation/run-full-game-simulation.js || echo "Full simulation completed (may have timed out)"
-        echo ""
-        
-        echo "⚖️ Balance Tests"
-        echo "==============="
-        
-        echo "Running comprehensive balance analysis..."
+
+    - name: Balance Analysis Tests
+      run: |
+        echo "📊 Running comprehensive balance analysis..."
         npx tsx tests/balance/run-balance-tests.ts
-        echo ""
-        
-        echo "🚢 USS Wasp Operations Tests"
-        echo "============================"
-        
-        echo "Testing USS Wasp operations..."
+
+    - name: USS Wasp Operations Tests
+      run: |
+        echo "🚢 Testing USS Wasp operations..."
         npx tsx tests/uss-wasp-operations-test.ts
-        echo ""
-        
-        echo "🧪 Special Tests"
-        echo "==============="
-        
-        echo "Running AI personality system tests..."
+
+    - name: AI Personality System Tests
+      run: |
+        echo "🎭 Running AI personality system tests..."
         node tests/ai/test-personality-system.js || echo "Personality tests completed"
-        echo ""
-        
-        echo "Running modular map system tests..."
+
+    - name: Modular Map System Tests
+      run: |
+        echo "🗺️ Running modular map system tests..."
         node tests/map/test-modular-map-system.js || echo "Map system tests completed"
-        echo ""
-        
-        echo "✅ All tests completed successfully"
     
     - name: Security audit
       run: npm audit --audit-level moderate
