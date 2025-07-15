@@ -1,0 +1,53 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot-auto-merge:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    
+    steps:
+    - name: Dependabot metadata
+      id: metadata
+      uses: dependabot/fetch-metadata@v1
+      with:
+        github-token: "${{ secrets.GITHUB_TOKEN }}"
+    
+    - name: Enable auto-merge for Dependabot PRs
+      run: gh pr merge --auto --squash "$PR_URL"
+      env:
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🤖 **Dependabot Auto-Merge Enabled**
+            
+            This PR will be automatically merged when all CI checks pass.
+            
+            **Update details:**
+            - **Package**: ${{ steps.metadata.outputs.dependency-names }}
+            - **Update type**: ${{ steps.metadata.outputs.update-type }}
+            - **Previous version**: ${{ steps.metadata.outputs.previous-version }}
+            - **New version**: ${{ steps.metadata.outputs.new-version }}
+            
+            If you need to make changes to this PR, please disable auto-merge first by running:
+            \`\`\`
+            gh pr merge --disable-auto ${{ github.event.pull_request.number }}
+            \`\`\`
+            
+            ✅ Auto-merge will trigger once all required checks pass.`
+          })
