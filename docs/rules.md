@@ -341,7 +341,7 @@ The system automatically evaluates victory conditions each turn and declares win
 ### Single Player vs AI
 ```bash
 npm run build
-node test-ai-system-gaps.js      # Validate AI systems
+npx tsx tests/ai/test-ai-system-gaps.ts      # Validate AI systems
 node quick-battle-test.js        # Quick 3v3 battles  
 node run-optimized-battles.js    # Full battle series
 ```
