@@ -76,7 +76,12 @@
       "files": ["**/*.test.ts", "**/*.spec.ts", "**/tests/**/*.ts", "**/testing/**/*.ts"],
       "rules": {
         "@typescript-eslint/unbound-method": "off",
-        "no-console": "off"
+        "no-console": "off",
+        "max-lines-per-function": "off",
+        "complexity": "off",
+        "max-depth": "off",
+        "max-params": "off",
+        "no-magic-numbers": "off"
       }
     }
   ],
