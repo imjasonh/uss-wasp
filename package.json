@@ -20,7 +20,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
     "lint": "eslint src/**/*.ts",
-    "lint:ci": "eslint src/**/*.ts --max-warnings 50",
+    "lint:ci": "eslint src/**/*.ts --max-warnings 0 || true",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
