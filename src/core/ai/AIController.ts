@@ -386,7 +386,7 @@ export class AIController {
         break;
 
       case AIDecisionType.LAUNCH_FROM_WASP:
-        if (decision.unitId && decision.metadata?.unitsToLaunch) {
+        if (decision.unitId && decision.metadata && 'unitsToLaunch' in decision.metadata) {
           return {
             type: ActionType.LAUNCH_FROM_WASP,
             playerId: this.aiPlayerId,
