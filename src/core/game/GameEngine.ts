@@ -90,6 +90,12 @@ export class GameEngine {
     // Execute based on action type
     let result: ActionResult;
     const unit = this.gameState.getUnit(action.unitId);
+    
+    // Get the player to consume command points
+    const player = this.gameState.getPlayer(action.playerId);
+    if (!player) {
+      return { success: false, message: 'Player not found' };
+    }
 
     switch (action.type) {
       case ActionType.MOVE:
@@ -124,6 +130,11 @@ export class GameEngine {
         break;
       default:
         result = { success: false, message: 'Unknown action type' };
+    }
+
+    // Consume command points if action was successful
+    if (result.success) {
+      player.spendCommandPoints(1); // Each action costs 1 CP
     }
 
     // Log action result

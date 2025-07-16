@@ -270,7 +270,7 @@ export class AIDecisionMaker {
         p => p.priority === TacticalPriority.SECURE_OBJECTIVES
       );
       if (objectivePriority) {
-        objectivePriority.weight += 8; // Higher bonus for objectives
+        objectivePriority.weight += 20; // Much higher bonus for objectives to maintain focus
       }
     }
 
@@ -324,7 +324,7 @@ export class AIDecisionMaker {
       [TacticalPriority.INFLICT_CASUALTIES]: 6,
       [TacticalPriority.DENY_TERRAIN]: 5,
       [TacticalPriority.DEFEND_OBJECTIVES]: 7,
-      [TacticalPriority.SECURE_OBJECTIVES]: 8,
+      [TacticalPriority.SECURE_OBJECTIVES]: 15,
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
       [TacticalPriority.MANAGE_LOGISTICS]: 9,
       [TacticalPriority.WASP_OPERATIONS]: 12,
@@ -717,6 +717,7 @@ export class AIDecisionMaker {
     const adjustedComplexity = Math.min(1.0, this.config.tacticalComplexity * emergencyComplexityBonus);
     
     const complexityLimit = Math.max(1, Math.floor(baseActionLimit * adjustedComplexity));
+    
     return sortedDecisions.slice(0, complexityLimit);
   }
 
@@ -2857,7 +2858,19 @@ export class AIDecisionMaker {
   ): Array<{ position: Hex; type: string; id: string; priority: number }> {
     const objectives: Array<{ position: Hex; type: string; id: string; priority: number }> = [];
 
-    // Try to access objectives from the map
+    // First check GameState objectives (added via addObjective)
+    if (context.gameState.objectives) {
+      for (const [id, objective] of context.gameState.objectives) {
+        objectives.push({
+          position: objective.position,
+          type: objective.type,
+          id: id,
+          priority: this.calculateObjectivePriority(objective.type),
+        });
+      }
+    }
+
+    // Also check map-based objectives (legacy support)
     try {
       const map = context.gameState.map;
 
@@ -2876,11 +2889,33 @@ export class AIDecisionMaker {
         }
       }
     } catch (error) {
-      // If map access fails, return empty array (fallback will handle)
+      // If map access fails, continue with GameState objectives
       console.warn('[AI] Could not access map objectives:', error);
     }
 
     return objectives;
+  }
+
+  /**
+   * Calculate simple direction toward target
+   */
+  private calculateDirectionToward(from: HexCoordinate, to: HexCoordinate): HexCoordinate | null {
+    const dx = to.q - from.q;
+    const dy = to.r - from.r;
+    
+    // Simple movement: move 1 hex in the direction of the target
+    let stepQ = from.q;
+    let stepR = from.r;
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Move horizontally
+      stepQ += dx > 0 ? 1 : -1;
+    } else {
+      // Move vertically
+      stepR += dy > 0 ? 1 : -1;
+    }
+    
+    return { q: stepQ, r: stepR, s: -stepQ - stepR };
   }
 
   /**
@@ -2939,8 +2974,9 @@ export class AIDecisionMaker {
 
     for (const objective of prioritizedObjectives) {
       // Find best units to assault this objective
+      // Remove hasMoved filter to allow multi-turn objective pursuit
       const availableUnits = context.availableUnits.filter(
-        unit => !usedUnits.has(unit.id) && !unit.state.hasMoved
+        unit => !usedUnits.has(unit.id) && unit.canAct()
       );
 
       if (availableUnits.length === 0) {
@@ -2950,7 +2986,15 @@ export class AIDecisionMaker {
       // Prioritize infantry for securing objectives
       const infantryUnits = availableUnits.filter(unit => unit.hasCategory(UnitCategory.INFANTRY));
 
-      const bestUnit = infantryUnits.length > 0 ? infantryUnits[0] : availableUnits[0];
+      // Sort units by distance to objective (closest first) to maintain focus
+      const sortedUnits = (infantryUnits.length > 0 ? infantryUnits : availableUnits)
+        .sort((a, b) => {
+          const distA = this.calculateDistance(a.state.position, objective.position);
+          const distB = this.calculateDistance(b.state.position, objective.position);
+          return distA - distB;
+        });
+
+      const bestUnit = sortedUnits[0];
       usedUnits.add(bestUnit.id);
 
       const distance = this.calculateDistance(bestUnit.state.position, objective.position);
@@ -3000,6 +3044,24 @@ export class AIDecisionMaker {
               targetDistance: distance,
             },
           });
+        } else {
+          // Fallback: simple movement toward objective
+          const direction = this.calculateDirectionToward(bestUnit.state.position, objective.position);
+          if (direction) {
+            decisions.push({
+              type: AIDecisionType.MOVE_UNIT,
+              priority: 8,
+              unitId: bestUnit.id,
+              targetPosition: new Hex(direction.q, direction.r, direction.s),
+              reasoning: `Moving ${bestUnit.type} toward ${objective.type} objective (simple approach)`,
+              metadata: {
+                objective: true, // Flag for test detection
+                objectiveAdvance: true,
+                objectiveId: objective.id,
+                targetDistance: distance,
+              },
+            });
+          }
         }
       }
     }
