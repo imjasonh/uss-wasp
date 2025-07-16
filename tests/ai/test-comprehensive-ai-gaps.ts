@@ -59,9 +59,9 @@ function testAIUnitCoordination(): ExtendedTestResult['coordination'] {
         ]);
         
         const defenderUnits = createTestUnits([
-            { id: 'target_cluster', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(8, 8) },
-            { id: 'target_cluster2', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(8, 9) },
-            { id: 'target_cluster3', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(9, 8) }
+            { id: 'target_cluster', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(6, 6) },
+            { id: 'target_cluster2', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(6, 7) },
+            { id: 'target_cluster3', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(7, 6) }
         ]);
         
         assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
@@ -248,7 +248,7 @@ function testAITerrainUtilization(): ExtendedTestResult['terrain'] {
         ]);
         
         const defenderUnits = createTestUnits([
-            { id: 'target', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(7, 7) }
+            { id: 'target', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(4, 4) }
         ]);
         
         assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
@@ -392,16 +392,16 @@ function testAICombatEffectiveness(): ExtendedTestResult['combat'] {
         gameState.addPlayer(assaultPlayer);
         gameState.addPlayer(defenderPlayer);
         
-        // Create combat scenario
+        // Create combat scenario with units in ADJACENT positions (range 1)
         const assaultUnits = createTestUnits([
-            { id: 'attacker1', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(1, 1) },
-            { id: 'attacker2', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 1) },
-            { id: 'support', type: UnitType.HUMVEE, side: PlayerSide.Assault, position: new Hex(1, 2) }
+            { id: 'attacker1', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 2) },
+            { id: 'attacker2', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 3) },
+            { id: 'support', type: UnitType.HUMVEE, side: PlayerSide.Assault, position: new Hex(1, 3) }
         ]);
         
         const defenderUnits = createTestUnits([
-            { id: 'defender1', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(4, 4) },
-            { id: 'defender2', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(5, 4) }
+            { id: 'defender1', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(3, 2) },
+            { id: 'defender2', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(3, 3) }
         ]);
         
         assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));

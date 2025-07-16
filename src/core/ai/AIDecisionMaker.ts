@@ -318,10 +318,10 @@ export class AIDecisionMaker {
    * Get default priority weights for legacy compatibility
    */
   private getDefaultPriorityWeights(): Record<TacticalPriority, number> {
-    // Base priority weights
+    // Base priority weights - COMBAT FIRST!
     const baseWeights = {
       [TacticalPriority.PRESERVE_FORCE]: 4,
-      [TacticalPriority.INFLICT_CASUALTIES]: 6,
+      [TacticalPriority.INFLICT_CASUALTIES]: 20, // HIGHEST - This is a COMBAT game!
       [TacticalPriority.DENY_TERRAIN]: 5,
       [TacticalPriority.DEFEND_OBJECTIVES]: 7,
       [TacticalPriority.SECURE_OBJECTIVES]: 15,
@@ -329,7 +329,7 @@ export class AIDecisionMaker {
       [TacticalPriority.MANAGE_LOGISTICS]: 9,
       [TacticalPriority.WASP_OPERATIONS]: 12,
       [TacticalPriority.HIDDEN_OPERATIONS]: 13,
-      [TacticalPriority.USE_SPECIAL_ABILITIES]: 11,
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 5, // MUCH LOWER - Support combat, don't replace it!
     };
 
     // Apply difficulty-based modifications
@@ -571,8 +571,8 @@ export class AIDecisionMaker {
         for (const target of targets) {
           const engagement = this.analyzeEngagement(unit, target, context);
 
-          if (engagement.shouldEngage && engagement.confidence > 0.3) {
-            // Much lower threshold for aggressive combat
+          if (engagement.shouldEngage && engagement.confidence > 0.1) {
+            // VERY low threshold for aggressive combat in COMBAT GAME
             decisions.push({
               type: AIDecisionType.ATTACK_TARGET,
               priority: 15, // Very high priority for actual combat
@@ -1536,7 +1536,7 @@ export class AIDecisionMaker {
       escapeOptions: 1.0,
       strategicValue: 1.0,
       playerVulnerability: 1.0,
-      shouldEngage: confidence > 0.25, // Lower threshold
+      shouldEngage: confidence > 0.05, // VERY low threshold for COMBAT GAME
       confidence: confidence,
     };
   }
