@@ -318,18 +318,18 @@ export class AIDecisionMaker {
    * Get default priority weights for legacy compatibility
    */
   private getDefaultPriorityWeights(): Record<TacticalPriority, number> {
-    // Base priority weights - COMBAT FIRST!
+    // Base priority weights - BALANCED COMBAT FOCUS
     const baseWeights = {
       [TacticalPriority.PRESERVE_FORCE]: 4,
-      [TacticalPriority.INFLICT_CASUALTIES]: 20, // HIGHEST - This is a COMBAT game!
+      [TacticalPriority.INFLICT_CASUALTIES]: 16, // HIGH - Combat is important but not overwhelming
       [TacticalPriority.DENY_TERRAIN]: 5,
       [TacticalPriority.DEFEND_OBJECTIVES]: 7,
       [TacticalPriority.SECURE_OBJECTIVES]: 15,
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
       [TacticalPriority.MANAGE_LOGISTICS]: 9,
       [TacticalPriority.WASP_OPERATIONS]: 12,
-      [TacticalPriority.HIDDEN_OPERATIONS]: 13,
-      [TacticalPriority.USE_SPECIAL_ABILITIES]: 5, // MUCH LOWER - Support combat, don't replace it!
+      [TacticalPriority.HIDDEN_OPERATIONS]: 14, // Keep hidden ops high priority
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 8, // Balanced - Support combat effectively
     };
 
     // Apply difficulty-based modifications
