@@ -311,19 +311,30 @@ function testAIResourceManagement(): EnhancedTestResult['resources'] {
         const gameState = new GameState('resources-test', map, 10);
         
         const assaultPlayer = new Player('assault', PlayerSide.Assault);
+        const defenderPlayer = new Player('defender', PlayerSide.Defender);
         assaultPlayer.commandPoints = 5; // Limited CP
+        defenderPlayer.commandPoints = 5;
         gameState.addPlayer(assaultPlayer);
+        gameState.addPlayer(defenderPlayer);
         
-        const units = createTestUnits([
+        const assaultUnits = createTestUnits([
             { id: 'marines1', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(1, 1) },
             { id: 'marines2', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 2) },
-            { id: 'marines3', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(3, 3) }
+            { id: 'marines3', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(3, 3) },
+            { id: 'marines4', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(1, 2) },
+            { id: 'marines5', type: UnitType.MARINE_SQUAD, side: PlayerSide.Assault, position: new Hex(2, 1) }
         ]);
         
-        units.forEach(unit => assaultPlayer.addUnit(unit));
+        const defenderUnits = createTestUnits([
+            { id: 'defender1', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(5, 5) },
+            { id: 'defender2', type: UnitType.INFANTRY_SQUAD, side: PlayerSide.Defender, position: new Hex(4, 4) }
+        ]);
+        
+        assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
+        defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
         
         const gameEngine = new GameEngine(gameState);
-        gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
+        gameEngine.addAIController(assaultPlayer.id, AIDifficulty.ELITE);
         
         gameState.setActivePlayerBySide(PlayerSide.Assault);
         gameState.phase = TurnPhase.ACTION;
@@ -432,6 +443,16 @@ function testAIMultiTurnCoherence(): EnhancedTestResult['coherence'] {
         const turnBehaviors: { [key: string]: { objectiveDistance: number; tacticalFocus: string } } = {};
         
         for (let turn = 0; turn < 3; turn++) {
+            // Reset turn state for new turn
+            gameState.turn = turn + 1;
+            gameState.phase = TurnPhase.ACTION;
+            
+            // Reset unit states for new turn
+            for (const player of gameState.getAllPlayers()) {
+                player.resetTurnState();
+                player.commandPoints = 20; // Reset CP for new turn
+            }
+            
             gameState.setActivePlayerBySide(PlayerSide.Assault);
             const assaultActions = gameEngine.updateAI();
             

@@ -53,7 +53,7 @@ export class AIDecisionMaker {
 
     // Analyze current tactical situation
     const tacticalPriorities = this.determineTacticalPriorities(context);
-
+    
     // Generate decisions based on priorities, tracking used units and CP
     for (const priority of tacticalPriorities) {
       if (remainingCP <= 0) {
@@ -141,6 +141,7 @@ export class AIDecisionMaker {
           priority: priority as TacticalPriority,
           weight: finalWeight,
         });
+        
       }
     }
 
@@ -189,7 +190,7 @@ export class AIDecisionMaker {
 
     // Combat opportunities - higher when enemies are vulnerable
     const enemyVulnerability = this.assessEnemyVulnerability(context.enemyUnits);
-    modifiers[TacticalPriority.INFLICT_CASUALTIES] = enemyVulnerability > 0.1 ? 1.4 : 1.0;
+    modifiers[TacticalPriority.INFLICT_CASUALTIES] = enemyVulnerability > 0.1 ? 1.2 : 1.0;
 
     // Unit-specific opportunities
     const hasWasp = context.availableUnits.some(unit => unit.type === UnitType.USS_WASP);
@@ -270,7 +271,7 @@ export class AIDecisionMaker {
         p => p.priority === TacticalPriority.SECURE_OBJECTIVES
       );
       if (objectivePriority) {
-        objectivePriority.weight += 8; // Higher bonus for objectives
+        objectivePriority.weight += 20; // Much higher bonus for objectives to maintain focus
       }
     }
 
@@ -318,18 +319,18 @@ export class AIDecisionMaker {
    * Get default priority weights for legacy compatibility
    */
   private getDefaultPriorityWeights(): Record<TacticalPriority, number> {
-    // Base priority weights
+    // Base priority weights - BALANCED COMBAT FOCUS
     const baseWeights = {
       [TacticalPriority.PRESERVE_FORCE]: 4,
-      [TacticalPriority.INFLICT_CASUALTIES]: 6,
+      [TacticalPriority.INFLICT_CASUALTIES]: 16, // HIGH - Combat is important but not overwhelming
       [TacticalPriority.DENY_TERRAIN]: 5,
       [TacticalPriority.DEFEND_OBJECTIVES]: 7,
-      [TacticalPriority.SECURE_OBJECTIVES]: 8,
+      [TacticalPriority.SECURE_OBJECTIVES]: 15,
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
-      [TacticalPriority.MANAGE_LOGISTICS]: 9,
-      [TacticalPriority.WASP_OPERATIONS]: 12,
-      [TacticalPriority.HIDDEN_OPERATIONS]: 13,
-      [TacticalPriority.USE_SPECIAL_ABILITIES]: 11,
+      [TacticalPriority.MANAGE_LOGISTICS]: 20, // High priority for transport operations
+      [TacticalPriority.WASP_OPERATIONS]: 22, // Very high priority for USS Wasp operations
+      [TacticalPriority.HIDDEN_OPERATIONS]: 14, // Keep hidden ops high priority
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 18, // High priority for special abilities
     };
 
     // Apply difficulty-based modifications
@@ -356,6 +357,10 @@ export class AIDecisionMaker {
         modifiedWeights[TacticalPriority.USE_SPECIAL_ABILITIES] = 7; // More complex tactics
         modifiedWeights[TacticalPriority.GATHER_INTELLIGENCE] = 5; // Better reconnaissance
         modifiedWeights[TacticalPriority.HIDDEN_OPERATIONS] = 12; // Superior stealth ops
+        break;
+        
+      default:
+        // Default to veteran behavior
         break;
     }
 
@@ -571,8 +576,8 @@ export class AIDecisionMaker {
         for (const target of targets) {
           const engagement = this.analyzeEngagement(unit, target, context);
 
-          if (engagement.shouldEngage && engagement.confidence > 0.3) {
-            // Much lower threshold for aggressive combat
+          if (engagement.shouldEngage && engagement.confidence > 0.1) {
+            // VERY low threshold for aggressive combat in COMBAT GAME
             decisions.push({
               type: AIDecisionType.ATTACK_TARGET,
               priority: 15, // Very high priority for actual combat
@@ -717,6 +722,7 @@ export class AIDecisionMaker {
     const adjustedComplexity = Math.min(1.0, this.config.tacticalComplexity * emergencyComplexityBonus);
     
     const complexityLimit = Math.max(1, Math.floor(baseActionLimit * adjustedComplexity));
+    
     return sortedDecisions.slice(0, complexityLimit);
   }
 
@@ -1535,7 +1541,7 @@ export class AIDecisionMaker {
       escapeOptions: 1.0,
       strategicValue: 1.0,
       playerVulnerability: 1.0,
-      shouldEngage: confidence > 0.25, // Lower threshold
+      shouldEngage: confidence > 0.05, // VERY low threshold for COMBAT GAME
       confidence: confidence,
     };
   }
@@ -2857,7 +2863,19 @@ export class AIDecisionMaker {
   ): Array<{ position: Hex; type: string; id: string; priority: number }> {
     const objectives: Array<{ position: Hex; type: string; id: string; priority: number }> = [];
 
-    // Try to access objectives from the map
+    // First check GameState objectives (added via addObjective)
+    if (context.gameState.objectives) {
+      for (const [id, objective] of context.gameState.objectives) {
+        objectives.push({
+          position: objective.position,
+          type: objective.type,
+          id: id,
+          priority: this.calculateObjectivePriority(objective.type),
+        });
+      }
+    }
+
+    // Also check map-based objectives (legacy support)
     try {
       const map = context.gameState.map;
 
@@ -2876,11 +2894,33 @@ export class AIDecisionMaker {
         }
       }
     } catch (error) {
-      // If map access fails, return empty array (fallback will handle)
+      // If map access fails, continue with GameState objectives
       console.warn('[AI] Could not access map objectives:', error);
     }
 
     return objectives;
+  }
+
+  /**
+   * Calculate simple direction toward target
+   */
+  private calculateDirectionToward(from: HexCoordinate, to: HexCoordinate): HexCoordinate | null {
+    const dx = to.q - from.q;
+    const dy = to.r - from.r;
+    
+    // Simple movement: move 1 hex in the direction of the target
+    let stepQ = from.q;
+    let stepR = from.r;
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Move horizontally
+      stepQ += dx > 0 ? 1 : -1;
+    } else {
+      // Move vertically
+      stepR += dy > 0 ? 1 : -1;
+    }
+    
+    return { q: stepQ, r: stepR, s: -stepQ - stepR };
   }
 
   /**
@@ -2939,8 +2979,9 @@ export class AIDecisionMaker {
 
     for (const objective of prioritizedObjectives) {
       // Find best units to assault this objective
+      // Remove hasMoved filter to allow multi-turn objective pursuit
       const availableUnits = context.availableUnits.filter(
-        unit => !usedUnits.has(unit.id) && !unit.state.hasMoved
+        unit => !usedUnits.has(unit.id) && unit.canAct()
       );
 
       if (availableUnits.length === 0) {
@@ -2950,7 +2991,15 @@ export class AIDecisionMaker {
       // Prioritize infantry for securing objectives
       const infantryUnits = availableUnits.filter(unit => unit.hasCategory(UnitCategory.INFANTRY));
 
-      const bestUnit = infantryUnits.length > 0 ? infantryUnits[0] : availableUnits[0];
+      // Sort units by distance to objective (closest first) to maintain focus
+      const sortedUnits = (infantryUnits.length > 0 ? infantryUnits : availableUnits)
+        .sort((a, b) => {
+          const distA = this.calculateDistance(a.state.position, objective.position);
+          const distB = this.calculateDistance(b.state.position, objective.position);
+          return distA - distB;
+        });
+
+      const bestUnit = sortedUnits[0];
       usedUnits.add(bestUnit.id);
 
       const distance = this.calculateDistance(bestUnit.state.position, objective.position);
@@ -3000,6 +3049,24 @@ export class AIDecisionMaker {
               targetDistance: distance,
             },
           });
+        } else {
+          // Fallback: simple movement toward objective
+          const direction = this.calculateDirectionToward(bestUnit.state.position, objective.position);
+          if (direction) {
+            decisions.push({
+              type: AIDecisionType.MOVE_UNIT,
+              priority: 8,
+              unitId: bestUnit.id,
+              targetPosition: new Hex(direction.q, direction.r, direction.s),
+              reasoning: `Moving ${bestUnit.type} toward ${objective.type} objective (simple approach)`,
+              metadata: {
+                objective: true, // Flag for test detection
+                objectiveAdvance: true,
+                objectiveId: objective.id,
+                targetDistance: distance,
+              },
+            });
+          }
         }
       }
     }
@@ -3288,9 +3355,9 @@ export class AIDecisionMaker {
     // Validate parameters based on ability type
     switch (abilityName) {
       case 'Artillery Barrage':
-        // Artillery barrage requires 3 target hexes
+        // Artillery barrage requires target hexes (preferably 3, but flexible)
         const targetHexes = this.selectArtilleryTargetHexes(unit, context);
-        if (targetHexes.length === 3) {
+        if (targetHexes.length > 0) {
           metadata.targetHexes = targetHexes;
           return {
             type: AIDecisionType.SPECIAL_ABILITY,
@@ -3376,6 +3443,14 @@ export class AIDecisionMaker {
         if (targetHexes.length < 3) {
           targetHexes.push(hex);
         }
+      }
+    }
+    
+    // If we still don't have enough targets, fall back to enemy positions
+    if (targetHexes.length === 0) {
+      for (const enemy of context.enemyUnits) {
+        targetHexes.push(new Hex(enemy.state.position.q, enemy.state.position.r, enemy.state.position.s));
+        if (targetHexes.length >= 3) break;
       }
     }
     

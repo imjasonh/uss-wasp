@@ -16,6 +16,7 @@ import {
   ActionType,
   UnitType,
   UnitCategory,
+  ObjectiveType,
 } from './types';
 
 /**
@@ -43,6 +44,18 @@ export interface GameEvent {
 }
 
 /**
+ * Map-level objective for strategic gameplay
+ */
+export interface MapObjective {
+  readonly id: string;
+  readonly type: ObjectiveType;
+  readonly position: Hex;
+  controlledBy: PlayerSide | null;
+  readonly value: number;
+  readonly description?: string;
+}
+
+/**
  * Complete game state
  */
 export class GameState {
@@ -61,6 +74,7 @@ export class GameState {
   public victoryCondition?: VictoryCondition;
   public events: GameEvent[];
   public lastActionTime: number;
+  public objectives: Map<string, MapObjective>;
 
   constructor(gameId: string, map: GameMap, maxTurns: number = 15) {
     this.gameId = gameId;
@@ -73,6 +87,7 @@ export class GameState {
     this.isGameOver = false;
     this.events = [];
     this.lastActionTime = Date.now();
+    this.objectives = new Map();
 
     // Initialize fog of war system
     this.fogOfWar = new FogOfWar(this);
@@ -97,6 +112,13 @@ export class GameState {
     
     // Initialize event card hand for player
     this.eventCardManager.initializePlayerHand(player.id);
+  }
+
+  /**
+   * Add a map-level objective
+   */
+  addObjective(objective: MapObjective): void {
+    this.objectives.set(objective.id, objective);
   }
 
   /**
@@ -512,6 +534,11 @@ export class GameState {
     }
     clone.events = [...this.events];
     clone.lastActionTime = this.lastActionTime;
+    
+    // Copy objectives
+    for (const [id, objective] of this.objectives) {
+      clone.objectives.set(id, { ...objective });
+    }
 
     return clone;
   }

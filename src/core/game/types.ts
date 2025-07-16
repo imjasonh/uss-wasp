@@ -89,6 +89,7 @@ export enum ObjectiveType {
   COMMS_HUB = 'comms_hub',
   CIVIC_CENTER = 'civic_center',
   HIGH_VALUE_TARGET = 'hvt',
+  CONTROL_POINT = 'control_point',
 }
 
 /**
