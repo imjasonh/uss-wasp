@@ -84,6 +84,12 @@ export class AIDecisionMaker {
       }
     }
 
+    // Enhanced resource utilization: generate additional actions if CP remains
+    if (remainingCP > 0 && context.availableUnits.length > usedUnits.size) {
+      const additionalDecisions = this.generateAdditionalDecisions(context, usedUnits, remainingCP);
+      decisions.push(...additionalDecisions);
+    }
+
     // Final deduplication pass - ensure no unit has multiple decisions
     const finalDecisions: AIDecision[] = [];
     const finalUsedUnits = new Set<string>();
@@ -2769,46 +2775,35 @@ export class AIDecisionMaker {
 
     for (const unit of context.availableUnits) {
       if (unit.specialAbilities.length > 0 && unit.canAct() && !usedUnits?.has(unit.id)) {
-        // Use first available special ability
+        // Use first available special ability with proper parameter validation
         const ability = unit.specialAbilities[0];
         const abilityName = ability.name;
-        decisions.push({
-          type: AIDecisionType.SPECIAL_ABILITY,
-          priority: 7,
-          unitId: unit.id,
-          reasoning: `Using special ability: ${abilityName}`,
-          metadata: {
-            abilityName: abilityName,
-          },
-        });
-
-        // Add fallback options in case special ability fails
-        // Fallback 1: Move toward enemies if special ability fails
-        const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 5);
-        if (nearbyEnemies.length > 0) {
-          const targetPosition = this.findAdvancementPosition(unit, nearbyEnemies[0], context);
-          if (targetPosition) {
-            decisions.push({
-              type: AIDecisionType.MOVE_UNIT,
-              priority: 5, // Lower priority than special ability
-              unitId: unit.id,
-              targetPosition: targetPosition,
-              reasoning: `Fallback movement toward ${nearbyEnemies[0].type} if special ability fails`,
-            });
+        
+        // Enhanced parameter validation for special abilities
+        const abilityDecision = this.createValidatedSpecialAbilityDecision(unit, ability, context);
+        
+        if (abilityDecision) {
+          decisions.push(abilityDecision);
+        } else {
+          // If we can't create a valid special ability decision, add a fallback
+          // Fall back to basic movement or attack
+          const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 5);
+          if (nearbyEnemies.length > 0) {
+            const targetPosition = this.findAdvancementPosition(unit, nearbyEnemies[0], context);
+            if (targetPosition) {
+              decisions.push({
+                type: AIDecisionType.MOVE_UNIT,
+                priority: 5,
+                unitId: unit.id,
+                targetPosition: targetPosition,
+                reasoning: `Moving toward ${nearbyEnemies[0].type} (special ability unavailable)`,
+              });
+            }
           }
         }
 
-        // Fallback 2: Basic attack if in range
-        const attackTargets = this.findValidTargets(unit, context.enemyUnits, context);
-        if (attackTargets.length > 0) {
-          decisions.push({
-            type: AIDecisionType.ATTACK_TARGET,
-            priority: 4, // Lower priority than movement
-            unitId: unit.id,
-            targetUnitId: attackTargets[0].id,
-            reasoning: `Fallback attack on ${attackTargets[0].type} if other actions fail`,
-          });
-        }
+        // Don't add fallback decisions for special abilities - they should be handled
+        // by the enhanced resource utilization system instead
       }
     }
 
@@ -3275,5 +3270,239 @@ export class AIDecisionMaker {
     }
 
     return null;
+  }
+
+  /**
+   * Create a validated special ability decision with proper parameters
+   */
+  private createValidatedSpecialAbilityDecision(
+    unit: Unit,
+    ability: any,
+    context: AIDecisionContext
+  ): AIDecision | null {
+    const abilityName = ability.name;
+    const metadata: Record<string, unknown> = {
+      abilityName: abilityName,
+    };
+
+    // Validate parameters based on ability type
+    switch (abilityName) {
+      case 'Artillery Barrage':
+        // Artillery barrage requires 3 target hexes
+        const targetHexes = this.selectArtilleryTargetHexes(unit, context);
+        if (targetHexes.length === 3) {
+          metadata.targetHexes = targetHexes;
+          return {
+            type: AIDecisionType.SPECIAL_ABILITY,
+            priority: 7,
+            unitId: unit.id,
+            reasoning: `Artillery barrage on ${targetHexes.length} target hexes`,
+            metadata,
+          };
+        }
+        return null; // Can't execute without valid targets
+
+      case 'SAM Strike':
+        // SAM strike requires a target unit ID
+        const airTargets = context.enemyUnits.filter(enemy => 
+          enemy.type === UnitType.HARRIER || 
+          enemy.type === UnitType.OSPREY || 
+          enemy.type === UnitType.USS_WASP
+        );
+        if (airTargets.length > 0) {
+          metadata.targetUnitId = airTargets[0].id;
+          return {
+            type: AIDecisionType.SPECIAL_ABILITY,
+            priority: 7,
+            unitId: unit.id,
+            reasoning: `SAM strike on ${airTargets[0].type}`,
+            metadata,
+          };
+        }
+        return null; // Can't execute without valid targets
+
+      case 'Special Operations':
+      case 'Direct Action':
+        // These abilities might require target selection
+        const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 3);
+        if (nearbyEnemies.length > 0) {
+          metadata.targetUnitId = nearbyEnemies[0].id;
+          return {
+            type: AIDecisionType.SPECIAL_ABILITY,
+            priority: 7,
+            unitId: unit.id,
+            reasoning: `${abilityName} targeting ${nearbyEnemies[0].type}`,
+            metadata,
+          };
+        }
+        // These abilities might work without targets too
+        return {
+          type: AIDecisionType.SPECIAL_ABILITY,
+          priority: 7,
+          unitId: unit.id,
+          reasoning: `Using ${abilityName}`,
+          metadata,
+        };
+
+      default:
+        // For other abilities, try to use them as-is
+        return {
+          type: AIDecisionType.SPECIAL_ABILITY,
+          priority: 7,
+          unitId: unit.id,
+          reasoning: `Using special ability: ${abilityName}`,
+          metadata,
+        };
+    }
+  }
+
+  /**
+   * Select target hexes for artillery barrage
+   */
+  private selectArtilleryTargetHexes(unit: Unit, context: AIDecisionContext): Hex[] {
+    const targetHexes: Hex[] = [];
+    
+    // Find enemy clusters for optimal targeting
+    const enemyClusters = this.findEnemyClusters(context.enemyUnits);
+    
+    if (enemyClusters.length > 0) {
+      const cluster = enemyClusters[0];
+      // Target the cluster center and adjacent hexes
+      targetHexes.push(cluster.center);
+      
+      // Add adjacent hexes to complete the 3-hex requirement
+      const adjacentHexes = this.getAdjacentHexes(cluster.center);
+      for (const hex of adjacentHexes) {
+        if (targetHexes.length < 3) {
+          targetHexes.push(hex);
+        }
+      }
+    }
+    
+    return targetHexes;
+  }
+
+  /**
+   * Find enemy unit clusters for area-of-effect targeting
+   */
+  private findEnemyClusters(enemies: Unit[]): { center: Hex; units: Unit[] }[] {
+    const clusters: { center: Hex; units: Unit[] }[] = [];
+    
+    for (const enemy of enemies) {
+      const nearbyEnemies = enemies.filter(other => {
+        const distance = this.calculateDistance(enemy.state.position, other.state.position);
+        return distance <= 2; // Within 2 hexes
+      });
+      
+      if (nearbyEnemies.length >= 2) {
+        clusters.push({
+          center: new Hex(enemy.state.position.q, enemy.state.position.r),
+          units: nearbyEnemies,
+        });
+      }
+    }
+    
+    return clusters.sort((a, b) => b.units.length - a.units.length);
+  }
+
+  /**
+   * Get adjacent hexes for a given position
+   */
+  private getAdjacentHexes(center: Hex): Hex[] {
+    const adjacent: Hex[] = [];
+    const directions = [
+      { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
+      { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }
+    ];
+    
+    for (const dir of directions) {
+      adjacent.push(new Hex(center.q + dir.q, center.r + dir.r));
+    }
+    
+    return adjacent;
+  }
+
+  /**
+   * Generate additional decisions to utilize remaining CP
+   */
+  private generateAdditionalDecisions(
+    context: AIDecisionContext,
+    usedUnits: Set<string>,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    // Find unused units
+    const unusedUnits = context.availableUnits.filter(unit => 
+      !usedUnits.has(unit.id) && unit.canAct()
+    );
+    
+    // Generate basic actions for unused units
+    for (const unit of unusedUnits) {
+      if (decisions.length >= remainingCP) {
+        break; // No more CP available
+      }
+      
+      // Generate basic movement decisions for unused units
+      const basicDecision = this.generateBasicActionForUnit(unit, context);
+      if (basicDecision) {
+        decisions.push(basicDecision);
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Generate a basic action for a unit to utilize remaining CP
+   */
+  private generateBasicActionForUnit(unit: Unit, context: AIDecisionContext): AIDecision | null {
+    // Try to generate a basic movement action
+    const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 8);
+    
+    if (nearbyEnemies.length > 0) {
+      // Move toward nearest enemy
+      const targetPosition = this.findAdvancementPosition(unit, nearbyEnemies[0], context);
+      if (targetPosition) {
+        return {
+          type: AIDecisionType.MOVE_UNIT,
+          priority: 3,
+          unitId: unit.id,
+          targetPosition: targetPosition,
+          reasoning: `Basic movement toward ${nearbyEnemies[0].type} (resource utilization)`,
+        };
+      }
+    }
+    
+    // Try to generate a basic attack action
+    const attackTargets = this.findValidTargets(unit, context.enemyUnits, context);
+    if (attackTargets.length > 0) {
+      return {
+        type: AIDecisionType.ATTACK_TARGET,
+        priority: 3,
+        unitId: unit.id,
+        targetUnitId: attackTargets[0].id,
+        reasoning: `Basic attack on ${attackTargets[0].type} (resource utilization)`,
+      };
+    }
+    
+    // If no enemies, try to use special abilities if available
+    if (unit.specialAbilities.length > 0) {
+      const ability = unit.specialAbilities[0];
+      const abilityDecision = this.createValidatedSpecialAbilityDecision(unit, ability, context);
+      if (abilityDecision) {
+        abilityDecision.priority = 3; // Lower priority for resource utilization
+        abilityDecision.reasoning = `${abilityDecision.reasoning} (resource utilization)`;
+        return abilityDecision;
+      }
+    }
+    
+    // Generate a basic defensive action - fortify position
+    return {
+      type: AIDecisionType.FORTIFY_POSITION,
+      priority: 2,
+      unitId: unit.id,
+      reasoning: `Fortifying position (resource utilization)`,
+    };
   }
 }
