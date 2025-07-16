@@ -1,16 +1,6 @@
 /**
  * Comprehensive AI vs AI test with real units and combat scenarios
  * This test exposes gaps in the game engine and AI programming
- *
- * MAJOR BREAKTHROUGH: This test led to fixing the critical AI decision generation issue.
- * Before fixes: AI generated 0 actions per turn
- * After fixes: AI generates 2-3 tactical decisions per turn consistently
- *
- * The AI now demonstrates intelligent behavior:
- * - Terrain control tactics (occupying key positions near enemies)
- * - Strategic state transitions (preparation -> active_defense)
- * - Scenario-appropriate decision complexity
- * - Proper tactical reasoning in decision logs
  */
 
 import { AIDifficulty } from '../core/ai/types';
@@ -1338,7 +1328,7 @@ export class ComprehensiveAITest {
       gameState.addPlayer(elitePlayer);
       gameState.setActivePlayerBySide(PlayerSide.Assault);
 
-      // Create simple combat scenario
+      // Create simple combat scenario with closer units for both sides
       const noviceUnits = createTestUnits([
         {
           id: 'novice-1',
@@ -1359,13 +1349,13 @@ export class ComprehensiveAITest {
           id: 'elite-1',
           type: UnitType.INFANTRY_SQUAD,
           side: PlayerSide.Defender,
-          position: new Hex(4, 4),
+          position: new Hex(2, 2),
         },
         {
           id: 'elite-2',
           type: UnitType.ATGM_TEAM,
           side: PlayerSide.Defender,
-          position: new Hex(5, 4),
+          position: new Hex(3, 2),
         },
       ]);
 
@@ -1377,36 +1367,45 @@ export class ComprehensiveAITest {
       gameEngine.addAIController(elitePlayer.id, AIDifficulty.ELITE);
 
       console.log('✅ Multi-difficulty test setup complete');
-      console.log('   Novice AI vs Elite AI');
+      console.log('   Testing AI difficulty differentiation');
 
-      // Test AI decision differences
-      let turnCount = 0;
-      const maxTurns = 5;
+      // Test AI decision differences - test both in sequence to avoid side bias
       let noviceActionCount = 0;
       let eliteActionCount = 0;
 
-      while (turnCount < maxTurns) {
-        turnCount++;
+      // Set proper game phase for AI decision making
+      gameState.phase = TurnPhase.ACTION;
 
+      // Initialize command points properly
+      novicePlayer.commandPoints = 10;
+      elitePlayer.commandPoints = 10;
+
+      // Test Novice AI (assault side)
+      console.log('\n   🎯 Testing Novice AI (Assault)');
+      gameState.setActivePlayerBySide(PlayerSide.Assault);
+      for (let turn = 1; turn <= 3; turn++) {
         try {
-          const aiActions = gameEngine.updateAI();
-
-          const activePlayer = gameState.getActivePlayer();
-          if (activePlayer?.id === novicePlayer.id) {
-            noviceActionCount += aiActions.length;
-          } else if (activePlayer?.id === elitePlayer.id) {
-            eliteActionCount += aiActions.length;
-          }
-
-          // Switch players
-          if (activePlayer?.side === PlayerSide.Assault) {
-            gameState.setActivePlayerBySide(PlayerSide.Defender);
-          } else {
-            gameState.setActivePlayerBySide(PlayerSide.Assault);
-          }
+          const actions = gameEngine.updateAI();
+          noviceActionCount += actions.length;
+          console.log(`      Turn ${turn}: ${actions.length} actions`);
         } catch (error) {
           testResult.errors.push(
-            `Multi-difficulty test turn ${turnCount}: ${error instanceof Error ? error.message : String(error)}`
+            `Novice AI turn ${turn}: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+
+      // Test Elite AI (defender side)
+      console.log('\n   🎯 Testing Elite AI (Defender)');
+      gameState.setActivePlayerBySide(PlayerSide.Defender);
+      for (let turn = 1; turn <= 3; turn++) {
+        try {
+          const actions = gameEngine.updateAI();
+          eliteActionCount += actions.length;
+          console.log(`      Turn ${turn}: ${actions.length} actions`);
+        } catch (error) {
+          testResult.errors.push(
+            `Elite AI turn ${turn}: ${error instanceof Error ? error.message : String(error)}`
           );
         }
       }
@@ -1416,13 +1415,21 @@ export class ComprehensiveAITest {
         `📊 Novice AI actions: ${noviceActionCount}, Elite AI actions: ${eliteActionCount}`
       );
 
-      if (noviceActionCount === eliteActionCount) {
+      // Elite AI should generate more actions than Novice AI
+      if (eliteActionCount <= noviceActionCount) {
         testResult.aiProgrammingGaps.push(
-          'No difference in action count between NOVICE and ELITE AI'
+          `Elite AI generated ${eliteActionCount} actions vs Novice AI ${noviceActionCount} actions - Elite should generate more`
+        );
+        console.log(
+          `❌ Elite AI generated ${eliteActionCount - noviceActionCount} fewer actions than Novice AI`
+        );
+      } else {
+        console.log(
+          `✅ Elite AI generated ${eliteActionCount - noviceActionCount} more actions than Novice AI`
         );
       }
 
-      testResult.performance = { turnCount, aiDecisionTime: 0, totalGameTime: 0 };
+      testResult.performance = { turnCount: 6, aiDecisionTime: 0, totalGameTime: 0 };
       testResult.success = testResult.errors.length === 0;
 
       console.log(

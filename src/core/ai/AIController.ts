@@ -22,7 +22,7 @@ import {
 } from './types';
 import { GameState, GameAction } from '../game/GameState';
 import { Player } from '../game/Player';
-import { HexCoordinate } from '../hex';
+import { HexCoordinate, Hex } from '../hex';
 import { Unit } from '../game/Unit';
 import { PlayerSide, ActionType, UnitType, TurnPhase } from '../game/types';
 import { getGameLogger } from '../logging/GameLogger';
@@ -40,6 +40,11 @@ export class AIController {
   private learningData!: AILearningData;
   private performanceMetrics!: AIPerformanceMetrics;
   private isEnabled: boolean = true;
+  
+  // Action failure tracking and fallback system
+  private actionFailureHistory: Map<string, Map<ActionType, number>> = new Map(); // unitId -> actionType -> failureCount
+  private blacklistedActions: Map<string, Set<ActionType>> = new Map(); // unitId -> set of blacklisted actions
+  private fallbackActions: Map<ActionType, ActionType[]> = new Map(); // primary action -> fallback actions
 
   public constructor(
     aiPlayerId: string,
@@ -74,6 +79,20 @@ export class AIController {
     this.stateMachine = new AIStateMachine(config);
 
     this.initializeAIData();
+    this.initializeFallbackSystem();
+  }
+
+  /**
+   * Initialize the fallback action system
+   */
+  private initializeFallbackSystem(): void {
+    // Define fallback actions for each primary action type
+    this.fallbackActions.set(ActionType.ATTACK, [ActionType.MOVE]);
+    this.fallbackActions.set(ActionType.MOVE, [ActionType.ATTACK]);
+    this.fallbackActions.set(ActionType.SPECIAL_ABILITY, [ActionType.ATTACK, ActionType.MOVE]);
+    this.fallbackActions.set(ActionType.LOAD, [ActionType.MOVE]);
+    this.fallbackActions.set(ActionType.UNLOAD, [ActionType.MOVE]);
+    this.fallbackActions.set(ActionType.SECURE_OBJECTIVE, [ActionType.MOVE, ActionType.ATTACK]);
   }
 
   /**
@@ -308,13 +327,98 @@ export class AIController {
 
     for (const decision of decisions.slice(0, 8)) {
       // Limit actions per turn
-      const action = this.convertDecisionToAction(decision, gameState);
+      const action = this.convertDecisionToActionWithFallback(decision, gameState);
       if (action) {
         actions.push(action);
       }
     }
 
     return actions;
+  }
+
+  /**
+   * Convert decision to action with fallback system
+   */
+  private convertDecisionToActionWithFallback(decision: AIDecision, gameState: GameState): GameAction | null {
+    // First, try the primary action
+    const primaryAction = this.convertDecisionToAction(decision, gameState);
+    
+    // If primary action would succeed and isn't blacklisted, use it
+    if (primaryAction && !this.isActionBlacklisted(primaryAction.unitId, primaryAction.type)) {
+      return primaryAction;
+    }
+    
+    // If primary action is blacklisted or null, try fallback actions
+    if (primaryAction) {
+      const fallbackActionTypes = this.fallbackActions.get(primaryAction.type) || [];
+      
+      for (const fallbackType of fallbackActionTypes) {
+        if (!this.isActionBlacklisted(primaryAction.unitId, fallbackType)) {
+          const fallbackAction = this.createFallbackAction(primaryAction, fallbackType, gameState);
+          if (fallbackAction) {
+            console.log(`[AI] Using fallback action ${fallbackType} for unit ${primaryAction.unitId} (${primaryAction.type} blacklisted)`);
+            return fallbackAction;
+          }
+        }
+      }
+    }
+    
+    return null; // No valid action found
+  }
+
+  /**
+   * Create a fallback action for a unit
+   */
+  private createFallbackAction(originalAction: GameAction, fallbackType: ActionType, gameState: GameState): GameAction | null {
+    const unit = gameState.getUnit(originalAction.unitId);
+    if (!unit) return null;
+    
+    switch (fallbackType) {
+      case ActionType.MOVE:
+        // Create a simple move action - move to a random nearby position
+        const currentPos = unit.state.position;
+        const nearbyPositions = [
+          new Hex(currentPos.q + 1, currentPos.r),
+          new Hex(currentPos.q - 1, currentPos.r),
+          new Hex(currentPos.q, currentPos.r + 1),
+          new Hex(currentPos.q, currentPos.r - 1),
+        ];
+        
+        for (const pos of nearbyPositions) {
+          if (gameState.map.isValidHex(pos) && gameState.getUnitsAt(pos).length === 0) {
+            return {
+              type: ActionType.MOVE,
+              playerId: this.aiPlayerId,
+              unitId: originalAction.unitId,
+              targetPosition: pos,
+            };
+          }
+        }
+        return null;
+        
+      case ActionType.ATTACK:
+        // Find a nearby enemy to attack
+        const enemyPlayer = this.getEnemyPlayer(gameState);
+        const enemies = enemyPlayer ? enemyPlayer.getLivingUnits() : [];
+        const nearestEnemy = enemies.find((enemy: Unit) => {
+          const distance = Math.abs(enemy.state.position.q - unit.state.position.q) + 
+                          Math.abs(enemy.state.position.r - unit.state.position.r);
+          return distance <= 2; // Within attack range
+        });
+        
+        if (nearestEnemy) {
+          return {
+            type: ActionType.ATTACK,
+            playerId: this.aiPlayerId,
+            unitId: originalAction.unitId,
+            targetId: nearestEnemy.id,
+          };
+        }
+        return null;
+        
+      default:
+        return null;
+    }
   }
 
   /**
@@ -718,9 +822,130 @@ export class AIController {
   /**
    * Update tactical learning
    */
-  private updateTacticalLearning(_actions: GameAction[], _results: unknown[]): void {
-    // Analyze which tactics worked and which didn't
-    // This would be expanded with more sophisticated learning
+  private updateTacticalLearning(actions: GameAction[], results: unknown[]): void {
+    // Track failed actions and implement blacklist system
+    for (let i = 0; i < actions.length && i < results.length; i++) {
+      const action = actions[i];
+      const result = results[i] as { success: boolean; message?: string };
+      
+      if (!result.success) {
+        // Only blacklist actions that are fundamentally impossible for this unit
+        // Don't penalize the AI for blocked actions - those are learning opportunities
+        if (this.shouldBlacklistAction(action, result.message || '')) {
+          this.trackActionFailure(action.unitId, action.type, result.message || 'Unknown failure');
+        } else {
+          // Log blocked action for learning but don't penalize
+          console.log(`[AI] Blocked action (learning): ${action.unitId} ${action.type} - ${result.message}`);
+        }
+      } else {
+        // Reset failure count for successful actions
+        this.resetActionFailureCount(action.unitId, action.type);
+      }
+    }
+  }
+
+  /**
+   * Determine if an action should be blacklisted vs just being a learning opportunity
+   */
+  private shouldBlacklistAction(action: GameAction, failureMessage: string): boolean {
+    // Don't blacklist actions that are just blocked by game rules or temporary conditions
+    const learningOnlyFailures = [
+      'Unit cannot move this turn',
+      'No valid path to target',
+      'Insufficient movement',
+      'Cannot attack target',
+      'Cannot target hidden unit',
+      'Invalid attack parameters',
+      'Unit is not adjacent to objective',
+      'Unit has already acted this turn',
+      'Unit not in range',
+      'Target not in range',
+      'Cannot perform action in current phase',
+      'Not enough command points',
+      'Invalid action parameters',
+    ];
+    
+    // Check if this is a learning-only failure (don't blacklist)
+    for (const learningFailure of learningOnlyFailures) {
+      if (failureMessage.includes(learningFailure)) {
+        return false;
+      }
+    }
+    
+    // Blacklist actions that are fundamentally impossible for this unit type
+    const blacklistFailures = [
+      'Unit does not have this ability',
+      'Unit type cannot perform this action',
+      'USS Wasp has no embarked aircraft',
+      'No aircraft available for launch',
+      'Invalid ability name',
+      'Unknown action type',
+      'Unit does not exist',
+    ];
+    
+    // Check if this should be blacklisted
+    for (const blacklistFailure of blacklistFailures) {
+      if (failureMessage.includes(blacklistFailure)) {
+        return true;
+      }
+    }
+    
+    // Default: don't blacklist, treat as learning opportunity
+    return false;
+  }
+
+  /**
+   * Track action failure for a unit
+   */
+  private trackActionFailure(unitId: string, actionType: ActionType, failureReason: string): void {
+    // Initialize failure tracking for this unit if needed
+    if (!this.actionFailureHistory.has(unitId)) {
+      this.actionFailureHistory.set(unitId, new Map());
+    }
+    
+    const unitFailures = this.actionFailureHistory.get(unitId)!;
+    const currentFailures = unitFailures.get(actionType) || 0;
+    const newFailureCount = currentFailures + 1;
+    
+    unitFailures.set(actionType, newFailureCount);
+    
+    // Blacklist actions that fail repeatedly (threshold: 3 failures)
+    if (newFailureCount >= 3) {
+      this.blacklistActionForUnit(unitId, actionType);
+      console.log(`[AI] Blacklisted action ${actionType} for unit ${unitId} (${newFailureCount} failures)`);
+    }
+    
+    // Log failure for debugging
+    console.log(`[AI] Action failure tracked: ${unitId} ${actionType} (${newFailureCount} failures) - ${failureReason}`);
+  }
+
+  /**
+   * Reset failure count for successful actions
+   */
+  private resetActionFailureCount(unitId: string, actionType: ActionType): void {
+    const unitFailures = this.actionFailureHistory.get(unitId);
+    if (unitFailures) {
+      unitFailures.delete(actionType);
+    }
+  }
+
+  /**
+   * Blacklist an action for a specific unit
+   */
+  private blacklistActionForUnit(unitId: string, actionType: ActionType): void {
+    if (!this.blacklistedActions.has(unitId)) {
+      this.blacklistedActions.set(unitId, new Set());
+    }
+    
+    this.blacklistedActions.get(unitId)!.add(actionType);
+  }
+
+  /**
+   * Check if an action is blacklisted for a unit
+   */
+  private isActionBlacklisted(unitId: string, actionType: ActionType): boolean {
+    const blacklistedForUnit = this.blacklistedActions.get(unitId);
+    return blacklistedForUnit ? blacklistedForUnit.has(actionType) : false;
   }
 
   /**

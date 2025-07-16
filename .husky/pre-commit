@@ -16,6 +16,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Verify formatting is correct after lint-staged
+echo "✅ Verifying formatting..."
+npm run format:check
+if [ $? -ne 0 ]; then
+  echo "❌ Formatting check failed after lint-staged!"
+  echo "💡 Run 'npm run format' to fix formatting issues."
+  exit 1
+fi
+
 # Run strict linting (zero errors allowed, warnings permitted)
 echo "🔍 Strict linting check..."
 npm run lint
