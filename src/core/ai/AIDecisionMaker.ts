@@ -351,6 +351,10 @@ export class AIDecisionMaker {
         modifiedWeights[TacticalPriority.GATHER_INTELLIGENCE] = 5; // Better reconnaissance
         modifiedWeights[TacticalPriority.HIDDEN_OPERATIONS] = 12; // Superior stealth ops
         break;
+        
+      default:
+        // ADAPTIVE or unknown difficulty - use standard weights
+        break;
     }
 
     return modifiedWeights;
