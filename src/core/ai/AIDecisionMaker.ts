@@ -327,8 +327,8 @@ export class AIDecisionMaker {
       [TacticalPriority.DEFEND_OBJECTIVES]: 7,
       [TacticalPriority.SECURE_OBJECTIVES]: 15,
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
-      [TacticalPriority.MANAGE_LOGISTICS]: 9,
-      [TacticalPriority.WASP_OPERATIONS]: 12,
+      [TacticalPriority.MANAGE_LOGISTICS]: 20, // High priority for transport operations
+      [TacticalPriority.WASP_OPERATIONS]: 22, // Very high priority for USS Wasp operations
       [TacticalPriority.HIDDEN_OPERATIONS]: 14, // Keep hidden ops high priority
       [TacticalPriority.USE_SPECIAL_ABILITIES]: 18, // High priority for special abilities
     };
