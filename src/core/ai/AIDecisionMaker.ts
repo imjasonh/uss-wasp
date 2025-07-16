@@ -53,7 +53,7 @@ export class AIDecisionMaker {
 
     // Analyze current tactical situation
     const tacticalPriorities = this.determineTacticalPriorities(context);
-
+    
     // Generate decisions based on priorities, tracking used units and CP
     for (const priority of tacticalPriorities) {
       if (remainingCP <= 0) {
@@ -141,6 +141,7 @@ export class AIDecisionMaker {
           priority: priority as TacticalPriority,
           weight: finalWeight,
         });
+        
       }
     }
 
@@ -189,7 +190,7 @@ export class AIDecisionMaker {
 
     // Combat opportunities - higher when enemies are vulnerable
     const enemyVulnerability = this.assessEnemyVulnerability(context.enemyUnits);
-    modifiers[TacticalPriority.INFLICT_CASUALTIES] = enemyVulnerability > 0.1 ? 1.4 : 1.0;
+    modifiers[TacticalPriority.INFLICT_CASUALTIES] = enemyVulnerability > 0.1 ? 1.2 : 1.0;
 
     // Unit-specific opportunities
     const hasWasp = context.availableUnits.some(unit => unit.type === UnitType.USS_WASP);
@@ -329,7 +330,7 @@ export class AIDecisionMaker {
       [TacticalPriority.MANAGE_LOGISTICS]: 9,
       [TacticalPriority.WASP_OPERATIONS]: 12,
       [TacticalPriority.HIDDEN_OPERATIONS]: 14, // Keep hidden ops high priority
-      [TacticalPriority.USE_SPECIAL_ABILITIES]: 8, // Balanced - Support combat effectively
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 18, // High priority for special abilities
     };
 
     // Apply difficulty-based modifications
@@ -356,6 +357,10 @@ export class AIDecisionMaker {
         modifiedWeights[TacticalPriority.USE_SPECIAL_ABILITIES] = 7; // More complex tactics
         modifiedWeights[TacticalPriority.GATHER_INTELLIGENCE] = 5; // Better reconnaissance
         modifiedWeights[TacticalPriority.HIDDEN_OPERATIONS] = 12; // Superior stealth ops
+        break;
+        
+      default:
+        // Default to veteran behavior
         break;
     }
 
@@ -3350,9 +3355,9 @@ export class AIDecisionMaker {
     // Validate parameters based on ability type
     switch (abilityName) {
       case 'Artillery Barrage':
-        // Artillery barrage requires 3 target hexes
+        // Artillery barrage requires target hexes (preferably 3, but flexible)
         const targetHexes = this.selectArtilleryTargetHexes(unit, context);
-        if (targetHexes.length === 3) {
+        if (targetHexes.length > 0) {
           metadata.targetHexes = targetHexes;
           return {
             type: AIDecisionType.SPECIAL_ABILITY,
@@ -3438,6 +3443,14 @@ export class AIDecisionMaker {
         if (targetHexes.length < 3) {
           targetHexes.push(hex);
         }
+      }
+    }
+    
+    // If we still don't have enough targets, fall back to enemy positions
+    if (targetHexes.length === 0) {
+      for (const enemy of context.enemyUnits) {
+        targetHexes.push(new Hex(enemy.state.position.q, enemy.state.position.r, enemy.state.position.s));
+        if (targetHexes.length >= 3) break;
       }
     }
     
