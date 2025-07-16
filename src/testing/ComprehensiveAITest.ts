@@ -1375,7 +1375,7 @@ export class ComprehensiveAITest {
 
       // Set proper game phase for AI decision making
       gameState.phase = TurnPhase.ACTION;
-      
+
       // Initialize command points properly
       novicePlayer.commandPoints = 10;
       elitePlayer.commandPoints = 10;
@@ -1420,9 +1420,13 @@ export class ComprehensiveAITest {
         testResult.aiProgrammingGaps.push(
           `Elite AI generated ${eliteActionCount} actions vs Novice AI ${noviceActionCount} actions - Elite should generate more`
         );
-        console.log(`❌ Elite AI generated ${eliteActionCount - noviceActionCount} fewer actions than Novice AI`);
+        console.log(
+          `❌ Elite AI generated ${eliteActionCount - noviceActionCount} fewer actions than Novice AI`
+        );
       } else {
-        console.log(`✅ Elite AI generated ${eliteActionCount - noviceActionCount} more actions than Novice AI`);
+        console.log(
+          `✅ Elite AI generated ${eliteActionCount - noviceActionCount} more actions than Novice AI`
+        );
       }
 
       testResult.performance = { turnCount: 6, aiDecisionTime: 0, totalGameTime: 0 };
