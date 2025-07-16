@@ -253,7 +253,7 @@ export class AIDecisionMaker {
         p => p.priority === TacticalPriority.USE_SPECIAL_ABILITIES
       );
       if (abilityPriority) {
-        abilityPriority.weight += 3; // Fixed bonus for special abilities
+        abilityPriority.weight += 5; // Higher bonus for special abilities
       }
     }
 
@@ -264,7 +264,33 @@ export class AIDecisionMaker {
         p => p.priority === TacticalPriority.SECURE_OBJECTIVES
       );
       if (objectivePriority) {
-        objectivePriority.weight += 2; // Fixed bonus for objectives
+        objectivePriority.weight += 8; // Higher bonus for objectives
+      }
+    }
+
+    // USS Wasp operations urgency - boost when USS Wasp is available
+    const hasUSSWasp = context.availableUnits.some(
+      unit => unit.type === UnitType.USS_WASP
+    );
+    if (hasUSSWasp) {
+      const waspPriority = priorities.find(
+        p => p.priority === TacticalPriority.WASP_OPERATIONS
+      );
+      if (waspPriority) {
+        waspPriority.weight += 10; // High bonus for USS Wasp operations
+      }
+    }
+
+    // Hidden operations urgency - boost when hidden units are available
+    const hasHiddenUnits = context.availableUnits.some(
+      unit => unit.isHidden() || unit.canBeHidden()
+    );
+    if (hasHiddenUnits) {
+      const hiddenPriority = priorities.find(
+        p => p.priority === TacticalPriority.HIDDEN_OPERATIONS
+      );
+      if (hiddenPriority) {
+        hiddenPriority.weight += 15; // Very high bonus for hidden operations
       }
     }
 
@@ -277,7 +303,7 @@ export class AIDecisionMaker {
         p => p.priority === TacticalPriority.MANAGE_LOGISTICS
       );
       if (logisticsPriority) {
-        logisticsPriority.weight += 2; // Fixed bonus for logistics
+        logisticsPriority.weight += 12; // High bonus for transport operations
       }
     }
   }
@@ -295,9 +321,9 @@ export class AIDecisionMaker {
       [TacticalPriority.SECURE_OBJECTIVES]: 8,
       [TacticalPriority.GATHER_INTELLIGENCE]: 3,
       [TacticalPriority.MANAGE_LOGISTICS]: 9,
-      [TacticalPriority.WASP_OPERATIONS]: 10,
-      [TacticalPriority.HIDDEN_OPERATIONS]: 10,
-      [TacticalPriority.USE_SPECIAL_ABILITIES]: 5,
+      [TacticalPriority.WASP_OPERATIONS]: 12,
+      [TacticalPriority.HIDDEN_OPERATIONS]: 13,
+      [TacticalPriority.USE_SPECIAL_ABILITIES]: 11,
     };
 
     // Apply difficulty-based modifications
@@ -648,9 +674,16 @@ export class AIDecisionMaker {
         
       case AIDifficulty.VETERAN:
         // Veteran AI: Standard capabilities with some limitations
-        filtered = filtered.filter(decision =>
-          decision.type !== AIDecisionType.SPECIAL_ABILITY || Math.random() < 0.7
-        );
+        // Reduce special abilities by priority instead of random filtering
+        const veteranSpecialAbilities = filtered.filter(d => d.type === AIDecisionType.SPECIAL_ABILITY);
+        const veteranOtherActions = filtered.filter(d => d.type !== AIDecisionType.SPECIAL_ABILITY);
+        
+        // Keep only the highest priority special abilities for veteran AI
+        const veteranTopSpecialAbilities = veteranSpecialAbilities
+          .sort((a, b) => b.priority - a.priority)
+          .slice(0, Math.max(1, Math.floor(veteranSpecialAbilities.length * 0.7)));
+        
+        filtered = [...veteranOtherActions, ...veteranTopSpecialAbilities];
         break;
         
       case AIDifficulty.ELITE:
@@ -2047,8 +2080,8 @@ export class AIDecisionMaker {
             ...context.enemyUnits.map(e => this.calculateDistance(unit.state.position, e.state.position))
           );
           
-          // Only reveal if enemies are within 2 hexes (immediate threat)
-          if (nearestEnemyDistance <= 2) {
+          // Only reveal if enemies are within 4 hexes (reasonable engagement range)
+          if (nearestEnemyDistance <= 4) {
             decisions.push({
               type: AIDecisionType.REVEAL_UNIT,
               priority: 6, // Lower priority than movement to allow tactical positioning
