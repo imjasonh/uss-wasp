@@ -276,7 +276,8 @@ function testAITerrainUtilization(): ExtendedTestResult['terrain'] {
             for (const action of moveActions) {
                 if (action.targetPosition) {
                     const targetHex = action.targetPosition;
-                    const targetTerrain = map.getTerrainAt(targetHex);
+                    const mapHex = map.getHex(targetHex);
+                    const targetTerrain = mapHex?.terrain;
                     
                     // Check if unit is moving to advantageous terrain
                     if (targetTerrain === TerrainType.FOREST || targetTerrain === TerrainType.HILL) {

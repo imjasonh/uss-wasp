@@ -3257,7 +3257,7 @@ export class AIDecisionMaker {
     let emergencyScore = 0;
     const totalUnits = context.availableUnits.length;
     
-    if (totalUnits === 0) return 0;
+    if (totalUnits === 0) {return 0;}
 
     // Factor 1: Unit health - more emergency if units are damaged
     const averageHealth = this.calculateAverageUnitHealth(context.availableUnits);
@@ -3314,11 +3314,32 @@ export class AIDecisionMaker {
     const unitPos = unit.state.position;
     const targetPos = target.state.position;
 
-    // Calculate direction toward target
+    // Get all possible movement hexes (adjacent to current position)
+    const adjacentHexes = this.getAdjacentHexes(new Hex(unitPos.q, unitPos.r, unitPos.s));
+    
+    // Score each hex based on terrain benefits and distance to target
+    const scoredHexes = adjacentHexes
+      .filter(hex => this.isValidMapPosition(hex, context))
+      .map(hex => {
+        const distanceToTarget = this.calculateDistance(hex, targetPos);
+        const terrainScore = this.evaluateTerrainBenefit(hex, unit, context);
+        
+        // Balance between moving toward target and terrain benefits
+        const totalScore = (10 - distanceToTarget) + (terrainScore * 2);
+        
+        return { hex, score: totalScore, distanceToTarget };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    // Return the best scoring hex, or fall back to direct movement
+    if (scoredHexes.length > 0) {
+      return scoredHexes[0].hex;
+    }
+
+    // Fallback to original direct movement logic
     const deltaQ = targetPos.q - unitPos.q;
     const deltaR = targetPos.r - unitPos.r;
 
-    // Normalize to single hex step
     let moveQ = 0;
     let moveR = 0;
 
@@ -3331,7 +3352,6 @@ export class AIDecisionMaker {
     const moveS = -(moveQ + moveR);
     const targetPosition = new Hex(unitPos.q + moveQ, unitPos.r + moveR, unitPos.s + moveS);
 
-    // Check if position is valid
     if (this.isValidMapPosition(targetPosition, context)) {
       return targetPosition;
     }
@@ -3340,11 +3360,68 @@ export class AIDecisionMaker {
   }
 
   /**
+   * Evaluate terrain benefits for a unit at a specific hex
+   */
+  private evaluateTerrainBenefit(hex: Hex, unit: Unit, context: AIDecisionContext): number {
+    const mapHex = context.gameState.map.getHex(hex);
+    if (!mapHex) {return 0;}
+
+    let score = 0;
+
+    // Unit-specific terrain preferences
+    switch (unit.type) {
+      case UnitType.MARSOC:
+        // MARSOC benefits from woods (stealth) and hills (reconnaissance)
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 3;}
+        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score += 4;}
+        if (mapHex.terrain === TerrainType.HILLS) {score += 4;}
+        break;
+      
+      case UnitType.MARINE_SQUAD:
+      case UnitType.INFANTRY_SQUAD:
+        // Infantry benefits from cover
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 2;}
+        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score += 2;}
+        if (mapHex.terrain === TerrainType.HILLS) {score += 2;}
+        if (mapHex.terrain === TerrainType.URBAN) {score += 1;}
+        break;
+      
+      case UnitType.HUMVEE:
+      case UnitType.TECHNICAL:
+        // Vehicles prefer clear terrain, avoid difficult terrain
+        if (mapHex.terrain === TerrainType.CLEAR) {score += 2;}
+        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score -= 2;}
+        if (mapHex.terrain === TerrainType.MOUNTAINS) {score -= 3;}
+        break;
+      
+      case UnitType.ATGM_TEAM:
+      case UnitType.ARTILLERY:
+        // Artillery and ATGM prefer elevated positions
+        if (mapHex.terrain === TerrainType.HILLS) {score += 3;}
+        if (mapHex.terrain === TerrainType.MOUNTAINS) {score += 2;}
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 1;} // Some cover
+        break;
+      
+      default:
+        // General terrain preferences
+        if (mapHex.terrain === TerrainType.HILLS) {score += 1;}
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 1;}
+        break;
+    }
+
+    // Avoid disadvantageous terrain for all units
+    if (mapHex.terrain === TerrainType.DEEP_WATER) {score -= 5;}
+    if (mapHex.terrain === TerrainType.MOUNTAINS) {score -= 1;} // Difficult movement
+
+    return score;
+  }
+
+  /**
    * Create a validated special ability decision with proper parameters
    */
   private createValidatedSpecialAbilityDecision(
     unit: Unit,
-    ability: any,
+    ability: { name: string; description: string; cpCost?: number },
     context: AIDecisionContext
   ): AIDecision | null {
     const abilityName = ability.name;
@@ -3354,7 +3431,7 @@ export class AIDecisionMaker {
 
     // Validate parameters based on ability type
     switch (abilityName) {
-      case 'Artillery Barrage':
+      case 'Artillery Barrage': {
         // Artillery barrage requires target hexes (preferably 3, but flexible)
         const targetHexes = this.selectArtilleryTargetHexes(unit, context);
         if (targetHexes.length > 0) {
@@ -3368,8 +3445,9 @@ export class AIDecisionMaker {
           };
         }
         return null; // Can't execute without valid targets
+      }
 
-      case 'SAM Strike':
+      case 'SAM Strike': {
         // SAM strike requires a target unit ID
         const airTargets = context.enemyUnits.filter(enemy => 
           enemy.type === UnitType.HARRIER || 
@@ -3387,9 +3465,10 @@ export class AIDecisionMaker {
           };
         }
         return null; // Can't execute without valid targets
+      }
 
       case 'Special Operations':
-      case 'Direct Action':
+      case 'Direct Action': {
         // These abilities might require target selection
         const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 3);
         if (nearbyEnemies.length > 0) {
@@ -3410,6 +3489,7 @@ export class AIDecisionMaker {
           reasoning: `Using ${abilityName}`,
           metadata,
         };
+      }
 
       default:
         // For other abilities, try to use them as-is
@@ -3450,7 +3530,7 @@ export class AIDecisionMaker {
     if (targetHexes.length === 0) {
       for (const enemy of context.enemyUnits) {
         targetHexes.push(new Hex(enemy.state.position.q, enemy.state.position.r, enemy.state.position.s));
-        if (targetHexes.length >= 3) break;
+        if (targetHexes.length >= 3) {break;}
       }
     }
     

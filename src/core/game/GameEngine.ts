@@ -423,6 +423,8 @@ export class GameEngine {
         return this.executeEntrench(unit, data);
       case 'Amphibious Training':
         return this.executeAmphibiousTraining(unit, data);
+      case 'Special Operations':
+        return this.executeSpecialOperations(unit, data);
 
       // Combat specialist abilities
       case 'Anti-Vehicle Specialist':
@@ -735,12 +737,15 @@ export class GameEngine {
    * Execute artillery barrage
    */
   private executeArtilleryBarrage(_unit: Unit, data: SpecialAbilityData): ActionResult {
-    if (!data.targetHexes || data.targetHexes.length !== 3) {
-      return { success: false, message: 'Artillery barrage requires 3 target hexes' };
+    if (!data.targetHexes || data.targetHexes.length === 0) {
+      return { success: false, message: 'Artillery barrage requires at least 1 target hex' };
     }
+    
+    // Limit to maximum 3 hexes for game balance
+    const targetHexes = data.targetHexes.slice(0, 3);
 
     const results = [];
-    for (const hexData of data.targetHexes) {
+    for (const hexData of targetHexes) {
       const hex = new Hex(hexData.q, hexData.r, hexData.s);
       const targets = this.gameState.getUnitsAt(hex);
 
@@ -759,8 +764,8 @@ export class GameEngine {
 
     return {
       success: true,
-      message: `Artillery barrage completed: ${results.join(', ')}`,
-      data: { results },
+      message: `Artillery barrage on ${targetHexes.length} hex${targetHexes.length > 1 ? 'es' : ''}: ${results.join(', ') || 'No hits'}`,
+      data: { results, hexesTargeted: targetHexes.length },
     };
   }
 
@@ -1189,6 +1194,21 @@ export class GameEngine {
       success: true,
       message: `${unit.type} uses Amphibious Training - water movement bonus`,
       data: { amphibiousBonus: true },
+    };
+  }
+
+  /**
+   * Execute Special Operations ability (MARSOC)
+   */
+  private executeSpecialOperations(unit: Unit, _data: SpecialAbilityData): ActionResult {
+    return {
+      success: true,
+      message: `${unit.type} uses Special Operations - enhanced reconnaissance and stealth`,
+      data: { 
+        reconnaissanceBonus: 2,
+        stealthBonus: 1,
+        specialOperations: true
+      },
     };
   }
 
