@@ -51,6 +51,23 @@ export class AIDecisionMaker {
     // Update threat assessments
     this.updateThreatAssessments(context);
 
+    // CRITICAL FIX: Phase-specific decision generation FIRST
+    // During movement phase, prioritize movement decisions for ALL units
+    if (context.phase === 'movement') {
+      console.log(`[AI] Movement phase - prioritizing movement decisions`);
+      const movementDecisions = this.generateMovementPhaseDecisions(context, usedUnits, remainingCP);
+      console.log(`[AI] Generated ${movementDecisions.length} movement decisions`);
+      decisions.push(...movementDecisions);
+      
+      // Update remaining CP and used units
+      for (const decision of movementDecisions) {
+        if (decision.unitId) {
+          usedUnits.add(decision.unitId);
+        }
+      }
+      remainingCP -= movementDecisions.length;
+    }
+
     // Analyze current tactical situation
     const tacticalPriorities = this.determineTacticalPriorities(context);
     
@@ -84,6 +101,7 @@ export class AIDecisionMaker {
       }
     }
 
+    
     // Enhanced resource utilization: generate additional actions if CP remains
     if (remainingCP > 0 && context.availableUnits.length > usedUnits.size) {
       const additionalDecisions = this.generateAdditionalDecisions(context, usedUnits, remainingCP);
@@ -3320,6 +3338,7 @@ export class AIDecisionMaker {
     // Score each hex based on terrain benefits and distance to target
     const scoredHexes = adjacentHexes
       .filter(hex => this.isValidMapPosition(hex, context))
+      .filter(hex => this.canUnitReachPosition(unit, hex, context)) // CRITICAL FIX: Validate pathfinding
       .map(hex => {
         const distanceToTarget = this.calculateDistance(hex, targetPos);
         const terrainScore = this.evaluateTerrainBenefit(hex, unit, context);
@@ -3352,7 +3371,7 @@ export class AIDecisionMaker {
     const moveS = -(moveQ + moveR);
     const targetPosition = new Hex(unitPos.q + moveQ, unitPos.r + moveR, unitPos.s + moveS);
 
-    if (this.isValidMapPosition(targetPosition, context)) {
+    if (this.isValidMapPosition(targetPosition, context) && this.canUnitReachPosition(unit, targetPosition, context)) {
       return targetPosition;
     }
 
@@ -3606,6 +3625,119 @@ export class AIDecisionMaker {
     }
     
     return decisions;
+  }
+
+  /**
+   * Generate movement decisions during movement phase
+   */
+  private generateMovementPhaseDecisions(
+    context: AIDecisionContext,
+    usedUnits: Set<string>,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    // Find unused units that can move
+    const unusedUnits = context.availableUnits.filter(unit => 
+      !usedUnits.has(unit.id) && unit.canMove() && !unit.state.hasMoved
+    );
+    
+    console.log(`[AI] Movement phase: ${unusedUnits.length} unused units can move`);
+    
+    for (const unit of unusedUnits) {
+      if (decisions.length >= remainingCP) {
+        break; // No more CP available
+      }
+      
+      // Priority 1: Move toward enemies
+      const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 10);
+      if (nearbyEnemies.length > 0) {
+        const targetPosition = this.findAdvancementPosition(unit, nearbyEnemies[0], context);
+        if (targetPosition) {
+          console.log(`[AI] Generated movement decision: ${unit.id} toward ${nearbyEnemies[0].type}`);
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 8, // High priority for movement phase
+            unitId: unit.id,
+            targetPosition: targetPosition,
+            reasoning: `Movement phase: advancing toward ${nearbyEnemies[0].type}`,
+          });
+          continue;
+        }
+      }
+      
+      // Priority 2: Move toward objectives
+      const objectives = this.findNearbyObjectives(unit, context);
+      if (objectives.length > 0) {
+        const objectivePosition = this.findPositionTowardsObjective(unit, objectives[0], context);
+        if (objectivePosition) {
+          console.log(`[AI] Generated objective movement: ${unit.id} toward objective`);
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 7,
+            unitId: unit.id,
+            targetPosition: objectivePosition,
+            reasoning: `Movement phase: advancing toward objective`,
+          });
+          continue;
+        }
+      }
+      
+      // Priority 3: Move toward center of map (fallback)
+      const centerPos = this.findCenterPosition(context);
+      if (centerPos && this.canUnitReachPosition(unit, centerPos, context)) {
+        console.log(`[AI] Generated fallback movement: ${unit.id} toward center`);
+        decisions.push({
+          type: AIDecisionType.MOVE_UNIT,
+          priority: 5,
+          unitId: unit.id,
+          targetPosition: centerPos,
+          reasoning: `Movement phase: general advancement`,
+        });
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Find nearby objectives for a unit
+   */
+  private findNearbyObjectives(unit: Unit, context: AIDecisionContext): Hex[] {
+    const objectives: Hex[] = [];
+    
+    // Check map objectives (MapHex objects with objective property)
+    const mapObjectives = context.gameState.map.getObjectives();
+    for (const mapHex of mapObjectives) {
+      const hexPosition = mapHex.coordinate;
+      const distance = this.calculateDistance(unit.state.position, hexPosition);
+      if (distance <= 10) { // Within reasonable distance
+        objectives.push(hexPosition);
+      }
+    }
+    
+    // Check game state objectives
+    for (const objective of context.gameState.objectives.values()) {
+      const distance = this.calculateDistance(unit.state.position, objective.position);
+      if (distance <= 10) { // Within reasonable distance
+        objectives.push(objective.position);
+      }
+    }
+    
+    return objectives;
+  }
+
+  /**
+   * Find center position of the map
+   */
+  private findCenterPosition(context: AIDecisionContext): Hex | null {
+    const mapDimensions = context.gameState.map.getDimensions();
+    const centerQ = Math.floor(mapDimensions.width / 2);
+    const centerR = Math.floor(mapDimensions.height / 2);
+    const centerS = -centerQ - centerR;
+    
+    const centerPos = new Hex(centerQ, centerR, centerS);
+    return this.isValidMapPosition(centerPos, context) ? centerPos : null;
   }
 
   /**
