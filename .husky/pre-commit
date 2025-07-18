@@ -1,6 +1,14 @@
 # Run lint-staged for formatting and linting
 npm run pre-commit
 
+# Run TypeScript type checking
+echo "🔍 Running TypeScript type checking..."
+npm run typecheck
+
+# Build project to catch compilation errors
+echo "🔨 Building project..."
+npm run build
+
 # Run personality matchups to update AI analysis
 echo "🤖 Running AI personality matchups..."
 node scripts/run-personality-matchups.js

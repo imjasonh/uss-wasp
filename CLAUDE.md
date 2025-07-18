@@ -389,6 +389,27 @@ This workflow ensures systematic progress toward USS Wasp project completion whi
 - **Easy cleanup**: Simple to identify and manage temporary files
 - **Version control**: Only intentional debug files committed
 
+### Pre-commit Hook Configuration
+
+**Issue Discovered**: The pre-commit hook was missing TypeScript type checking, causing CI failures that could have been caught locally.
+
+**Current Pre-commit Pipeline**:
+```bash
+1. lint-staged (eslint --fix, prettier --write)
+2. TypeScript type checking (npm run typecheck)
+3. Project build (npm run build)
+4. AI personality matchups (documentation updates)
+```
+
+**Alignment with CI**: Pre-commit hooks now mirror CI pipeline steps to catch issues early:
+- ✅ **Linting**: ESLint with auto-fix
+- ✅ **Formatting**: Prettier code formatting
+- ✅ **Type Checking**: TypeScript validation
+- ✅ **Build**: Compilation verification
+- ✅ **AI Analysis**: Personality matchup updates
+
+**Lesson**: Pre-commit hooks should include all validation steps that CI performs to prevent remote failures.
+
 ---
 
 *Last Updated: 2025-07-18*  
