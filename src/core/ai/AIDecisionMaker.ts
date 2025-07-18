@@ -20,6 +20,60 @@ import { Hex, HexCoordinate } from '../hex';
 import { UnitCategory, UnitType, TerrainType, TurnPhase } from '../game/types';
 import { MapHex } from '../game/Map';
 
+// Counter-tactics analysis types
+interface PlayerBehaviorAnalysis {
+  detectedPatterns: string[];
+  predictabilityScore: number;
+  preferredTactics: string[];
+  weaknesses: string[];
+  counterOpportunities: string[];
+  movementPatterns: MovementPattern[];
+  targetingPreferences: TargetingPreference[];
+  riskProfile: RiskProfile;
+  timingPatterns: TimingPattern[];
+}
+
+interface MovementPattern {
+  type: 'aggressive' | 'cautious' | 'flanking' | 'direct';
+  frequency: number;
+  effectiveness: number;
+  counterStrategy: string;
+}
+
+interface TargetingPreference {
+  unitType: string;
+  priority: number;
+  frequency: number;
+  effectiveness: number;
+}
+
+interface RiskProfile {
+  riskTolerance: number;
+  retreatThreshold: number;
+  aggressionLevel: number;
+  adaptationSpeed: number;
+}
+
+interface TimingPattern {
+  phase: string;
+  preferredActions: string[];
+  frequency: number;
+  predictability: number;
+}
+
+interface CounterTacticPlan {
+  strategy: string;
+  targetWeakness: string;
+  expectedEffectiveness: number;
+  requiredUnits: string[];
+  executionPhase: 'preparation' | 'movement' | 'action';
+  priority: number;
+  triggers: string[];
+  fallbackOptions: string[];
+  resourceCost: number;
+}
+
+
 /**
  * Core AI decision-making engine
  */
@@ -87,13 +141,20 @@ export class AIDecisionMaker {
       remainingCP -= coordinatedDecisions.length;
     }
     
+    // NEW: Analyze player behavior and generate counter-tactics
+    const playerAnalysis = this.analyzePlayerBehavior(context);
+    const counterTactics = this.generateCounterTactics(playerAnalysis, context);
+    
     // Generate decisions based on priorities, tracking used units and CP
     for (const priority of tacticalPriorities) {
       if (remainingCP <= 0) {
         break; // No more CP available
       }
 
-      const priorityDecisions = this.generateDecisionsForPriority(priority, context, usedUnits);
+      let priorityDecisions = this.generateDecisionsForPriority(priority, context, usedUnits);
+      
+      // Integrate counter-tactics into priority decisions
+      priorityDecisions = this.integrateCounterTactics(priorityDecisions, counterTactics, context, priority);
       
       // Filter out any decisions for units that are already used (safety check)
       const filteredPriorityDecisions = priorityDecisions.filter(decision => {
@@ -150,6 +211,578 @@ export class AIDecisionMaker {
     this.decisionHistory.push(...filteredDecisions);
 
     return filteredDecisions;
+  }
+
+  /**
+   * Analyze player behavior patterns to develop counter-tactics
+   */
+  private analyzePlayerBehavior(context: AIDecisionContext): PlayerBehaviorAnalysis {
+    const gameState = context.gameState;
+    const playerUnits = context.enemyUnits;
+    const currentTurn = context.turn;
+    
+    // Analyze movement patterns
+    const movementPatterns = this.analyzeMovementPatterns(playerUnits, gameState);
+    
+    // Analyze targeting preferences
+    const targetingPreferences = this.analyzeTargetingPreferences(gameState, currentTurn);
+    
+    // Analyze risk profile
+    const riskProfile = this.analyzeRiskProfile(playerUnits, gameState);
+    
+    // Analyze timing patterns
+    const timingPatterns = this.analyzeTimingPatterns(gameState, currentTurn);
+    
+    // Detect overall patterns
+    const detectedPatterns = this.detectTacticalPatterns(movementPatterns, targetingPreferences, riskProfile);
+    
+    // Calculate predictability score
+    const predictabilityScore = this.calculatePredictabilityScore(detectedPatterns, timingPatterns);
+    
+    // Identify weaknesses
+    const weaknesses = this.identifyPlayerWeaknesses(detectedPatterns, riskProfile);
+    
+    // Find counter opportunities
+    const counterOpportunities = this.findCounterOpportunities(weaknesses, context);
+    
+    return {
+      detectedPatterns,
+      predictabilityScore,
+      preferredTactics: this.extractPreferredTactics(detectedPatterns),
+      weaknesses,
+      counterOpportunities,
+      movementPatterns,
+      targetingPreferences,
+      riskProfile,
+      timingPatterns
+    };
+  }
+
+  /**
+   * Analyze player movement patterns
+   */
+  private analyzeMovementPatterns(playerUnits: Unit[], gameState: any): MovementPattern[] {
+    const patterns: MovementPattern[] = [];
+    
+    let aggressiveCount = 0;
+    let cautiousCount = 0;
+    let flankingCount = 0;
+    let directCount = 0;
+    
+    playerUnits.forEach(unit => {
+      const position = unit.state.position;
+      const nearEnemies = gameState.getUnitsInRange(position, 2)
+        .filter((u: Unit) => u.side !== unit.side).length;
+      
+      if (nearEnemies >= 2) {
+        aggressiveCount++;
+      } else if (nearEnemies === 0) {
+        cautiousCount++;
+      } else {
+        const enemyUnits = gameState.getUnitsInRange(position, 3)
+          .filter((u: Unit) => u.side !== unit.side);
+        if (enemyUnits.length > 0) {
+          const avgEnemyQ = enemyUnits.reduce((sum: number, u: Unit) => sum + u.state.position.q, 0) / enemyUnits.length;
+          const avgEnemyR = enemyUnits.reduce((sum: number, u: Unit) => sum + u.state.position.r, 0) / enemyUnits.length;
+          
+          const distanceFromCenter = Math.abs(position.q - avgEnemyQ) + Math.abs(position.r - avgEnemyR);
+          if (distanceFromCenter > 2) {
+            flankingCount++;
+          } else {
+            directCount++;
+          }
+        }
+      }
+    });
+    
+    const totalUnits = playerUnits.length || 1;
+    
+    if (aggressiveCount > 0) {
+      patterns.push({
+        type: 'aggressive',
+        frequency: aggressiveCount / totalUnits,
+        effectiveness: 0.7,
+        counterStrategy: 'defensive_positioning'
+      });
+    }
+    
+    if (cautiousCount > 0) {
+      patterns.push({
+        type: 'cautious',
+        frequency: cautiousCount / totalUnits,
+        effectiveness: 0.6,
+        counterStrategy: 'aggressive_pressure'
+      });
+    }
+    
+    if (flankingCount > 0) {
+      patterns.push({
+        type: 'flanking',
+        frequency: flankingCount / totalUnits,
+        effectiveness: 0.8,
+        counterStrategy: 'central_defense'
+      });
+    }
+    
+    if (directCount > 0) {
+      patterns.push({
+        type: 'direct',
+        frequency: directCount / totalUnits,
+        effectiveness: 0.5,
+        counterStrategy: 'mobile_defense'
+      });
+    }
+    
+    return patterns;
+  }
+
+  /**
+   * Analyze player targeting preferences
+   */
+  private analyzeTargetingPreferences(gameState: any, currentTurn: number): TargetingPreference[] {
+    const preferences: TargetingPreference[] = [];
+    
+    const unitTypes = ['infantry', 'armor', 'aircraft', 'artillery', 'special'];
+    
+    unitTypes.forEach(unitType => {
+      const unitsOfType = gameState.getAllUnits()
+        .filter((u: Unit) => u.type.toLowerCase().includes(unitType.toLowerCase()));
+      
+      const threatenedUnits = unitsOfType.filter((unit: Unit) => {
+        const threats = gameState.getUnitsInRange(unit.state.position, 2)
+          .filter((u: Unit) => u.side !== unit.side);
+        return threats.length > 0;
+      });
+      
+      if (unitsOfType.length > 0) {
+        const targetingFrequency = threatenedUnits.length / unitsOfType.length;
+        
+        if (targetingFrequency > 0.1) {
+          preferences.push({
+            unitType,
+            priority: this.calculateTargetPriority(unitType),
+            frequency: targetingFrequency,
+            effectiveness: 0.6
+          });
+        }
+      }
+    });
+    
+    return preferences;
+  }
+
+  /**
+   * Calculate priority for different unit types
+   */
+  private calculateTargetPriority(unitType: string): number {
+    const priorities: Record<string, number> = {
+      'aircraft': 0.9,
+      'artillery': 0.8,
+      'armor': 0.7,
+      'special': 0.6,
+      'infantry': 0.5
+    };
+    
+    return priorities[unitType] || 0.5;
+  }
+
+  /**
+   * Analyze player risk profile
+   */
+  private analyzeRiskProfile(playerUnits: Unit[], gameState: any): RiskProfile {
+    let totalRisk = 0;
+    let retreatThreshold = 0;
+    let aggressionLevel = 0;
+    
+    playerUnits.forEach(unit => {
+      const threats = gameState.getUnitsInRange(unit.state.position, 2)
+        .filter((u: Unit) => u.side !== unit.side);
+      
+      const riskScore = threats.length * 0.3;
+      totalRisk += riskScore;
+      
+      const hpPercentage = unit.state.currentHP / unit.stats.hp;
+      if (hpPercentage < 0.5 && threats.length > 0) {
+        retreatThreshold += hpPercentage;
+      }
+      
+      if (threats.length > 0) {
+        aggressionLevel += 0.2;
+      }
+    });
+    
+    const unitCount = playerUnits.length || 1;
+    
+    return {
+      riskTolerance: Math.min(1, totalRisk / unitCount),
+      retreatThreshold: retreatThreshold / unitCount || 0.3,
+      aggressionLevel: aggressionLevel / unitCount,
+      adaptationSpeed: 0.5
+    };
+  }
+
+  /**
+   * Analyze timing patterns
+   */
+  private analyzeTimingPatterns(gameState: any, currentTurn: number): TimingPattern[] {
+    const patterns: TimingPattern[] = [];
+    
+    const currentPhase = gameState.phase;
+    
+    patterns.push({
+      phase: currentPhase,
+      preferredActions: this.getPhasePreferredActions(currentPhase),
+      frequency: 0.8,
+      predictability: 0.6
+    });
+    
+    return patterns;
+  }
+
+  /**
+   * Get preferred actions for current phase
+   */
+  private getPhasePreferredActions(phase: string): string[] {
+    const phaseActions: Record<string, string[]> = {
+      'movement': ['advance', 'flank', 'retreat', 'reposition'],
+      'action': ['attack', 'special_ability', 'defensive_action'],
+      'deployment': ['deploy', 'reinforce', 'prepare']
+    };
+    
+    return phaseActions[phase] || ['general_action'];
+  }
+
+  /**
+   * Detect tactical patterns from movement and targeting data
+   */
+  private detectTacticalPatterns(movementPatterns: MovementPattern[], targetingPreferences: TargetingPreference[], riskProfile: RiskProfile): string[] {
+    const patterns: string[] = [];
+    
+    movementPatterns.forEach(pattern => {
+      if (pattern.frequency > 0.6) {
+        patterns.push(`frequent_${pattern.type}_movement`);
+      }
+    });
+    
+    targetingPreferences.forEach(pref => {
+      if (pref.frequency > 0.7) {
+        patterns.push(`prioritizes_${pref.unitType}`);
+      }
+    });
+    
+    if (riskProfile.riskTolerance > 0.7) {
+      patterns.push('high_risk_player');
+    } else if (riskProfile.riskTolerance < 0.3) {
+      patterns.push('cautious_player');
+    }
+    
+    if (riskProfile.aggressionLevel > 0.6) {
+      patterns.push('aggressive_player');
+    }
+    
+    return patterns;
+  }
+
+  /**
+   * Calculate predictability score
+   */
+  private calculatePredictabilityScore(patterns: string[], timingPatterns: TimingPattern[]): number {
+    let predictabilitySum = 0;
+    let count = 0;
+    
+    if (patterns.length > 3) {
+      predictabilitySum += 0.8;
+      count++;
+    }
+    
+    timingPatterns.forEach(pattern => {
+      predictabilitySum += pattern.predictability;
+      count++;
+    });
+    
+    return count > 0 ? predictabilitySum / count : 0.5;
+  }
+
+  /**
+   * Extract preferred tactics from patterns
+   */
+  private extractPreferredTactics(patterns: string[]): string[] {
+    const tactics: string[] = [];
+    
+    patterns.forEach(pattern => {
+      if (pattern.includes('aggressive')) {
+        tactics.push('direct_assault');
+      } else if (pattern.includes('cautious')) {
+        tactics.push('defensive_positioning');
+      } else if (pattern.includes('flanking')) {
+        tactics.push('flanking_maneuvers');
+      }
+    });
+    
+    return tactics;
+  }
+
+  /**
+   * Identify player weaknesses
+   */
+  private identifyPlayerWeaknesses(patterns: string[], riskProfile: RiskProfile): string[] {
+    const weaknesses: string[] = [];
+    
+    patterns.forEach(pattern => {
+      if (pattern.includes('frequent_direct_movement')) {
+        weaknesses.push('predictable_movement');
+      } else if (pattern.includes('prioritizes_aircraft')) {
+        weaknesses.push('air_focused_tunnel_vision');
+      } else if (pattern.includes('high_risk_player')) {
+        weaknesses.push('overextension_vulnerability');
+      } else if (pattern.includes('cautious_player')) {
+        weaknesses.push('slow_to_adapt');
+      }
+    });
+    
+    if (riskProfile.retreatThreshold > 0.7) {
+      weaknesses.push('early_retreat_tendency');
+    } else if (riskProfile.retreatThreshold < 0.2) {
+      weaknesses.push('fights_to_death');
+    }
+    
+    if (riskProfile.adaptationSpeed < 0.3) {
+      weaknesses.push('slow_tactical_adaptation');
+    }
+    
+    return weaknesses;
+  }
+
+  /**
+   * Find counter opportunities
+   */
+  private findCounterOpportunities(weaknesses: string[], context: AIDecisionContext): string[] {
+    const opportunities: string[] = [];
+    
+    weaknesses.forEach(weakness => {
+      switch (weakness) {
+        case 'predictable_movement':
+          opportunities.push('ambush_positioning');
+          opportunities.push('flanking_maneuvers');
+          break;
+        case 'air_focused_tunnel_vision':
+          opportunities.push('ground_assault_while_distracted');
+          opportunities.push('anti_air_trap');
+          break;
+        case 'overextension_vulnerability':
+          opportunities.push('counter_attack_isolated_units');
+          opportunities.push('cut_supply_lines');
+          break;
+        case 'slow_to_adapt':
+          opportunities.push('repeated_successful_tactics');
+          opportunities.push('escalating_pressure');
+          break;
+        case 'early_retreat_tendency':
+          opportunities.push('psychological_pressure');
+          opportunities.push('pursuit_tactics');
+          break;
+        case 'fights_to_death':
+          opportunities.push('attrition_warfare');
+          opportunities.push('surround_and_destroy');
+          break;
+      }
+    });
+    
+    return opportunities;
+  }
+
+  /**
+   * Generate counter-tactics based on player analysis
+   */
+  private generateCounterTactics(playerAnalysis: PlayerBehaviorAnalysis, context: AIDecisionContext): CounterTacticPlan[] {
+    const counterTactics: CounterTacticPlan[] = [];
+    
+    playerAnalysis.counterOpportunities.forEach(opportunity => {
+      const tactic = this.createCounterTacticPlan(opportunity, playerAnalysis, context);
+      if (tactic) {
+        counterTactics.push(tactic);
+      }
+    });
+    
+    counterTactics.sort((a, b) => {
+      const scoreA = a.expectedEffectiveness * a.priority;
+      const scoreB = b.expectedEffectiveness * b.priority;
+      return scoreB - scoreA;
+    });
+    
+    return counterTactics.slice(0, 3);
+  }
+
+  /**
+   * Create specific counter-tactic plan
+   */
+  private createCounterTacticPlan(opportunity: string, playerAnalysis: PlayerBehaviorAnalysis, context: AIDecisionContext): CounterTacticPlan | null {
+    const availableUnits = context.availableUnits.map(u => u.id);
+    
+    switch (opportunity) {
+      case 'ambush_positioning':
+        return {
+          strategy: 'Position hidden units along predicted movement paths',
+          targetWeakness: 'predictable_movement',
+          expectedEffectiveness: 0.8,
+          requiredUnits: availableUnits.filter(id => {
+            const unit = context.availableUnits.find(u => u.id === id);
+            return unit && unit.categories.has(UnitCategory.INFANTRY);
+          }).slice(0, 2),
+          executionPhase: 'movement',
+          priority: 0.9,
+          triggers: ['enemy_movement_detected', 'favorable_terrain_available'],
+          fallbackOptions: ['defensive_positioning', 'mobile_defense'],
+          resourceCost: 2
+        };
+        
+      case 'flanking_maneuvers':
+        return {
+          strategy: 'Execute coordinated flanking attack while enemy focused elsewhere',
+          targetWeakness: 'tunnel_vision',
+          expectedEffectiveness: 0.7,
+          requiredUnits: availableUnits.filter(id => {
+            const unit = context.availableUnits.find(u => u.id === id);
+            return unit && unit.stats.mv >= 2;
+          }).slice(0, 2),
+          executionPhase: 'movement',
+          priority: 0.8,
+          triggers: ['enemy_focused_elsewhere', 'mobile_units_available'],
+          fallbackOptions: ['direct_assault', 'defensive_hold'],
+          resourceCost: 3
+        };
+        
+      case 'counter_attack_isolated_units':
+        return {
+          strategy: 'Focus fire on overextended enemy units',
+          targetWeakness: 'overextension_vulnerability',
+          expectedEffectiveness: 0.9,
+          requiredUnits: availableUnits.slice(0, 3),
+          executionPhase: 'action',
+          priority: 0.95,
+          triggers: ['isolated_enemy_detected', 'sufficient_firepower'],
+          fallbackOptions: ['harassing_fire', 'defensive_positioning'],
+          resourceCost: 4
+        };
+        
+      case 'psychological_pressure':
+        return {
+          strategy: 'Apply continuous pressure to trigger early retreat',
+          targetWeakness: 'early_retreat_tendency',
+          expectedEffectiveness: 0.6,
+          requiredUnits: availableUnits.slice(0, 2),
+          executionPhase: 'movement',
+          priority: 0.7,
+          triggers: ['enemy_morale_low', 'sustained_pressure_possible'],
+          fallbackOptions: ['direct_assault', 'defensive_hold'],
+          resourceCost: 2
+        };
+        
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Integrate counter-tactics into priority decisions
+   */
+  private integrateCounterTactics(decisions: AIDecision[], counterTactics: CounterTacticPlan[], context: AIDecisionContext, priority: TacticalPriority): AIDecision[] {
+    const enhancedDecisions: AIDecision[] = [...decisions];
+    
+    // Only apply counter-tactics for certain priorities
+    const applicablePriorities = [
+      TacticalPriority.INFLICT_CASUALTIES,
+      TacticalPriority.HIDDEN_OPERATIONS,
+      TacticalPriority.DENY_TERRAIN
+    ];
+    
+    if (!applicablePriorities.includes(priority)) {
+      return enhancedDecisions;
+    }
+    
+    // Convert applicable counter-tactics to AI decisions
+    counterTactics.forEach(tactic => {
+      const decision = this.convertTacticToDecision(tactic, context);
+      if (decision) {
+        decision.priority *= 1.2; // Boost counter-tactic priority
+        enhancedDecisions.push(decision);
+      }
+    });
+    
+    enhancedDecisions.sort((a, b) => b.priority - a.priority);
+    
+    return enhancedDecisions;
+  }
+
+  /**
+   * Convert counter-tactic to AI decision
+   */
+  private convertTacticToDecision(tactic: CounterTacticPlan, context: AIDecisionContext): AIDecision | null {
+    const availableUnits = context.availableUnits;
+    
+    if (tactic.requiredUnits.length === 0) {
+      return null;
+    }
+    
+    const primaryUnit = availableUnits.find(u => u.id === tactic.requiredUnits[0]);
+    if (!primaryUnit) {
+      return null;
+    }
+    
+    if (tactic.strategy.includes('ambush')) {
+      return {
+        type: AIDecisionType.SET_AMBUSH,
+        priority: tactic.priority,
+        unitId: primaryUnit.id,
+        reasoning: `Counter-tactic: ${tactic.strategy}`,
+        metadata: {
+          counterTactic: true,
+          targetWeakness: tactic.targetWeakness,
+          expectedEffectiveness: tactic.expectedEffectiveness,
+          requiredUnits: tactic.requiredUnits
+        }
+      };
+    } else if (tactic.strategy.includes('flanking')) {
+      return {
+        type: AIDecisionType.COORDINATE_ATTACK,
+        priority: tactic.priority,
+        unitId: primaryUnit.id,
+        reasoning: `Counter-tactic: ${tactic.strategy}`,
+        metadata: {
+          counterTactic: true,
+          coordinationType: 'flanking',
+          targetWeakness: tactic.targetWeakness,
+          requiredUnits: tactic.requiredUnits
+        }
+      };
+    } else if (tactic.strategy.includes('focus fire')) {
+      return {
+        type: AIDecisionType.COORDINATE_ATTACK,
+        priority: tactic.priority,
+        unitId: primaryUnit.id,
+        reasoning: `Counter-tactic: ${tactic.strategy}`,
+        metadata: {
+          counterTactic: true,
+          coordinationType: 'focus_fire',
+          targetWeakness: tactic.targetWeakness,
+          requiredUnits: tactic.requiredUnits
+        }
+      };
+    } else if (tactic.strategy.includes('pressure')) {
+      return {
+        type: AIDecisionType.MOVE_UNIT,
+        priority: tactic.priority,
+        unitId: primaryUnit.id,
+        reasoning: `Counter-tactic: ${tactic.strategy}`,
+        metadata: {
+          counterTactic: true,
+          movementType: 'pressure',
+          targetWeakness: tactic.targetWeakness
+        }
+      };
+    }
+    
+    return null;
   }
 
   /**
