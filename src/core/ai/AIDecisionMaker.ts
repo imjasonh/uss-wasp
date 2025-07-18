@@ -271,7 +271,7 @@ export class AIDecisionMaker {
     
     playerUnits.forEach(unit => {
       const position = unit.state.position;
-      const nearEnemies = gameState.getUnitsInRange(position, 2)
+      const nearEnemies = this.getUnitsInRange(gameState, position, 2)
         .filter((u: Unit) => u.side !== unit.side).length;
       
       if (nearEnemies >= 2) {
@@ -279,7 +279,7 @@ export class AIDecisionMaker {
       } else if (nearEnemies === 0) {
         cautiousCount++;
       } else {
-        const enemyUnits = gameState.getUnitsInRange(position, 3)
+        const enemyUnits = this.getUnitsInRange(gameState, position, 3)
           .filter((u: Unit) => u.side !== unit.side);
         if (enemyUnits.length > 0) {
           const avgEnemyQ = enemyUnits.reduce((sum: number, u: Unit) => sum + u.state.position.q, 0) / enemyUnits.length;
@@ -349,7 +349,7 @@ export class AIDecisionMaker {
         .filter((u: Unit) => u.type.toLowerCase().includes(unitType.toLowerCase()));
       
       const threatenedUnits = unitsOfType.filter((unit: Unit) => {
-        const threats = gameState.getUnitsInRange(unit.state.position, 2)
+        const threats = this.getUnitsInRange(gameState, unit.state.position, 2)
           .filter((u: Unit) => u.side !== unit.side);
         return threats.length > 0;
       });
@@ -395,7 +395,7 @@ export class AIDecisionMaker {
     let aggressionLevel = 0;
     
     playerUnits.forEach(unit => {
-      const threats = gameState.getUnitsInRange(unit.state.position, 2)
+      const threats = this.getUnitsInRange(gameState, unit.state.position, 2)
         .filter((u: Unit) => u.side !== unit.side);
       
       const riskScore = threats.length * 0.3;
@@ -5856,5 +5856,18 @@ export class AIDecisionMaker {
       unitId: unit.id,
       reasoning: `Fortifying position (resource utilization)`,
     };
+  }
+
+  /**
+   * Get units within range of a position
+   */
+  private getUnitsInRange(gameState: any, position: any, range: number): Unit[] {
+    const allUnits = gameState.getAllUnits();
+    const targetHex = new Hex(position.q, position.r, position.s);
+    
+    return allUnits.filter((unit: Unit) => {
+      const unitHex = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
+      return unitHex.distanceTo(targetHex) <= range;
+    });
   }
 }
