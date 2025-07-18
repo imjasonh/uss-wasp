@@ -18,6 +18,7 @@ import {
 import { Unit } from '../game/Unit';
 import { Hex, HexCoordinate } from '../hex';
 import { UnitCategory, UnitType, TerrainType, TurnPhase } from '../game/types';
+import { MapHex } from '../game/Map';
 
 /**
  * Core AI decision-making engine
@@ -1366,27 +1367,6 @@ export class AIDecisionMaker {
     return this.validatePathExists(unit, position, context);
   }
 
-  /**
-   * Check if terrain is obviously impassable for a unit type
-   */
-  private isTerrainImpassableForUnit(
-    unit: Unit,
-    targetHex: any,
-    _context: AIDecisionContext
-  ): boolean {
-    // Ground units cannot enter deep water (unless amphibious)
-    if (
-      targetHex.terrain === TerrainType.DEEP_WATER &&
-      !unit.hasCategory(UnitCategory.AMPHIBIOUS) &&
-      !unit.hasCategory(UnitCategory.AIRCRAFT) &&
-      !unit.hasCategory(UnitCategory.SHIP)
-    ) {
-      return true;
-    }
-
-    // Add other obvious impassable terrain checks here
-    return false;
-  }
 
   /**
    * Validate that a path actually exists using lightweight pathfinding
@@ -1402,16 +1382,22 @@ export class AIDecisionMaker {
   }
 
   /**
-   * Simplified pathfinding check for reachability
+   * Advanced pathfinding check with terrain awareness and caching
    */
   private checkSimplifiedPath(unit: Unit, target: Hex, context: AIDecisionContext): boolean {
     const start = new Hex(unit.state.position.q, unit.state.position.r, unit.state.position.s);
     const maxMovement = unit.getEffectiveMovement();
 
-    // Use a simple BFS to check if target is reachable within movement range
-    const queue: Array<{ hex: Hex; cost: number }> = [{ hex: start, cost: 0 }];
-    const visited = new Set<string>();
-    visited.add(start.toKey());
+    // Early validation - check if target is within theoretical range
+    const directDistance = this.calculateDistance(start, target);
+    if (directDistance > maxMovement * 2) {
+      return false; // Too far even with optimal terrain
+    }
+
+    // Enhanced BFS with terrain cost consideration
+    const queue: Array<{ hex: Hex; cost: number; actualCost: number }> = [{ hex: start, cost: 0, actualCost: 0 }];
+    const visited = new Map<string, number>(); // Store cost for each visited position
+    visited.set(start.toKey(), 0);
 
     while (queue.length > 0) {
       const current = queue.shift()!;
@@ -1422,7 +1408,7 @@ export class AIDecisionMaker {
       }
 
       // Skip if we've exceeded movement range
-      if (current.cost >= maxMovement) {
+      if (current.actualCost >= maxMovement) {
         continue;
       }
 
@@ -1430,37 +1416,141 @@ export class AIDecisionMaker {
       for (const neighbor of current.hex.neighbors()) {
         const neighborKey = neighbor.toKey();
         
-        if (visited.has(neighborKey)) {
-          continue;
-        }
-
-        // Check if position is valid
+        // Advanced boundary validation
         if (!this.isValidMapPosition(neighbor, context)) {
           continue;
         }
 
-        // Get movement cost
-        const movementCost = context.gameState.map.getMovementCost(neighbor);
+        // Get movement cost with unit-specific terrain handling
+        const movementCost = this.getAdvancedMovementCost(unit, neighbor, context);
         if (!isFinite(movementCost) || movementCost <= 0) {
           continue; // Impassable terrain
         }
 
-        // Check terrain restrictions
+        const newActualCost = current.actualCost + movementCost;
+        
+        // Check if we've already visited this position with better cost
+        const existingCost = visited.get(neighborKey);
+        if (existingCost !== undefined && existingCost <= newActualCost) {
+          continue;
+        }
+
+        // Check terrain restrictions with advanced unit rules
         const targetHex = context.gameState.map.getHex(neighbor);
         if (targetHex && this.isTerrainImpassableForUnit(unit, targetHex, context)) {
           continue;
         }
 
-        const newCost = current.cost + movementCost;
-        if (newCost <= maxMovement) {
-          visited.add(neighborKey);
-          queue.push({ hex: neighbor, cost: newCost });
+        // Update visited with new cost
+        visited.set(neighborKey, newActualCost);
+        
+        // Add to queue if within movement range
+        if (newActualCost <= maxMovement) {
+          queue.push({ 
+            hex: neighbor, 
+            cost: directDistance, // Use direct distance for priority
+            actualCost: newActualCost 
+          });
         }
       }
     }
 
     // Target not reachable within movement range
     return false;
+  }
+
+  /**
+   * Get advanced movement cost considering unit-specific terrain abilities
+   */
+  private getAdvancedMovementCost(unit: Unit, position: Hex, context: AIDecisionContext): number {
+    const mapHex = context.gameState.map.getHex(position);
+    if (!mapHex) {
+      return Infinity;
+    }
+
+    // Get base terrain cost
+    let baseCost = context.gameState.map.getMovementCost(position);
+    
+    // Apply unit-specific modifiers
+    if (unit.hasCategory(UnitCategory.AIRCRAFT)) {
+      return 1; // Aircraft ignore terrain costs
+    }
+    
+    if (unit.hasCategory(UnitCategory.AMPHIBIOUS)) {
+      // Amphibious units get reduced water penalties
+      if (mapHex.terrain === TerrainType.SHALLOW_WATER) {
+        baseCost = Math.max(1, baseCost - 1);
+      }
+    }
+    
+    if (unit.type === UnitType.LCAC) {
+      // LCAC has special terrain handling
+      if (mapHex.terrain === TerrainType.DEEP_WATER || mapHex.terrain === TerrainType.SHALLOW_WATER || mapHex.terrain === TerrainType.BEACH) {
+        return 1;
+      }
+    }
+
+    // Apply terrain preference bonuses
+    const terrainBenefit = this.evaluateTerrainBenefit(position, unit, context);
+    if (terrainBenefit > 3) {
+      baseCost = Math.max(1, baseCost - 1); // Reduce cost for preferred terrain
+    }
+
+    return baseCost;
+  }
+
+  /**
+   * Check if terrain is impassable for a specific unit
+   */
+  private isTerrainImpassableForUnit(unit: Unit, mapHex: MapHex, context: AIDecisionContext): boolean {
+    const terrainProps = context.gameState.map.getTerrainProperties(mapHex.terrain);
+    
+    // Ground units cannot enter deep water
+    if (mapHex.terrain === TerrainType.DEEP_WATER && !unit.hasCategory(UnitCategory.AMPHIBIOUS) && !unit.hasCategory(UnitCategory.AIRCRAFT)) {
+      return true;
+    }
+    
+    // Check if terrain has infinite movement cost
+    if (terrainProps.movementCost === Infinity) {
+      return true;
+    }
+    
+    // Aircraft need landing zones for certain operations
+    if (unit.hasCategory(UnitCategory.AIRCRAFT) && unit.hasCategory(UnitCategory.HELICOPTER)) {
+      // Helicopters can land in most terrain
+      return false;
+    }
+    
+    if (unit.hasCategory(UnitCategory.AIRCRAFT) && !unit.hasCategory(UnitCategory.HELICOPTER)) {
+      // Fixed-wing aircraft need suitable landing areas
+      return !terrainProps.canLandAircraft;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Enhanced map position validation with fallback mechanisms
+   */
+  private isValidMapPosition(position: Hex, context: AIDecisionContext): boolean {
+    // Primary validation - check if position is within map bounds
+    if (!context.gameState.map.isValidHex(position)) {
+      return false;
+    }
+
+    // Secondary validation - check if position is accessible
+    const mapHex = context.gameState.map.getHex(position);
+    if (!mapHex) {
+      return false;
+    }
+
+    // Tertiary validation - check for extreme terrain
+    const terrainProps = context.gameState.map.getTerrainProperties(mapHex.terrain);
+    if (terrainProps.movementCost === Infinity) {
+      return false;
+    }
+
+    return true;
   }
 
   private selectBestUnitForPosition(
@@ -1524,9 +1614,9 @@ export class AIDecisionMaker {
     return scoredUnits[0].unit;
   }
 
-  private findValidTargets(unit: Unit, enemies: Unit[], _context: AIDecisionContext): Unit[] {
+  private findValidTargets(unit: Unit, enemies: Unit[], context: AIDecisionContext): Unit[] {
     // Find enemies that this unit can potentially attack
-    const targets: Unit[] = [];
+    const potentialTargets: Unit[] = [];
 
     for (const enemy of enemies) {
       // Basic range check
@@ -1534,13 +1624,16 @@ export class AIDecisionMaker {
       const maxRange = this.getUnitRange(unit);
 
       if (distance <= maxRange && enemy.isAlive()) {
-        targets.push(enemy);
+        potentialTargets.push(enemy);
       }
     }
 
+    // Apply advanced target prioritization
+    const prioritizedTargets = this.prioritizeTargets(unit, potentialTargets, context);
+
     // BALANCE FIX: Prioritize air targets for AA units
     if (unit.type === UnitType.AA_TEAM || unit.type === UnitType.SAM_SITE) {
-      const airTargets = targets.filter(
+      const airTargets = prioritizedTargets.filter(
         t => t.hasCategory(UnitCategory.AIRCRAFT) || t.hasCategory(UnitCategory.HELICOPTER)
       );
       if (airTargets.length > 0) {
@@ -1548,34 +1641,230 @@ export class AIDecisionMaker {
       }
     }
 
-    return targets;
+    return prioritizedTargets;
+  }
+
+  /**
+   * Advanced target prioritization with comprehensive threat assessment
+   */
+  private prioritizeTargets(unit: Unit, targets: Unit[], context: AIDecisionContext): Unit[] {
+    if (targets.length <= 1) {
+      return targets;
+    }
+
+    // Calculate threat score for each target
+    const targetScores = targets.map(target => {
+      const threatScore = this.calculateThreatScore(target, unit, context);
+      const opportunityScore = this.calculateOpportunityScore(target, unit, context);
+      const strategicScore = this.calculateStrategicScore(target, unit, context);
+
+      return {
+        target,
+        totalScore: threatScore + opportunityScore + strategicScore,
+        threatScore,
+        opportunityScore,
+        strategicScore
+      };
+    });
+
+    // Sort by total score (highest first)
+    targetScores.sort((a, b) => b.totalScore - a.totalScore);
+
+    // Return targets in priority order
+    return targetScores.map(ts => ts.target);
+  }
+
+  /**
+   * Calculate threat score - how dangerous the target is to us
+   */
+  private calculateThreatScore(target: Unit, attacker: Unit, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Base threat from unit combat power
+    score += target.stats.atk * 2;
+
+    // Range threat - units that can hit us back
+    const distance = this.calculateDistance(attacker.state.position, target.state.position);
+    const targetRange = this.getUnitRange(target);
+    if (distance <= targetRange) {
+      score += 5; // Immediate threat bonus
+    }
+
+    // Special unit threats
+    if (target.type === UnitType.USS_WASP) {
+      score += 20; // High value target
+    }
+    if (target.hasCategory(UnitCategory.ARTILLERY)) {
+      score += 8; // Artillery is dangerous
+    }
+    if (target.hasCategory(UnitCategory.AIRCRAFT)) {
+      score += 6; // Aircraft mobility threat
+    }
+
+    // Health-based threat (damaged units less dangerous)
+    const healthRatio = target.state.currentHP / target.stats.hp;
+    score *= healthRatio;
+
+    // Proximity threat - closer enemies are more dangerous
+    const proximityBonus = Math.max(0, 5 - distance);
+    score += proximityBonus;
+
+    return score;
+  }
+
+  /**
+   * Calculate opportunity score - how easy/profitable the target is to kill
+   */
+  private calculateOpportunityScore(target: Unit, attacker: Unit, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Vulnerability assessment
+    const healthRatio = target.state.currentHP / target.stats.hp;
+    score += (1 - healthRatio) * 10; // Damaged units are easier targets
+
+    // Defense assessment
+    const defenseRatio = target.stats.def / (attacker.stats.atk + 1);
+    score += Math.max(0, 5 - defenseRatio * 5); // Weaker defense = higher opportunity
+
+    // Terrain advantage
+    const targetHex = context.gameState.map.getHex(target.state.position);
+    if (targetHex) {
+      const terrainProps = context.gameState.map.getTerrainProperties(targetHex.terrain);
+      score -= terrainProps.coverBonus; // Covered targets are harder
+    }
+
+    // Isolation bonus - isolated targets are easier
+    const nearbyEnemies = context.enemyUnits.filter(enemy => 
+      enemy.id !== target.id && this.calculateDistance(target.state.position, enemy.state.position) <= 2
+    );
+    if (nearbyEnemies.length === 0) {
+      score += 3; // Isolated target bonus
+    }
+
+    // Distance penalty - closer targets are easier
+    const distance = this.calculateDistance(attacker.state.position, target.state.position);
+    score += Math.max(0, 3 - distance);
+
+    return score;
+  }
+
+  /**
+   * Calculate strategic score - how strategically valuable the target is
+   */
+  private calculateStrategicScore(target: Unit, attacker: Unit, context: AIDecisionContext): number {
+    let score = 0;
+
+    // High-value targets
+    if (target.type === UnitType.USS_WASP) {
+      score += 15; // Highest strategic value
+    }
+    if (target.hasCategory(UnitCategory.ARTILLERY)) {
+      score += 8; // Artillery has strategic impact
+    }
+    if (target.hasCategory(UnitCategory.AIRCRAFT)) {
+      score += 6; // Aircraft provide strategic mobility
+    }
+
+    // Leadership and special units
+    if (target.type === UnitType.MARSOC) {
+      score += 5; // Special operations forces
+    }
+    if (target.type === UnitType.SUPER_COBRA) {
+      score += 7; // Attack helicopter
+    }
+
+    // Objective-related scoring
+    const objectives = context.gameState.map.getObjectives();
+    for (const objective of objectives) {
+      const distanceToObjective = this.calculateDistance(target.state.position, objective.coordinate);
+      if (distanceToObjective <= 2) {
+        score += 4; // Target near objective
+      }
+    }
+
+    // Transport capacity (valuable for logistics)
+    const cargoCapacity = target.getCargoCapacity();
+    if (cargoCapacity > 0) {
+      score += cargoCapacity * 2;
+    }
+
+    // Unit rarity (more valuable if fewer exist)
+    const sameTypeCount = context.enemyUnits.filter(u => u.type === target.type).length;
+    if (sameTypeCount === 1) {
+      score += 3; // Last of its kind
+    }
+
+    return score;
   }
 
   private analyzeEngagement(
     attacker: Unit,
     target: Unit,
-    _context: AIDecisionContext
+    context: AIDecisionContext
   ): EngagementAnalysis {
-    // Simple engagement analysis
+    // Enhanced engagement analysis with threat assessment
     const attackerPower = attacker.stats.atk;
     const targetDefense = target.stats.def;
 
-    // Check if units are adjacent (distance 0 or 1) for bonus confidence
+    // Calculate terrain advantages
     const distance = this.calculateDistance(attacker.state.position, target.state.position);
     const adjacentBonus = distance <= 1 ? 0.3 : 0; // Big confidence boost for adjacent combat
+    
+    const attackerHex = context.gameState.map.getHex(attacker.state.position);
+    const targetHex = context.gameState.map.getHex(target.state.position);
+    
+    let terrainAdvantage = adjacentBonus;
+    if (attackerHex && targetHex) {
+      const attackerTerrain = context.gameState.map.getTerrainProperties(attackerHex.terrain);
+      const targetTerrain = context.gameState.map.getTerrainProperties(targetHex.terrain);
+      terrainAdvantage += (attackerTerrain.coverBonus - targetTerrain.coverBonus) * 0.1;
+    }
 
+    // Calculate strategic value using threat assessment
+    const threatScore = this.calculateThreatScore(target, attacker, context);
+    const opportunityScore = this.calculateOpportunityScore(target, attacker, context);
+    const strategicScore = this.calculateStrategicScore(target, attacker, context);
+    
+    const strategicValue = (threatScore + opportunityScore + strategicScore) / 30; // Normalize
+
+    // Calculate engagement confidence
     const baseConfidence = attackerPower / (targetDefense + 1);
-    const confidence = Math.min(0.95, Math.max(0.2, baseConfidence + adjacentBonus));
+    const healthRatio = target.state.currentHP / target.stats.hp;
+    const damageBonus = (1 - healthRatio) * 0.2; // Bonus for damaged targets
+    
+    const confidence = Math.min(0.95, Math.max(0.2, baseConfidence + terrainAdvantage + damageBonus));
+
+    // Calculate supply status (simplified - could be enhanced with actual supply tracking)
+    const supplyStatus = attacker.state.currentHP / attacker.stats.hp; // Use health as supply proxy
+
+    // Calculate escape options
+    const attackerNeighbors = context.gameState.map.getNeighbors(attacker.state.position);
+    const validEscapeRoutes = attackerNeighbors.filter(hex => {
+      const terrainProps = context.gameState.map.getTerrainProperties(hex.terrain);
+      return terrainProps.movementCost < Infinity && !this.isTerrainImpassableForUnit(attacker, hex, context);
+    });
+    const escapeOptions = validEscapeRoutes.length / 6; // Normalized to 0-1
+
+    // Calculate player vulnerability (target's disadvantage)
+    const playerVulnerability = Math.max(0, 1 - (target.stats.def / attackerPower));
+
+    // Enhanced engagement decision
+    const shouldEngage = confidence > 0.05 && (
+      strategicValue > 0.3 || // High strategic value
+      distance <= 1 || // Adjacent combat
+      healthRatio < 0.5 || // Target is damaged
+      threatScore > 10 // High threat target
+    );
 
     return {
       friendlyAdvantage: attackerPower - targetDefense,
-      terrainAdvantage: adjacentBonus, // Use bonus as terrain advantage
-      supplyStatus: 1.0,
-      escapeOptions: 1.0,
-      strategicValue: 1.0,
-      playerVulnerability: 1.0,
-      shouldEngage: confidence > 0.05, // VERY low threshold for COMBAT GAME
-      confidence: confidence,
+      terrainAdvantage,
+      supplyStatus,
+      escapeOptions,
+      strategicValue,
+      playerVulnerability,
+      shouldEngage,
+      confidence,
     };
   }
 
@@ -1810,12 +2099,6 @@ export class AIDecisionMaker {
 
   // Additional helper methods for basic AI functionality
 
-  /**
-   * Check if a position is within map boundaries using the actual map
-   */
-  private isValidMapPosition(position: Hex, context: AIDecisionContext): boolean {
-    return context.gameState.map.isValidHex(position);
-  }
 
   /**
    * Generate a safe position within map bounds, with fallback if original is invalid
@@ -3400,52 +3683,314 @@ export class AIDecisionMaker {
     const mapHex = context.gameState.map.getHex(hex);
     if (!mapHex) {return 0;}
 
+    const terrainProps = context.gameState.map.getTerrainProperties(mapHex.terrain);
     let score = 0;
 
-    // Unit-specific terrain preferences
+    // Core terrain analysis using actual terrain properties
+    const coverValue = terrainProps.coverBonus;
+    const movementCost = terrainProps.movementCost;
+    const blocksLOS = terrainProps.blocksLOS;
+    const elevation = mapHex.elevation;
+
+    // Base cover bonus (all units benefit from cover)
+    score += coverValue * 2;
+
+    // Movement efficiency penalty
+    if (movementCost > 1) {
+      score -= (movementCost - 1) * 1.5;
+    }
+
+    // Line of sight advantages and disadvantages
+    if (blocksLOS) {
+      // Infantry benefits from concealment
+      if (unit.hasCategory(UnitCategory.INFANTRY)) {
+        score += 2;
+      }
+      // Artillery and ranged units avoid blocked LOS
+      if (unit.hasCategory(UnitCategory.ARTILLERY) || unit.type === UnitType.ATGM_TEAM) {
+        score -= 3;
+      }
+    }
+
+    // Elevation advantages
+    if (elevation > 0) {
+      // Artillery and ATGM units get significant elevation bonuses
+      if (unit.hasCategory(UnitCategory.ARTILLERY) || unit.type === UnitType.ATGM_TEAM) {
+        score += elevation * 3;
+      }
+      // Other units get modest elevation bonuses
+      else {
+        score += elevation * 1.5;
+      }
+    }
+
+    // Unit-specific terrain analysis
+    score += this.evaluateUnitSpecificTerrainBenefit(unit, mapHex, terrainProps);
+
+    // Tactical positioning analysis
+    score += this.evaluateTacticalPositioning(hex, unit, context);
+
+    // Strategic terrain value
+    score += this.evaluateStrategicTerrainValue(hex, mapHex, context);
+
+    return score;
+  }
+
+  /**
+   * Evaluate unit-specific terrain benefits
+   */
+  private evaluateUnitSpecificTerrainBenefit(unit: Unit, mapHex: any, terrainProps: any): number {
+    let score = 0;
+
     switch (unit.type) {
       case UnitType.MARSOC:
-        // MARSOC benefits from woods (stealth) and hills (reconnaissance)
+        // MARSOC excels in difficult terrain for stealth operations
+        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score += 5;}
         if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 3;}
-        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score += 4;}
         if (mapHex.terrain === TerrainType.HILLS) {score += 4;}
+        if (mapHex.terrain === TerrainType.URBAN) {score += 3;}
+        // MARSOC can operate in all terrain types effectively
         break;
       
       case UnitType.MARINE_SQUAD:
       case UnitType.INFANTRY_SQUAD:
-        // Infantry benefits from cover
-        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 2;}
-        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score += 2;}
-        if (mapHex.terrain === TerrainType.HILLS) {score += 2;}
-        if (mapHex.terrain === TerrainType.URBAN) {score += 1;}
+        // Infantry prioritizes cover and defensive positions
+        if (terrainProps.coverBonus >= 2) {score += 4;}
+        if (terrainProps.coverBonus === 1) {score += 2;}
+        if (mapHex.terrain === TerrainType.URBAN) {score += 2;} // Urban warfare training
         break;
       
       case UnitType.HUMVEE:
       case UnitType.TECHNICAL:
-        // Vehicles prefer clear terrain, avoid difficult terrain
+        // Vehicles need mobility and clear fields of fire
+        if (mapHex.terrain === TerrainType.CLEAR) {score += 4;}
+        if (mapHex.terrain === TerrainType.BEACH) {score += 2;}
+        if (terrainProps.movementCost > 2) {score -= 4;}
+        if (terrainProps.blocksLOS) {score -= 2;}
+        break;
+      
+      case UnitType.AAV_7:
+        // Amphibious vehicle excels in water operations
+        if (mapHex.terrain === TerrainType.SHALLOW_WATER) {score += 3;}
+        if (mapHex.terrain === TerrainType.BEACH) {score += 4;}
         if (mapHex.terrain === TerrainType.CLEAR) {score += 2;}
-        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score -= 2;}
-        if (mapHex.terrain === TerrainType.MOUNTAINS) {score -= 3;}
         break;
       
       case UnitType.ATGM_TEAM:
+        // ATGM needs elevation and clear lines of sight
+        if (mapHex.terrain === TerrainType.HILLS) {score += 5;}
+        if (mapHex.terrain === TerrainType.MOUNTAINS) {score += 4;}
+        if (terrainProps.blocksLOS) {score -= 4;}
+        if (terrainProps.coverBonus >= 1) {score += 2;} // Some cover is good
+        break;
+      
       case UnitType.ARTILLERY:
-        // Artillery and ATGM prefer elevated positions
-        if (mapHex.terrain === TerrainType.HILLS) {score += 3;}
-        if (mapHex.terrain === TerrainType.MOUNTAINS) {score += 2;}
-        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 1;} // Some cover
+      case UnitType.LONG_RANGE_ARTILLERY:
+        // Artillery needs elevation and stability
+        if (mapHex.terrain === TerrainType.HILLS) {score += 4;}
+        if (mapHex.terrain === TerrainType.CLEAR) {score += 3;}
+        if (terrainProps.movementCost > 2) {score -= 3;}
+        if (terrainProps.coverBonus >= 1) {score += 1;} // Prefer some cover
+        break;
+      
+      case UnitType.MORTAR_TEAM:
+        // Mortars can use indirect fire, benefit from cover
+        if (terrainProps.coverBonus >= 1) {score += 3;}
+        if (mapHex.terrain === TerrainType.URBAN) {score += 2;}
+        break;
+      
+      case UnitType.AA_TEAM:
+      case UnitType.SAM_SITE:
+        // AA units need elevation and clear sky coverage
+        if (mapHex.terrain === TerrainType.HILLS) {score += 4;}
+        if (mapHex.terrain === TerrainType.CLEAR) {score += 3;}
+        if (terrainProps.blocksLOS) {score -= 3;}
+        break;
+      
+      case UnitType.HARRIER:
+      case UnitType.OSPREY:
+      case UnitType.SUPER_STALLION:
+      case UnitType.SUPER_COBRA:
+        // Aircraft need landing capability
+        if (terrainProps.canLandAircraft) {score += 3;}
+        else {score -= 5;}
+        break;
+      
+      case UnitType.LCAC:
+      case UnitType.LCU:
+        // Landing craft need deployment capability
+        if (terrainProps.canDeployLCAC) {score += 4;}
+        else {score -= 5;}
         break;
       
       default:
-        // General terrain preferences
-        if (mapHex.terrain === TerrainType.HILLS) {score += 1;}
-        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 1;}
+        // General unit preferences
+        if (terrainProps.coverBonus >= 1) {score += 1;}
         break;
     }
 
-    // Avoid disadvantageous terrain for all units
-    if (mapHex.terrain === TerrainType.DEEP_WATER) {score -= 5;}
-    if (mapHex.terrain === TerrainType.MOUNTAINS) {score -= 1;} // Difficult movement
+    return score;
+  }
+
+  /**
+   * Evaluate tactical positioning relative to enemies and objectives
+   */
+  private evaluateTacticalPositioning(hex: Hex, unit: Unit, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Analyze position relative to enemies
+    const nearbyEnemies = context.enemyUnits.filter(enemy => {
+      const distance = this.calculateDistance(hex, enemy.state.position);
+      return distance <= 3;
+    });
+
+    // Defensive positioning
+    if (nearbyEnemies.length > 0) {
+      const mapHex = context.gameState.map.getHex(hex);
+      const terrainProps = context.gameState.map.getTerrainProperties(mapHex!.terrain);
+      
+      // Prefer defensive terrain when enemies are close
+      score += terrainProps.coverBonus * nearbyEnemies.length;
+      
+      // Artillery and ranged units maintain distance
+      if (unit.hasCategory(UnitCategory.ARTILLERY) || unit.type === UnitType.ATGM_TEAM) {
+        if (nearbyEnemies.length > 1) {
+          score -= 3; // Avoid being overwhelmed
+        }
+      }
+    }
+
+    // Offensive positioning
+    if (unit.hasCategory(UnitCategory.INFANTRY) || unit.hasCategory(UnitCategory.VEHICLE)) {
+      // Infantry and vehicles consider flanking opportunities
+      const flankingScore = this.evaluateFlankingPosition(hex, unit, context);
+      score += flankingScore;
+    }
+
+    // Objective proximity
+    const objectiveScore = this.evaluateObjectiveProximity(hex, context);
+    score += objectiveScore;
+
+    return score;
+  }
+
+  /**
+   * Evaluate strategic terrain value
+   */
+  private evaluateStrategicTerrainValue(hex: Hex, mapHex: any, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Objective hexes are strategically valuable
+    if (mapHex.objective) {
+      score += 5;
+    }
+
+    // Central map positions are often strategic
+    const mapDimensions = context.gameState.map.getDimensions();
+    const mapCenter = new Hex(
+      Math.floor(mapDimensions.width / 2), 
+      Math.floor(mapDimensions.height / 2)
+    );
+    const distanceFromCenter = this.calculateDistance(hex, mapCenter);
+    if (distanceFromCenter <= 2) {
+      score += 2;
+    }
+
+    // Chokepoints (terrain that forces movement) are strategic
+    if (mapHex.terrain === TerrainType.BEACH) {
+      score += 3; // Critical for amphibious operations
+    }
+
+    // High ground is always valuable
+    if (mapHex.elevation > 1) {
+      score += 2;
+    }
+
+    return score;
+  }
+
+  /**
+   * Evaluate flanking position potential
+   */
+  private evaluateFlankingPosition(hex: Hex, unit: Unit, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Look for enemies that could be flanked from this position
+    for (const enemy of context.enemyUnits) {
+      const distance = this.calculateDistance(hex, enemy.state.position);
+      if (distance >= 2 && distance <= 4) {
+        // Check if this position provides a flanking angle
+        const angle = this.calculateFlankingAngle(hex, new Hex(enemy.state.position.q, enemy.state.position.r, enemy.state.position.s), context);
+        if (angle > 0.5) {
+          score += 2;
+        }
+      }
+    }
+
+    return score;
+  }
+
+  /**
+   * Calculate flanking angle advantage
+   */
+  private calculateFlankingAngle(attackerPos: Hex, targetPos: Hex, context: AIDecisionContext): number {
+    // Find other friendly units near the target
+    const friendlyUnits = context.availableUnits.filter(unit => {
+      const distance = this.calculateDistance(unit.state.position, targetPos);
+      return distance <= 3;
+    });
+
+    if (friendlyUnits.length === 0) {
+      return 0;
+    }
+
+    // Calculate if this creates a multi-directional threat
+    const directions = new Set<string>();
+    directions.add(this.getDirectionString(attackerPos, targetPos));
+    
+    for (const friendly of friendlyUnits) {
+      directions.add(this.getDirectionString(new Hex(friendly.state.position.q, friendly.state.position.r, friendly.state.position.s), targetPos));
+    }
+
+    // More directions = better flanking
+    return (directions.size - 1) / 6; // Normalize to 0-1
+  }
+
+  /**
+   * Get direction string for flanking analysis
+   */
+  private getDirectionString(from: Hex, to: Hex): string {
+    const dx = to.q - from.q;
+    const dy = to.r - from.r;
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+      return dx > 0 ? 'east' : 'west';
+    } else {
+      return dy > 0 ? 'south' : 'north';
+    }
+  }
+
+  /**
+   * Evaluate proximity to objectives
+   */
+  private evaluateObjectiveProximity(hex: Hex, context: AIDecisionContext): number {
+    let score = 0;
+
+    // Find closest objective
+    let closestDistance = Infinity;
+    context.gameState.map.getAllHexes().forEach(mapHex => {
+      if (mapHex.objective) {
+        const distance = this.calculateDistance(hex, mapHex.coordinate);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+        }
+      }
+    });
+
+    // Closer to objectives is better
+    if (closestDistance < Infinity) {
+      score += Math.max(0, 5 - closestDistance);
+    }
 
     return score;
   }
