@@ -375,8 +375,8 @@ export class GameEngine {
     }
 
     // Check CP cost
-    const player = this.gameState.getPlayer(action.playerId);
-    if (ability.cpCost && player && !player.spendCommandPoints(ability.cpCost)) {
+    const abilityPlayer = this.gameState.getPlayer(action.playerId);
+    if (ability.cpCost && abilityPlayer && !abilityPlayer.spendCommandPoints(ability.cpCost)) {
       return { success: false, message: `Insufficient command points (need ${ability.cpCost})` };
     }
 
