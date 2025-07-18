@@ -9,7 +9,7 @@ import { CombatSystem } from './Combat';
 import { AIController } from '../ai/AIController';
 import { Player } from './Player';
 import { ActionType, UnitType, UnitCategory, PlayerSide, TerrainType } from './types';
-import { AIDifficulty, AIState, AIPerformanceMetrics } from '../ai/types';
+import { AIDifficulty, AIState, AIPerformanceMetrics, AIPersonalityType } from '../ai/types';
 import { GameLogger, LogCategory, LogLevel, getGameLogger } from '../logging/GameLogger';
 import { GameStateManager } from '../logging/GameStateManager';
 
@@ -90,7 +90,7 @@ export class GameEngine {
     // Execute based on action type
     let result: ActionResult;
     const unit = this.gameState.getUnit(action.unitId);
-    
+
     // Get the player to consume command points
     const player = this.gameState.getPlayer(action.playerId);
     if (!player) {
@@ -590,7 +590,7 @@ export class GameEngine {
     if (unit.type === UnitType.LCAC) {
       if (
         [TerrainType.DEEP_WATER, TerrainType.SHALLOW_WATER, TerrainType.BEACH].includes(
-          toHex.terrain as TerrainType
+          toHex.terrain
         )
       ) {
         return 1;
@@ -934,10 +934,15 @@ export class GameEngine {
   /**
    * Add AI controller for a player
    */
-  public addAIController(playerId: string, difficulty: AIDifficulty = AIDifficulty.VETERAN): void {
-    const aiController = new AIController(playerId, difficulty);
+  public addAIController(
+    playerId: string,
+    configOrPersonality: AIDifficulty | AIPersonalityType = AIDifficulty.VETERAN
+  ): void {
+    const aiController = new AIController(playerId, configOrPersonality);
     this.aiControllers.set(playerId, aiController);
-    console.log(`[AI] Added AI controller for player ${playerId} with difficulty ${difficulty}`);
+    console.log(
+      `[AI] Added AI controller for player ${playerId} with configuration ${configOrPersonality}`
+    );
   }
 
   /**

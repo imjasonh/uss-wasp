@@ -1,0 +1,48 @@
+AI PERSONALITY MATCHUP ANALYSIS REPORT
+=====================================
+Generated: 7/17/2025, 9:39:44 AM
+Total Battles: 640
+Bugs Discovered: 0
+
+OVERALL PERSONALITY RANKINGS
+============================
+1. BERSERKER: 50.0% win rate (16.50 avg power)
+2. STRATEGIST: 50.0% win rate (16.50 avg power)
+3. CONSERVATIVE: 50.0% win rate (16.50 avg power)
+4. BALANCED: 50.0% win rate (16.50 avg power)
+5. ROOKIE: 50.0% win rate (16.50 avg power)
+6. VETERAN: 50.0% win rate (16.50 avg power)
+7. SPECIALIST: 50.0% win rate (16.50 avg power)
+8. ADAPTIVE: 50.0% win rate (16.50 avg power)
+
+BEST ATTACKING PERSONALITIES
+============================
+1. BERSERKER: 100.0% attack win rate
+2. STRATEGIST: 100.0% attack win rate
+3. CONSERVATIVE: 100.0% attack win rate
+4. BALANCED: 100.0% attack win rate
+5. ROOKIE: 100.0% attack win rate
+
+BEST DEFENDING PERSONALITIES
+============================
+1. BERSERKER: 0.0% defense win rate
+2. STRATEGIST: 0.0% defense win rate
+3. CONSERVATIVE: 0.0% defense win rate
+4. BALANCED: 0.0% defense win rate
+5. ROOKIE: 0.0% defense win rate
+
+MOST DOMINANT MATCHUPS
+=====================
+1. berserker dominates berserker (100.0%)
+2. berserker dominates strategist (100.0%)
+3. berserker dominates conservative (100.0%)
+4. berserker dominates balanced (100.0%)
+5. berserker dominates rookie (100.0%)
+6. berserker dominates veteran (100.0%)
+7. berserker dominates specialist (100.0%)
+8. berserker dominates adaptive (100.0%)
+9. strategist dominates berserker (100.0%)
+10. strategist dominates strategist (100.0%)
+
+MOST BALANCED MATCHUPS
+=====================
