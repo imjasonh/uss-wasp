@@ -486,34 +486,491 @@ export class AIDecisionMaker {
       if (usedUnits?.has(unit.id)) {
         continue;
       }
-      // Check if unit is in immediate danger
-      const threat = this.threatAssessments.get(unit.id);
-      if (threat && threat.overallThreatLevel > 60) {
-        // Find safe withdrawal position
-        const safePosition = this.findSafeWithdrawalPosition(unit, context);
-        if (safePosition) {
-          decisions.push({
-            type: AIDecisionType.WITHDRAW,
-            priority: 8,
-            unitId: unit.id,
-            targetPosition: safePosition,
-            reasoning: `Unit ${unit.type} withdrawing from high threat area (${threat.overallThreatLevel}% threat)`,
-          });
+
+      // Comprehensive retreat analysis
+      const retreatDecision = this.analyzeRetreatNeed(unit, context);
+      if (retreatDecision) {
+        decisions.push(retreatDecision);
+      }
+
+      // Additional force preservation options
+      const preservationOptions = this.generatePreservationOptions(unit, context);
+      decisions.push(...preservationOptions);
+    }
+
+    return decisions;
+  }
+
+  /**
+   * Analyze whether a unit needs to retreat and generate appropriate decision
+   */
+  private analyzeRetreatNeed(unit: Unit, context: AIDecisionContext): AIDecision | null {
+    const threat = this.threatAssessments.get(unit.id);
+    if (!threat) return null;
+
+    // Multiple retreat triggers
+    const retreatTriggers = this.evaluateRetreatTriggers(unit, threat, context);
+    if (!retreatTriggers.shouldRetreat) return null;
+
+    // Find optimal retreat position using enhanced logic
+    const retreatPosition = this.findOptimalRetreatPosition(unit, context, retreatTriggers);
+    if (!retreatPosition) return null;
+
+    // Calculate retreat priority based on urgency and unit value
+    const retreatPriority = this.calculateRetreatPriority(unit, retreatTriggers, context);
+
+    return {
+      type: AIDecisionType.WITHDRAW,
+      priority: retreatPriority,
+      unitId: unit.id,
+      targetPosition: retreatPosition,
+      reasoning: `${unit.type} tactical retreat: ${retreatTriggers.primaryReason}`,
+      metadata: {
+        threatLevel: threat.overallThreatLevel,
+        retreatType: retreatTriggers.retreatType,
+        unitValue: this.calculateUnitValue(unit)
+      }
+    };
+  }
+
+  /**
+   * Evaluate various triggers that might necessitate a retreat
+   */
+  private evaluateRetreatTriggers(unit: Unit, threat: ThreatAssessment, context: AIDecisionContext): {
+    shouldRetreat: boolean;
+    primaryReason: string;
+    retreatType: 'tactical' | 'strategic' | 'emergency';
+    urgencyLevel: number;
+  } {
+    let shouldRetreat = false;
+    let primaryReason = '';
+    let retreatType: 'tactical' | 'strategic' | 'emergency' = 'tactical';
+    let urgencyLevel = 0;
+
+    // 1. Immediate threat level (classic trigger)
+    if (threat.overallThreatLevel > 70) {
+      shouldRetreat = true;
+      primaryReason = `High threat level (${threat.overallThreatLevel}%)`;
+      retreatType = 'emergency';
+      urgencyLevel = Math.max(urgencyLevel, 8);
+    }
+
+    // 2. Health-based retreat (wounded units)
+    const healthRatio = unit.state.currentHP / unit.stats.hp;
+    if (healthRatio < 0.4 && threat.overallThreatLevel > 40) {
+      shouldRetreat = true;
+      primaryReason = `Wounded unit (${Math.round(healthRatio * 100)}% HP) under threat`;
+      retreatType = 'tactical';
+      urgencyLevel = Math.max(urgencyLevel, 7);
+    }
+
+    // 3. Outnumbered situation
+    const nearbyEnemies = context.enemyUnits.filter(enemy => 
+      this.calculateDistance(unit.state.position, enemy.state.position) <= 3
+    );
+    const nearbyAllies = context.availableUnits.filter(ally => 
+      ally.id !== unit.id && 
+      this.calculateDistance(unit.state.position, ally.state.position) <= 2
+    );
+
+    if (nearbyEnemies.length > nearbyAllies.length + 1 && nearbyEnemies.length > 2) {
+      shouldRetreat = true;
+      primaryReason = `Outnumbered ${nearbyEnemies.length} vs ${nearbyAllies.length + 1}`;
+      retreatType = 'tactical';
+      urgencyLevel = Math.max(urgencyLevel, 6);
+    }
+
+    // 4. High-value unit protection
+    const unitValue = this.calculateUnitValue(unit);
+    if (unitValue > 15 && threat.overallThreatLevel > 50) {
+      shouldRetreat = true;
+      primaryReason = `Protecting high-value unit (value: ${unitValue})`;
+      retreatType = 'strategic';
+      urgencyLevel = Math.max(urgencyLevel, 7);
+    }
+
+    // 5. Insufficient support
+    const supportLevel = this.calculateSupportLevel(unit, context);
+    if (supportLevel < 0.3 && threat.overallThreatLevel > 45) {
+      shouldRetreat = true;
+      primaryReason = `Insufficient support (${Math.round(supportLevel * 100)}%)`;
+      retreatType = 'tactical';
+      urgencyLevel = Math.max(urgencyLevel, 5);
+    }
+
+    // 6. Ammunition/ability exhaustion (if unit has used all special abilities)
+    if (unit.specialAbilities.length > 0 && !unit.canAct() && threat.overallThreatLevel > 35) {
+      shouldRetreat = true;
+      primaryReason = 'Abilities exhausted, repositioning for safety';
+      retreatType = 'tactical';
+      urgencyLevel = Math.max(urgencyLevel, 4);
+    }
+
+    return {
+      shouldRetreat,
+      primaryReason,
+      retreatType,
+      urgencyLevel
+    };
+  }
+
+  /**
+   * Find optimal retreat position considering multiple factors
+   */
+  private findOptimalRetreatPosition(unit: Unit, context: AIDecisionContext, triggers: any): Hex | null {
+    const unitPos = unit.state.position;
+    const moveRange = unit.stats.mv;
+    const candidates: Array<{ position: Hex; score: number; }> = [];
+
+    // Generate all possible retreat positions
+    for (let dq = -moveRange; dq <= moveRange; dq++) {
+      for (let dr = -moveRange; dr <= moveRange; dr++) {
+        const ds = -dq - dr;
+        const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+        
+        if (distance === 0 || distance > moveRange) continue;
+
+        const candidatePos = new Hex(unitPos.q + dq, unitPos.r + dr, unitPos.s + ds);
+        
+        if (!this.isValidMapPosition(candidatePos, context) || 
+            !this.canUnitReachPosition(unit, candidatePos, context)) {
+          continue;
         }
 
-        // Consider hiding if unit can be hidden
-        if (unit.canBeHidden() && !unit.isHidden()) {
-          decisions.push({
-            type: AIDecisionType.HIDE_UNIT,
-            priority: 7,
-            unitId: unit.id,
-            reasoning: `Hiding ${unit.type} to avoid detection and preserve force`,
+        const score = this.scoreRetreatPosition(unit, candidatePos, context, triggers);
+        candidates.push({ position: candidatePos, score });
+      }
+    }
+
+    // Sort by score (higher is better) and return best position
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates.length > 0 ? candidates[0].position : null;
+  }
+
+  /**
+   * Score a potential retreat position
+   */
+  private scoreRetreatPosition(unit: Unit, position: Hex, context: AIDecisionContext, triggers: any): number {
+    let score = 0;
+
+    // 1. Distance from immediate threats (higher is better)
+    const threat = this.threatAssessments.get(unit.id);
+    if (threat) {
+      for (const threatUnit of threat.immediateThreats) {
+        const currentDistance = this.calculateDistance(unit.state.position, threatUnit.state.position);
+        const newDistance = this.calculateDistance(position, threatUnit.state.position);
+        
+        if (newDistance > currentDistance) {
+          score += (newDistance - currentDistance) * 15; // Reward moving away from threats
+        }
+      }
+    }
+
+    // 2. Terrain benefits at retreat position
+    const terrainBenefit = this.evaluateTerrainBenefit(position, unit, context);
+    score += terrainBenefit * 8;
+
+    // 3. Proximity to friendly units (support)
+    let supportScore = 0;
+    for (const ally of context.availableUnits) {
+      if (ally.id === unit.id) continue;
+      
+      const distance = this.calculateDistance(position, ally.state.position);
+      if (distance <= 2) {
+        supportScore += 10; // Bonus for nearby allies
+      } else if (distance <= 4) {
+        supportScore += 5; // Smaller bonus for moderately close allies
+      }
+    }
+    score += Math.min(supportScore, 30); // Cap support bonus
+
+    // 4. Distance from enemy units (general threat reduction)
+    let enemyThreatReduction = 0;
+    for (const enemy of context.enemyUnits) {
+      const currentDistance = this.calculateDistance(unit.state.position, enemy.state.position);
+      const newDistance = this.calculateDistance(position, enemy.state.position);
+      
+      if (newDistance > currentDistance) {
+        enemyThreatReduction += (newDistance - currentDistance) * 5;
+      }
+    }
+    score += Math.min(enemyThreatReduction, 50); // Cap threat reduction bonus
+
+    // 5. Line of sight considerations
+    const hasGoodLOS = this.hasGoodLineOfSight(position, context);
+    if (hasGoodLOS) {
+      score += 12; // Bonus for maintaining situational awareness
+    }
+
+    // 6. Retreat type specific bonuses
+    if (triggers.retreatType === 'strategic') {
+      // Strategic retreats favor positions closer to objectives we control
+      const friendlyObjectives = this.getFriendlyObjectives(context);
+      for (const obj of friendlyObjectives) {
+        const distance = this.calculateDistance(position, obj.position);
+        if (distance <= 3) {
+          score += 15; // Bonus for retreating toward friendly objectives
+        }
+      }
+    }
+
+    // 7. Avoid positions that are still threatened
+    const futureThreats = this.assessFutureThreats(position, context);
+    score -= futureThreats * 10;
+
+    return score;
+  }
+
+  /**
+   * Generate additional force preservation options beyond retreat
+   */
+  private generatePreservationOptions(unit: Unit, context: AIDecisionContext): AIDecision[] {
+    const options: AIDecision[] = [];
+    const threat = this.threatAssessments.get(unit.id);
+
+    // 1. Hiding for stealth preservation
+    if (unit.canBeHidden() && !unit.isHidden() && threat && threat.overallThreatLevel > 35) {
+      options.push({
+        type: AIDecisionType.HIDE_UNIT,
+        priority: 6,
+        unitId: unit.id,
+        reasoning: `Hiding ${unit.type} to avoid detection and preserve force`,
+        metadata: { threatLevel: threat.overallThreatLevel }
+      });
+    }
+
+    // 2. Defensive positioning without full retreat
+    if (threat && threat.overallThreatLevel > 25 && threat.overallThreatLevel <= 60) {
+      const defensivePosition = this.findDefensivePosition(unit, context);
+      if (defensivePosition) {
+        options.push({
+          type: AIDecisionType.MOVE_UNIT,
+          priority: 5,
+          unitId: unit.id,
+          targetPosition: defensivePosition,
+          reasoning: `${unit.type} moving to defensive position`,
+          metadata: { maneuverType: 'defensive_reposition' }
+        });
+      }
+    }
+
+    // 3. Mutual support positioning
+    const supportPosition = this.findMutualSupportPosition(unit, context);
+    if (supportPosition) {
+      options.push({
+        type: AIDecisionType.MOVE_UNIT,
+        priority: 4,
+        unitId: unit.id,
+        targetPosition: supportPosition,
+        reasoning: `${unit.type} moving to mutual support position`,
+        metadata: { maneuverType: 'mutual_support' }
+      });
+    }
+
+    return options;
+  }
+
+  /**
+   * Calculate retreat priority based on unit importance and urgency
+   */
+  private calculateRetreatPriority(unit: Unit, triggers: any, context: AIDecisionContext): number {
+    let priority = triggers.urgencyLevel;
+
+    // Adjust based on unit value
+    const unitValue = this.calculateUnitValue(unit);
+    if (unitValue > 20) priority += 2; // High-value units get priority
+    if (unitValue < 10) priority -= 1; // Low-value units get lower priority
+
+    // Adjust based on retreat type
+    if (triggers.retreatType === 'emergency') priority += 2;
+    if (triggers.retreatType === 'strategic') priority += 1;
+
+    // Adjust based on battlefield situation
+    const overallThreatLevel = this.calculateOverallThreatLevel(context);
+    if (overallThreatLevel > 0.7) priority += 1; // High overall threat increases priority
+
+    return Math.max(1, Math.min(10, priority)); // Clamp between 1 and 10
+  }
+
+  /**
+   * Calculate unit value for retreat priority decisions
+   */
+  private calculateUnitValue(unit: Unit): number {
+    let value = unit.stats.atk + unit.stats.def + unit.stats.hp;
+    
+    // Special unit bonuses
+    if (unit.type === UnitType.USS_WASP) value += 20;
+    if (unit.specialAbilities.length > 0) value += unit.specialAbilities.length * 3;
+    if (unit.getCargoCapacity() > 0) value += unit.getCargoCapacity() * 2;
+    
+    return value;
+  }
+
+  /**
+   * Calculate support level for a unit (nearby allies and their capabilities)
+   */
+  private calculateSupportLevel(unit: Unit, context: AIDecisionContext): number {
+    let supportLevel = 0;
+    const unitPos = unit.state.position;
+
+    for (const ally of context.availableUnits) {
+      if (ally.id === unit.id) continue;
+      
+      const distance = this.calculateDistance(unitPos, ally.state.position);
+      if (distance <= 2) {
+        supportLevel += 0.4; // Close support
+      } else if (distance <= 4) {
+        supportLevel += 0.2; // Moderate support
+      }
+    }
+
+    return Math.min(supportLevel, 1.0); // Cap at 1.0
+  }
+
+  /**
+   * Find a defensive position that improves unit safety without full retreat
+   */
+  private findDefensivePosition(unit: Unit, context: AIDecisionContext): Hex | null {
+    const unitPos = unit.state.position;
+    const moveRange = Math.min(unit.stats.mv, 2); // Limit to short defensive moves
+    let bestPosition: Hex | null = null;
+    let bestScore = -Infinity;
+
+    for (let dq = -moveRange; dq <= moveRange; dq++) {
+      for (let dr = -moveRange; dr <= moveRange; dr++) {
+        const ds = -dq - dr;
+        const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+        
+        if (distance === 0 || distance > moveRange) continue;
+
+        const candidatePos = new Hex(unitPos.q + dq, unitPos.r + dr, unitPos.s + ds);
+        
+        if (!this.isValidMapPosition(candidatePos, context) || 
+            !this.canUnitReachPosition(unit, candidatePos, context)) {
+          continue;
+        }
+
+        const score = this.evaluateTerrainBenefit(candidatePos, unit, context);
+        if (score > bestScore) {
+          bestScore = score;
+          bestPosition = candidatePos;
+        }
+      }
+    }
+
+    return bestPosition;
+  }
+
+  /**
+   * Find position that provides mutual support with other units
+   */
+  private findMutualSupportPosition(unit: Unit, context: AIDecisionContext): Hex | null {
+    const unitPos = unit.state.position;
+    const moveRange = Math.min(unit.stats.mv, 3);
+    let bestPosition: Hex | null = null;
+    let bestSupportCount = 0;
+
+    for (let dq = -moveRange; dq <= moveRange; dq++) {
+      for (let dr = -moveRange; dr <= moveRange; dr++) {
+        const ds = -dq - dr;
+        const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+        
+        if (distance === 0 || distance > moveRange) continue;
+
+        const candidatePos = new Hex(unitPos.q + dq, unitPos.r + dr, unitPos.s + ds);
+        
+        if (!this.isValidMapPosition(candidatePos, context) || 
+            !this.canUnitReachPosition(unit, candidatePos, context)) {
+          continue;
+        }
+
+        // Count nearby allies at this position
+        const nearbyAllies = context.availableUnits.filter(ally => 
+          ally.id !== unit.id && 
+          this.calculateDistance(candidatePos, ally.state.position) <= 2
+        );
+
+        if (nearbyAllies.length > bestSupportCount) {
+          bestSupportCount = nearbyAllies.length;
+          bestPosition = candidatePos;
+        }
+      }
+    }
+
+    return bestSupportCount > 0 ? bestPosition : null;
+  }
+
+  /**
+   * Assess future threats at a position (enemies that could reach it next turn)
+   */
+  private assessFutureThreats(position: Hex, context: AIDecisionContext): number {
+    let threatScore = 0;
+
+    for (const enemy of context.enemyUnits) {
+      const distance = this.calculateDistance(position, enemy.state.position);
+      const enemyRange = this.getUnitRange(enemy);
+      
+      // Enemy can attack this position next turn
+      if (distance <= enemyRange + enemy.stats.mv) {
+        threatScore += enemy.stats.atk;
+      }
+    }
+
+    return threatScore;
+  }
+
+  /**
+   * Get friendly objectives for strategic retreat positioning
+   */
+  private getFriendlyObjectives(context: AIDecisionContext): Array<{ position: Hex; id: string }> {
+    const objectives: Array<{ position: Hex; id: string }> = [];
+    const map = context.gameState.map;
+
+    // This is a simplified version - in a real game, we'd check objective control
+    for (let q = 0; q < 8; q++) {
+      for (let r = 0; r < 6; r++) {
+        const hex = map.getHex(new Hex(q, r, -q - r));
+        if (hex?.objective) {
+          objectives.push({
+            position: new Hex(q, r, -q - r),
+            id: hex.objective.id || `obj_${q}_${r}`
           });
         }
       }
     }
 
-    return decisions;
+    return objectives;
+  }
+
+  /**
+   * Check if position has good line of sight for situational awareness
+   */
+  private hasGoodLineOfSight(position: Hex, context: AIDecisionContext): boolean {
+    const map = context.gameState.map;
+    const hex = map.getHex(position);
+    
+    if (!hex) return false;
+
+    // Higher elevation or open terrain provides better LOS
+    return hex.elevation > 0 || hex.terrain === TerrainType.CLEAR || hex.terrain === TerrainType.BEACH;
+  }
+
+  /**
+   * Calculate overall threat level across the battlefield
+   */
+  private calculateOverallThreatLevel(context: AIDecisionContext): number {
+    let totalThreat = 0;
+    let unitCount = 0;
+
+    for (const unit of context.availableUnits) {
+      const threat = this.threatAssessments.get(unit.id);
+      if (threat) {
+        totalThreat += threat.overallThreatLevel;
+        unitCount++;
+      }
+    }
+
+    return unitCount > 0 ? totalThreat / (unitCount * 100) : 0;
   }
 
   /**
