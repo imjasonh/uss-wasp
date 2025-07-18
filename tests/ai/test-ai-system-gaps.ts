@@ -329,7 +329,7 @@ function testObjectiveAI(): boolean {
         // Check for objective-related actions
         const objectiveActions = [...movementActions, ...actionActions].filter(action => 
             action.type === 'secure_objective' || 
-            (action.type === 'move' && action.metadata?.objective)
+            (action.type === 'move' && action.data?.objective)
         );
         
         console.log(`   Movement actions: ${movementActions.length}`);

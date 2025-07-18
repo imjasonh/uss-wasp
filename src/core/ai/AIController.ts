@@ -295,6 +295,7 @@ export class AIController {
           break;
         case TurnPhase.ACTION:
           // Action phase - combat, special abilities, and logistics
+          // CRITICAL FIX: Removed MOVE_UNIT from action phase to prevent pathfinding errors
           isAppropriate =
             decision.type === AIDecisionType.ATTACK_TARGET ||
             decision.type === AIDecisionType.HIDE_UNIT ||
@@ -304,8 +305,7 @@ export class AIController {
             decision.type === AIDecisionType.RECOVER_TO_WASP ||
             decision.type === AIDecisionType.LOAD_TRANSPORT ||
             decision.type === AIDecisionType.UNLOAD_TRANSPORT ||
-            decision.type === AIDecisionType.SECURE_OBJECTIVE ||
-            decision.type === AIDecisionType.MOVE_UNIT;
+            decision.type === AIDecisionType.SECURE_OBJECTIVE;
           break;
         default:
           isAppropriate = false;
@@ -436,6 +436,7 @@ export class AIController {
               playerId: this.aiPlayerId,
               unitId: decision.unitId,
               targetPosition: decision.targetPosition,
+              ...(decision.metadata && { data: decision.metadata }), // Preserve metadata for test detection
             };
           }
           // If unit can't move, don't generate action

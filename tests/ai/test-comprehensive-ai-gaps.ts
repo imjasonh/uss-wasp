@@ -49,6 +49,25 @@ function testAIUnitCoordination(): ExtendedTestResult['coordination'] {
         gameState.addPlayer(assaultPlayer);
         gameState.addPlayer(defenderPlayer);
         
+        // Add objectives for AI to pursue
+        gameState.addObjective({
+            id: 'objective1',
+            type: ObjectiveType.CONTROL_POINT,
+            position: new Hex(7, 7),
+            controlledBy: null,
+            value: 10,
+            description: 'Strategic control point'
+        });
+        
+        gameState.addObjective({
+            id: 'objective2', 
+            type: ObjectiveType.COMMS_HUB,
+            position: new Hex(8, 8),
+            controlledBy: null,
+            value: 15,
+            description: 'Communications hub'
+        });
+        
         // Create multiple units that should coordinate
         const assaultUnits = createTestUnits([
             { id: 'artillery', type: UnitType.ARTILLERY, side: PlayerSide.Assault, position: new Hex(1, 1) },
@@ -276,7 +295,8 @@ function testAITerrainUtilization(): ExtendedTestResult['terrain'] {
             for (const action of moveActions) {
                 if (action.targetPosition) {
                     const targetHex = action.targetPosition;
-                    const targetTerrain = map.getTerrainAt(targetHex);
+                    const mapHex = map.getHex(targetHex);
+                    const targetTerrain = mapHex?.terrain;
                     
                     // Check if unit is moving to advantageous terrain
                     if (targetTerrain === TerrainType.FOREST || targetTerrain === TerrainType.HILL) {
@@ -391,6 +411,16 @@ function testAICombatEffectiveness(): ExtendedTestResult['combat'] {
         
         gameState.addPlayer(assaultPlayer);
         gameState.addPlayer(defenderPlayer);
+        
+        // Add objective for tactical focus
+        gameState.addObjective({
+            id: 'combat_objective',
+            type: ObjectiveType.CONTROL_POINT,
+            position: new Hex(4, 4),
+            controlledBy: null,
+            value: 10,
+            description: 'Contested control point'
+        });
         
         // Create combat scenario with units in ADJACENT positions (range 1)
         const assaultUnits = createTestUnits([

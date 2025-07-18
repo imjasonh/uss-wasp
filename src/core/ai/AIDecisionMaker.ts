@@ -17,7 +17,7 @@ import {
 } from './types';
 import { Unit } from '../game/Unit';
 import { Hex, HexCoordinate } from '../hex';
-import { UnitCategory, UnitType, TerrainType } from '../game/types';
+import { UnitCategory, UnitType, TerrainType, TurnPhase } from '../game/types';
 
 /**
  * Core AI decision-making engine
@@ -50,6 +50,23 @@ export class AIDecisionMaker {
 
     // Update threat assessments
     this.updateThreatAssessments(context);
+
+    // CRITICAL FIX: Phase-specific decision generation FIRST
+    // During movement phase, prioritize movement decisions for ALL units
+    if (context.phase === TurnPhase.MOVEMENT || context.phase === 'movement') {
+      console.log(`[AI] Movement phase - prioritizing movement decisions`);
+      const movementDecisions = this.generateMovementPhaseDecisions(context, usedUnits, remainingCP);
+      console.log(`[AI] Generated ${movementDecisions.length} movement decisions`);
+      decisions.push(...movementDecisions);
+      
+      // Update remaining CP and used units
+      for (const decision of movementDecisions) {
+        if (decision.unitId) {
+          usedUnits.add(decision.unitId);
+        }
+      }
+      remainingCP -= movementDecisions.length;
+    }
 
     // Analyze current tactical situation
     const tacticalPriorities = this.determineTacticalPriorities(context);
@@ -84,6 +101,7 @@ export class AIDecisionMaker {
       }
     }
 
+    
     // Enhanced resource utilization: generate additional actions if CP remains
     if (remainingCP > 0 && context.availableUnits.length > usedUnits.size) {
       const additionalDecisions = this.generateAdditionalDecisions(context, usedUnits, remainingCP);
@@ -3257,7 +3275,7 @@ export class AIDecisionMaker {
     let emergencyScore = 0;
     const totalUnits = context.availableUnits.length;
     
-    if (totalUnits === 0) return 0;
+    if (totalUnits === 0) {return 0;}
 
     // Factor 1: Unit health - more emergency if units are damaged
     const averageHealth = this.calculateAverageUnitHealth(context.availableUnits);
@@ -3314,11 +3332,33 @@ export class AIDecisionMaker {
     const unitPos = unit.state.position;
     const targetPos = target.state.position;
 
-    // Calculate direction toward target
+    // Get all possible movement hexes (adjacent to current position)
+    const adjacentHexes = this.getAdjacentHexes(new Hex(unitPos.q, unitPos.r, unitPos.s));
+    
+    // Score each hex based on terrain benefits and distance to target
+    const scoredHexes = adjacentHexes
+      .filter(hex => this.isValidMapPosition(hex, context))
+      .filter(hex => this.canUnitReachPosition(unit, hex, context)) // CRITICAL FIX: Validate pathfinding
+      .map(hex => {
+        const distanceToTarget = this.calculateDistance(hex, targetPos);
+        const terrainScore = this.evaluateTerrainBenefit(hex, unit, context);
+        
+        // Balance between moving toward target and terrain benefits
+        const totalScore = (10 - distanceToTarget) + (terrainScore * 2);
+        
+        return { hex, score: totalScore, distanceToTarget };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    // Return the best scoring hex, or fall back to direct movement
+    if (scoredHexes.length > 0) {
+      return scoredHexes[0].hex;
+    }
+
+    // Fallback to original direct movement logic
     const deltaQ = targetPos.q - unitPos.q;
     const deltaR = targetPos.r - unitPos.r;
 
-    // Normalize to single hex step
     let moveQ = 0;
     let moveR = 0;
 
@@ -3331,8 +3371,7 @@ export class AIDecisionMaker {
     const moveS = -(moveQ + moveR);
     const targetPosition = new Hex(unitPos.q + moveQ, unitPos.r + moveR, unitPos.s + moveS);
 
-    // Check if position is valid
-    if (this.isValidMapPosition(targetPosition, context)) {
+    if (this.isValidMapPosition(targetPosition, context) && this.canUnitReachPosition(unit, targetPosition, context)) {
       return targetPosition;
     }
 
@@ -3340,11 +3379,68 @@ export class AIDecisionMaker {
   }
 
   /**
+   * Evaluate terrain benefits for a unit at a specific hex
+   */
+  private evaluateTerrainBenefit(hex: Hex, unit: Unit, context: AIDecisionContext): number {
+    const mapHex = context.gameState.map.getHex(hex);
+    if (!mapHex) {return 0;}
+
+    let score = 0;
+
+    // Unit-specific terrain preferences
+    switch (unit.type) {
+      case UnitType.MARSOC:
+        // MARSOC benefits from woods (stealth) and hills (reconnaissance)
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 3;}
+        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score += 4;}
+        if (mapHex.terrain === TerrainType.HILLS) {score += 4;}
+        break;
+      
+      case UnitType.MARINE_SQUAD:
+      case UnitType.INFANTRY_SQUAD:
+        // Infantry benefits from cover
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 2;}
+        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score += 2;}
+        if (mapHex.terrain === TerrainType.HILLS) {score += 2;}
+        if (mapHex.terrain === TerrainType.URBAN) {score += 1;}
+        break;
+      
+      case UnitType.HUMVEE:
+      case UnitType.TECHNICAL:
+        // Vehicles prefer clear terrain, avoid difficult terrain
+        if (mapHex.terrain === TerrainType.CLEAR) {score += 2;}
+        if (mapHex.terrain === TerrainType.HEAVY_WOODS) {score -= 2;}
+        if (mapHex.terrain === TerrainType.MOUNTAINS) {score -= 3;}
+        break;
+      
+      case UnitType.ATGM_TEAM:
+      case UnitType.ARTILLERY:
+        // Artillery and ATGM prefer elevated positions
+        if (mapHex.terrain === TerrainType.HILLS) {score += 3;}
+        if (mapHex.terrain === TerrainType.MOUNTAINS) {score += 2;}
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 1;} // Some cover
+        break;
+      
+      default:
+        // General terrain preferences
+        if (mapHex.terrain === TerrainType.HILLS) {score += 1;}
+        if (mapHex.terrain === TerrainType.LIGHT_WOODS) {score += 1;}
+        break;
+    }
+
+    // Avoid disadvantageous terrain for all units
+    if (mapHex.terrain === TerrainType.DEEP_WATER) {score -= 5;}
+    if (mapHex.terrain === TerrainType.MOUNTAINS) {score -= 1;} // Difficult movement
+
+    return score;
+  }
+
+  /**
    * Create a validated special ability decision with proper parameters
    */
   private createValidatedSpecialAbilityDecision(
     unit: Unit,
-    ability: any,
+    ability: { name: string; description: string; cpCost?: number },
     context: AIDecisionContext
   ): AIDecision | null {
     const abilityName = ability.name;
@@ -3354,7 +3450,7 @@ export class AIDecisionMaker {
 
     // Validate parameters based on ability type
     switch (abilityName) {
-      case 'Artillery Barrage':
+      case 'Artillery Barrage': {
         // Artillery barrage requires target hexes (preferably 3, but flexible)
         const targetHexes = this.selectArtilleryTargetHexes(unit, context);
         if (targetHexes.length > 0) {
@@ -3368,8 +3464,9 @@ export class AIDecisionMaker {
           };
         }
         return null; // Can't execute without valid targets
+      }
 
-      case 'SAM Strike':
+      case 'SAM Strike': {
         // SAM strike requires a target unit ID
         const airTargets = context.enemyUnits.filter(enemy => 
           enemy.type === UnitType.HARRIER || 
@@ -3387,9 +3484,10 @@ export class AIDecisionMaker {
           };
         }
         return null; // Can't execute without valid targets
+      }
 
       case 'Special Operations':
-      case 'Direct Action':
+      case 'Direct Action': {
         // These abilities might require target selection
         const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 3);
         if (nearbyEnemies.length > 0) {
@@ -3410,6 +3508,7 @@ export class AIDecisionMaker {
           reasoning: `Using ${abilityName}`,
           metadata,
         };
+      }
 
       default:
         // For other abilities, try to use them as-is
@@ -3450,7 +3549,7 @@ export class AIDecisionMaker {
     if (targetHexes.length === 0) {
       for (const enemy of context.enemyUnits) {
         targetHexes.push(new Hex(enemy.state.position.q, enemy.state.position.r, enemy.state.position.s));
-        if (targetHexes.length >= 3) break;
+        if (targetHexes.length >= 3) {break;}
       }
     }
     
@@ -3526,6 +3625,124 @@ export class AIDecisionMaker {
     }
     
     return decisions;
+  }
+
+  /**
+   * Generate movement decisions during movement phase
+   */
+  private generateMovementPhaseDecisions(
+    context: AIDecisionContext,
+    usedUnits: Set<string>,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    // Find unused units that can move
+    const unusedUnits = context.availableUnits.filter(unit => 
+      !usedUnits.has(unit.id) && unit.canMove() && !unit.state.hasMoved
+    );
+    
+    console.log(`[AI] Movement phase: ${unusedUnits.length} unused units can move`);
+    
+    for (const unit of unusedUnits) {
+      if (decisions.length >= remainingCP) {
+        break; // No more CP available
+      }
+      
+      // Priority 1: Move toward objectives (highest priority in movement phase)
+      const objectives = this.findNearbyObjectives(unit, context);
+      if (objectives.length > 0) {
+        const objectivePosition = this.findPositionTowardsObjective(unit, objectives[0], context);
+        if (objectivePosition) {
+          console.log(`[AI] Generated objective movement: ${unit.id} toward objective`);
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 9, // Highest priority for objectives
+            unitId: unit.id,
+            targetPosition: objectivePosition,
+            reasoning: `Movement phase: advancing toward objective`,
+            metadata: {
+              objective: true, // Flag for test detection
+              objectiveAdvance: true,
+              targetDistance: this.calculateDistance(unit.state.position, objectives[0]),
+            },
+          });
+          continue;
+        }
+      }
+      
+      // Priority 2: Move toward enemies
+      const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 10);
+      if (nearbyEnemies.length > 0) {
+        const targetPosition = this.findAdvancementPosition(unit, nearbyEnemies[0], context);
+        if (targetPosition) {
+          console.log(`[AI] Generated movement decision: ${unit.id} toward ${nearbyEnemies[0].type}`);
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 8, // High priority for movement phase
+            unitId: unit.id,
+            targetPosition: targetPosition,
+            reasoning: `Movement phase: advancing toward ${nearbyEnemies[0].type}`,
+          });
+          continue;
+        }
+      }
+      
+      // Priority 3: Move toward center of map (fallback)
+      const centerPos = this.findCenterPosition(context);
+      if (centerPos && this.canUnitReachPosition(unit, centerPos, context)) {
+        console.log(`[AI] Generated fallback movement: ${unit.id} toward center`);
+        decisions.push({
+          type: AIDecisionType.MOVE_UNIT,
+          priority: 5,
+          unitId: unit.id,
+          targetPosition: centerPos,
+          reasoning: `Movement phase: general advancement`,
+        });
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Find nearby objectives for a unit
+   */
+  private findNearbyObjectives(unit: Unit, context: AIDecisionContext): Hex[] {
+    const objectives: Hex[] = [];
+    
+    // Check map objectives (MapHex objects with objective property)
+    const mapObjectives = context.gameState.map.getObjectives();
+    for (const mapHex of mapObjectives) {
+      const hexPosition = mapHex.coordinate;
+      const distance = this.calculateDistance(unit.state.position, hexPosition);
+      if (distance <= 10) { // Within reasonable distance
+        objectives.push(hexPosition);
+      }
+    }
+    
+    // Check game state objectives
+    for (const objective of context.gameState.objectives.values()) {
+      const distance = this.calculateDistance(unit.state.position, objective.position);
+      if (distance <= 10) { // Within reasonable distance
+        objectives.push(objective.position);
+      }
+    }
+    
+    return objectives;
+  }
+
+  /**
+   * Find center position of the map
+   */
+  private findCenterPosition(context: AIDecisionContext): Hex | null {
+    const mapDimensions = context.gameState.map.getDimensions();
+    const centerQ = Math.floor(mapDimensions.width / 2);
+    const centerR = Math.floor(mapDimensions.height / 2);
+    const centerS = -centerQ - centerR;
+    
+    const centerPos = new Hex(centerQ, centerR, centerS);
+    return this.isValidMapPosition(centerPos, context) ? centerPos : null;
   }
 
   /**
