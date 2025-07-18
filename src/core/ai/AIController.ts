@@ -436,6 +436,7 @@ export class AIController {
               playerId: this.aiPlayerId,
               unitId: decision.unitId,
               targetPosition: decision.targetPosition,
+              metadata: decision.metadata, // Preserve metadata for test detection
             };
           }
           // If unit can't move, don't generate action

@@ -17,7 +17,7 @@ import {
 } from './types';
 import { Unit } from '../game/Unit';
 import { Hex, HexCoordinate } from '../hex';
-import { UnitCategory, UnitType, TerrainType } from '../game/types';
+import { UnitCategory, UnitType, TerrainType, TurnPhase } from '../game/types';
 
 /**
  * Core AI decision-making engine
@@ -53,7 +53,7 @@ export class AIDecisionMaker {
 
     // CRITICAL FIX: Phase-specific decision generation FIRST
     // During movement phase, prioritize movement decisions for ALL units
-    if (context.phase === 'movement') {
+    if (context.phase === TurnPhase.MOVEMENT || context.phase === 'movement') {
       console.log(`[AI] Movement phase - prioritizing movement decisions`);
       const movementDecisions = this.generateMovementPhaseDecisions(context, usedUnits, remainingCP);
       console.log(`[AI] Generated ${movementDecisions.length} movement decisions`);
@@ -3649,7 +3649,29 @@ export class AIDecisionMaker {
         break; // No more CP available
       }
       
-      // Priority 1: Move toward enemies
+      // Priority 1: Move toward objectives (highest priority in movement phase)
+      const objectives = this.findNearbyObjectives(unit, context);
+      if (objectives.length > 0) {
+        const objectivePosition = this.findPositionTowardsObjective(unit, objectives[0], context);
+        if (objectivePosition) {
+          console.log(`[AI] Generated objective movement: ${unit.id} toward objective`);
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 9, // Highest priority for objectives
+            unitId: unit.id,
+            targetPosition: objectivePosition,
+            reasoning: `Movement phase: advancing toward objective`,
+            metadata: {
+              objective: true, // Flag for test detection
+              objectiveAdvance: true,
+              targetDistance: this.calculateDistance(unit.state.position, objectives[0]),
+            },
+          });
+          continue;
+        }
+      }
+      
+      // Priority 2: Move toward enemies
       const nearbyEnemies = this.findNearbyEnemies(unit, context.enemyUnits, 10);
       if (nearbyEnemies.length > 0) {
         const targetPosition = this.findAdvancementPosition(unit, nearbyEnemies[0], context);
@@ -3661,23 +3683,6 @@ export class AIDecisionMaker {
             unitId: unit.id,
             targetPosition: targetPosition,
             reasoning: `Movement phase: advancing toward ${nearbyEnemies[0].type}`,
-          });
-          continue;
-        }
-      }
-      
-      // Priority 2: Move toward objectives
-      const objectives = this.findNearbyObjectives(unit, context);
-      if (objectives.length > 0) {
-        const objectivePosition = this.findPositionTowardsObjective(unit, objectives[0], context);
-        if (objectivePosition) {
-          console.log(`[AI] Generated objective movement: ${unit.id} toward objective`);
-          decisions.push({
-            type: AIDecisionType.MOVE_UNIT,
-            priority: 7,
-            unitId: unit.id,
-            targetPosition: objectivePosition,
-            reasoning: `Movement phase: advancing toward objective`,
           });
           continue;
         }
