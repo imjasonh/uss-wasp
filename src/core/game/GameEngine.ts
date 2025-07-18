@@ -90,12 +90,6 @@ export class GameEngine {
     // Execute based on action type
     let result: ActionResult;
     const unit = this.gameState.getUnit(action.unitId);
-    
-    // Get the player to consume command points
-    const player = this.gameState.getPlayer(action.playerId);
-    if (!player) {
-      return { success: false, message: 'Player not found' };
-    }
 
     // Get the player to consume command points
     const player = this.gameState.getPlayer(action.playerId);
