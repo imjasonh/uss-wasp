@@ -332,7 +332,6 @@ export class AIController {
         actions.push(action);
       }
     }
-
     return actions;
   }
 
