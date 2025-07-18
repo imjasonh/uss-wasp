@@ -71,6 +71,21 @@ export class AIDecisionMaker {
     // Analyze current tactical situation
     const tacticalPriorities = this.determineTacticalPriorities(context);
     
+    // NEW: Generate coordinated multi-unit plans BEFORE individual decisions
+    // Only generate coordination in action phase to avoid interfering with other phases
+    if (context.phase === TurnPhase.ACTION || context.phase === 'action') {
+      const coordinatedDecisions = this.generateCoordinatedPlans(context, usedUnits, remainingCP);
+      decisions.push(...coordinatedDecisions);
+      
+      // Update used units and remaining CP after coordination
+      for (const decision of coordinatedDecisions) {
+        if (decision.unitId) {
+          usedUnits.add(decision.unitId);
+        }
+      }
+      remainingCP -= coordinatedDecisions.length;
+    }
+    
     // Generate decisions based on priorities, tracking used units and CP
     for (const priority of tacticalPriorities) {
       if (remainingCP <= 0) {
@@ -3743,6 +3758,416 @@ export class AIDecisionMaker {
     
     const centerPos = new Hex(centerQ, centerR, centerS);
     return this.isValidMapPosition(centerPos, context) ? centerPos : null;
+  }
+
+  /**
+   * Generate coordinated multi-unit plans
+   */
+  private generateCoordinatedPlans(
+    context: AIDecisionContext,
+    usedUnits: Set<string>,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    // Get available units for coordination (not yet used)
+    const availableUnits = context.availableUnits.filter(unit => !usedUnits.has(unit.id));
+    
+    if (availableUnits.length < 2 || remainingCP < 2) {
+      return decisions; // Need at least 2 units and 2 CP for coordination
+    }
+    
+    // Priority 1: Combined Arms Coordination (Artillery + Infantry)
+    const combinedArmsDecisions = this.planCombinedArmsAssault(availableUnits, context, remainingCP);
+    decisions.push(...combinedArmsDecisions);
+    
+    // Priority 2: Flanking Maneuvers (Multiple units from different angles)
+    const flankingDecisions = this.planFlankingManeuver(availableUnits, context, remainingCP - decisions.length);
+    decisions.push(...flankingDecisions);
+    
+    // Priority 3: Concentrated Attacks (Focus fire on priority targets)
+    const concentratedDecisions = this.planConcentratedAttack(availableUnits, context, remainingCP - decisions.length);
+    decisions.push(...concentratedDecisions);
+    
+    // Priority 4: Supporting Fires (Artillery supports infantry advances)
+    const supportingFiresDecisions = this.planSupportingFires(availableUnits, context, remainingCP - decisions.length);
+    decisions.push(...supportingFiresDecisions);
+    
+    console.log(`[AI] Generated ${decisions.length} coordinated decisions`);
+    return decisions;
+  }
+
+  /**
+   * Plan combined arms assault (artillery + infantry coordination)
+   */
+  private planCombinedArmsAssault(
+    availableUnits: Unit[],
+    context: AIDecisionContext,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    if (remainingCP < 2) return decisions;
+    
+    // Find artillery units
+    const artilleryUnits = availableUnits.filter(unit => 
+      unit.type === UnitType.ARTILLERY || unit.type === UnitType.LONG_RANGE_ARTILLERY
+    );
+    
+    // Find infantry and armor units
+    const infantryUnits = availableUnits.filter(unit => 
+      unit.hasCategory(UnitCategory.INFANTRY)
+    );
+    
+    const armorUnits = availableUnits.filter(unit => 
+      unit.type === UnitType.AAV_7 || unit.type === UnitType.HUMVEE
+    );
+    
+    const combatUnits = [...infantryUnits, ...armorUnits];
+    
+    if (artilleryUnits.length === 0 || combatUnits.length === 0) {
+      return decisions; // Need both artillery and combat units
+    }
+    
+    // Find high-value enemy targets
+    const priorityTargets = this.findPriorityTargets(context.enemyUnits, context);
+    
+    for (const target of priorityTargets.slice(0, 1)) { // Focus on one target at a time
+      const artillery = artilleryUnits[0];
+      const combatUnit = this.findNearestUnit(combatUnits, new Hex(target.state.position.q, target.state.position.r, target.state.position.s));
+      
+      if (artillery && combatUnit && decisions.length < remainingCP - 1) {
+        // Artillery attacks target first (if in range)
+        const artilleryDistance = this.calculateDistance(artillery.state.position, target.state.position);
+        if (artilleryDistance <= 3) { // Artillery has longer range
+          // Use artillery special ability instead of direct attack
+          const artilleryBarrage = artillery.specialAbilities.find(ability => 
+            ability.name.toLowerCase().includes('barrage') || ability.name.toLowerCase().includes('artillery')
+          );
+          
+          if (artilleryBarrage) {
+            decisions.push({
+              type: AIDecisionType.SPECIAL_ABILITY,
+              priority: 15, // Very high priority for coordination
+              unitId: artillery.id,
+              reasoning: `Combined arms: Artillery barrage on ${target.type} for infantry assault`,
+              metadata: {
+                coordination: true,
+                combinedArms: true,
+                supportingInfantry: combatUnit.id,
+                targetId: target.id,
+                abilityName: artilleryBarrage.name,
+              },
+            });
+          } else {
+            // Fallback to direct attack if no artillery ability
+            decisions.push({
+              type: AIDecisionType.ATTACK_TARGET,
+              priority: 15, // Very high priority for coordination
+              unitId: artillery.id,
+              targetUnitId: target.id,
+              reasoning: `Combined arms: Artillery attacks ${target.type} for infantry assault`,
+              metadata: {
+                coordination: true,
+                combinedArms: true,
+                supportingInfantry: combatUnit.id,
+                targetId: target.id,
+              },
+            });
+          }
+        }
+        
+        // Combat unit follows up with assault
+        const combatDistance = this.calculateDistance(combatUnit.state.position, target.state.position);
+        if (combatDistance <= 2) {
+          // Combat unit can attack directly
+          decisions.push({
+            type: AIDecisionType.ATTACK_TARGET,
+            priority: 14, // High priority, but after artillery
+            unitId: combatUnit.id,
+            targetUnitId: target.id,
+            reasoning: `Combined arms: ${combatUnit.type} attacks after artillery preparation`,
+            metadata: {
+              coordination: true,
+              combinedArms: true,
+              supportingArtillery: artillery.id,
+              targetId: target.id,
+            },
+          });
+        } else {
+          // Combat unit is not in range - skip coordination for this target
+          // (Movement should happen in movement phase, not action phase)
+          continue;
+        }
+        
+        console.log(`[AI] Combined arms: ${artillery.id} + ${combatUnit.id} targeting ${target.type}`);
+        break; // One coordinated assault per turn
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Plan flanking maneuver (multiple units attacking from different angles)
+   */
+  private planFlankingManeuver(
+    availableUnits: Unit[],
+    context: AIDecisionContext,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    if (remainingCP < 2) return decisions;
+    
+    // Find mobile units suitable for flanking
+    const mobileUnits = availableUnits.filter(unit => 
+      unit.stats.mv >= 2 && unit.hasCategory(UnitCategory.GROUND)
+    );
+    
+    if (mobileUnits.length < 2) return decisions;
+    
+    // Find targets suitable for flanking
+    const flankingTargets = context.enemyUnits.filter(target => {
+      const threateningUnits = context.availableUnits.filter(unit => {
+        const distance = this.calculateDistance(unit.state.position, target.state.position);
+        return distance <= 3;
+      });
+      return threateningUnits.length >= 2; // Can surround this target
+    });
+    
+    for (const target of flankingTargets.slice(0, 1)) { // One flanking maneuver per turn
+      const unit1 = mobileUnits[0];
+      const unit2 = mobileUnits[1];
+      
+      if (unit1 && unit2 && decisions.length < remainingCP - 1) {
+        // Find flanking positions (different angles of attack)
+        const flankPos1 = this.findFlankingPosition(unit1, target, context, 'left');
+        const flankPos2 = this.findFlankingPosition(unit2, target, context, 'right');
+        
+        if (flankPos1 && flankPos2) {
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 13,
+            unitId: unit1.id,
+            targetPosition: flankPos1,
+            reasoning: `Flanking maneuver: Left flank against ${target.type}`,
+            metadata: {
+              coordination: true,
+              flanking: true,
+              flankingPartner: unit2.id,
+              targetId: target.id,
+              flankSide: 'left',
+            },
+          });
+          
+          decisions.push({
+            type: AIDecisionType.MOVE_UNIT,
+            priority: 13,
+            unitId: unit2.id,
+            targetPosition: flankPos2,
+            reasoning: `Flanking maneuver: Right flank against ${target.type}`,
+            metadata: {
+              coordination: true,
+              flanking: true,
+              flankingPartner: unit1.id,
+              targetId: target.id,
+              flankSide: 'right',
+            },
+          });
+          
+          console.log(`[AI] Flanking maneuver: ${unit1.id} + ${unit2.id} vs ${target.type}`);
+          break;
+        }
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Plan concentrated attack (multiple units focus fire on priority target)
+   */
+  private planConcentratedAttack(
+    availableUnits: Unit[],
+    context: AIDecisionContext,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    if (remainingCP < 2) return decisions;
+    
+    // Find units capable of attacking
+    const attackingUnits = availableUnits.filter(unit => 
+      unit.stats.atk > 0 && unit.canAct()
+    );
+    
+    if (attackingUnits.length < 2) return decisions;
+    
+    // Find high-value targets worth concentrating fire on
+    const priorityTargets = this.findPriorityTargets(context.enemyUnits, context);
+    
+    for (const target of priorityTargets.slice(0, 1)) { // Focus on one target
+      const attackers = attackingUnits.filter(unit => {
+        const distance = this.calculateDistance(unit.state.position, target.state.position);
+        return distance <= 2; // Within attack range (simplified)
+      }).slice(0, remainingCP); // Don't exceed CP limit
+      
+      if (attackers.length >= 2) {
+        for (const attacker of attackers) {
+          decisions.push({
+            type: AIDecisionType.ATTACK_TARGET,
+            priority: 12,
+            unitId: attacker.id,
+            targetUnitId: target.id,
+            reasoning: `Concentrated attack: Focus fire on ${target.type}`,
+            metadata: {
+              coordination: true,
+              concentratedAttack: true,
+              attackPartners: attackers.map(u => u.id).filter(id => id !== attacker.id),
+              targetId: target.id,
+            },
+          });
+        }
+        
+        console.log(`[AI] Concentrated attack: ${attackers.length} units vs ${target.type}`);
+        break;
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Plan supporting fires (artillery supports infantry advances)
+   */
+  private planSupportingFires(
+    availableUnits: Unit[],
+    context: AIDecisionContext,
+    remainingCP: number
+  ): AIDecision[] {
+    const decisions: AIDecision[] = [];
+    
+    if (remainingCP < 2) return decisions;
+    
+    // Find artillery units
+    const artilleryUnits = availableUnits.filter(unit => 
+      unit.type === UnitType.ARTILLERY || unit.type === UnitType.LONG_RANGE_ARTILLERY
+    );
+    
+    // Find advancing infantry
+    const advancingInfantry = availableUnits.filter(unit => 
+      unit.hasCategory(UnitCategory.INFANTRY) && !unit.state.hasMoved
+    );
+    
+    if (artilleryUnits.length === 0 || advancingInfantry.length === 0) {
+      return decisions;
+    }
+    
+    for (const infantry of advancingInfantry.slice(0, 1)) {
+      const artillery = artilleryUnits[0];
+      
+      // Find enemies threatening the infantry's advance
+      const threateningEnemies = context.enemyUnits.filter(enemy => {
+        const distanceToInfantry = this.calculateDistance(enemy.state.position, infantry.state.position);
+        return distanceToInfantry <= 4; // Enemies close to infantry
+      });
+      
+      if (threateningEnemies.length > 0 && artillery) {
+        const target = threateningEnemies[0];
+        
+        // Artillery provides supporting fires (attack if in range)
+        const artilleryDistance = this.calculateDistance(artillery.state.position, target.state.position);
+        if (artilleryDistance <= 3) { // Artillery has longer range
+          // Use artillery special ability instead of direct attack
+          const artilleryBarrage = artillery.specialAbilities.find(ability => 
+            ability.name.toLowerCase().includes('barrage') || ability.name.toLowerCase().includes('artillery')
+          );
+          
+          if (artilleryBarrage) {
+            decisions.push({
+              type: AIDecisionType.SPECIAL_ABILITY,
+              priority: 11,
+              unitId: artillery.id,
+              reasoning: `Supporting fires: Artillery barrage suppresses ${target.type} threatening ${infantry.type}`,
+              metadata: {
+                coordination: true,
+                supportingFires: true,
+                supportedUnit: infantry.id,
+                targetId: target.id,
+                abilityName: artilleryBarrage.name,
+              },
+            });
+          } else {
+            // Fallback to direct attack if no artillery ability
+            decisions.push({
+              type: AIDecisionType.ATTACK_TARGET,
+              priority: 11,
+              unitId: artillery.id,
+              targetUnitId: target.id,
+              reasoning: `Supporting fires: Artillery suppresses ${target.type} threatening ${infantry.type}`,
+              metadata: {
+                coordination: true,
+                supportingFires: true,
+                supportedUnit: infantry.id,
+                targetId: target.id,
+              },
+            });
+          }
+        }
+        
+        console.log(`[AI] Supporting fires: ${artillery.id} supports ${infantry.id}`);
+        break;
+      }
+    }
+    
+    return decisions;
+  }
+
+  /**
+   * Find priority targets for coordination
+   */
+  private findPriorityTargets(enemyUnits: Unit[], context: AIDecisionContext): Unit[] {
+    return enemyUnits
+      .filter(unit => unit.stats.hp > 0) // Alive targets only
+      .sort((a, b) => {
+        // Priority: High attack value, low health (easier to kill)
+        const priorityA = a.stats.atk * 2 - a.state.currentHP;
+        const priorityB = b.stats.atk * 2 - b.state.currentHP;
+        return priorityB - priorityA;
+      });
+  }
+
+  /**
+   * Find flanking position for a unit
+   */
+  private findFlankingPosition(
+    unit: Unit,
+    target: Unit,
+    context: AIDecisionContext,
+    side: 'left' | 'right'
+  ): Hex | null {
+    const targetPos = target.state.position;
+    const unitPos = unit.state.position;
+    
+    // Calculate positions to the left and right of the target
+    const directions = [
+      new Hex(targetPos.q + 1, targetPos.r - 1, targetPos.s),
+      new Hex(targetPos.q - 1, targetPos.r + 1, targetPos.s),
+      new Hex(targetPos.q + 1, targetPos.r, targetPos.s - 1),
+      new Hex(targetPos.q - 1, targetPos.r, targetPos.s + 1),
+      new Hex(targetPos.q, targetPos.r + 1, targetPos.s - 1),
+      new Hex(targetPos.q, targetPos.r - 1, targetPos.s + 1),
+    ];
+    
+    // Filter for valid positions
+    const validPositions = directions.filter(pos => 
+      this.isValidMapPosition(pos, context) && 
+      this.canUnitReachPosition(unit, pos, context)
+    );
+    
+    // Return first valid position (simplified flanking)
+    return validPositions.length > 0 ? validPositions[0] : null;
   }
 
   /**

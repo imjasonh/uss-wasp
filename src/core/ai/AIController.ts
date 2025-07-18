@@ -332,7 +332,6 @@ export class AIController {
         actions.push(action);
       }
     }
-
     return actions;
   }
 
@@ -350,13 +349,12 @@ export class AIController {
     
     // If primary action is blacklisted or null, try fallback actions
     if (primaryAction) {
-      const fallbackActionTypes = this.fallbackActions.get(primaryAction.type) || [];
+      const fallbackActionTypes = this.fallbackActions.get(primaryAction.type) ?? [];
       
       for (const fallbackType of fallbackActionTypes) {
         if (!this.isActionBlacklisted(primaryAction.unitId, fallbackType)) {
           const fallbackAction = this.createFallbackAction(primaryAction, fallbackType, gameState);
           if (fallbackAction) {
-            console.log(`[AI] Using fallback action ${fallbackType} for unit ${primaryAction.unitId} (${primaryAction.type} blacklisted)`);
             return fallbackAction;
           }
         }
@@ -374,7 +372,7 @@ export class AIController {
     if (!unit) return null;
     
     switch (fallbackType) {
-      case ActionType.MOVE:
+      case ActionType.MOVE: {
         // Create a simple move action - move to a random nearby position
         const currentPos = unit.state.position;
         const nearbyPositions = [
@@ -395,8 +393,9 @@ export class AIController {
           }
         }
         return null;
+      }
         
-      case ActionType.ATTACK:
+      case ActionType.ATTACK: {
         // Find a nearby enemy to attack
         const enemyPlayer = this.getEnemyPlayer(gameState);
         const enemies = enemyPlayer ? enemyPlayer.getLivingUnits() : [];
@@ -415,6 +414,7 @@ export class AIController {
           };
         }
         return null;
+      }
         
       default:
         return null;
@@ -693,9 +693,10 @@ export class AIController {
    */
   private calculateAmmoStatus(units: Unit[]): number {
     // Simplified ammo calculation - in full implementation would track actual ammo
-    const totalSupply = units.reduce((sum, unit) => sum + (unit.stats.sp ?? 10), 0);
+    const defaultSupply = 10;
+    const totalSupply = units.reduce((sum, unit) => sum + (unit.stats.sp ?? defaultSupply), 0);
     const currentSupply = units.reduce(
-      (sum, unit) => sum + (unit.state.currentSP ?? unit.stats.sp ?? 10),
+      (sum, unit) => sum + (unit.state.currentSP ?? unit.stats.sp ?? defaultSupply),
       0
     );
 
