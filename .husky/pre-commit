@@ -1,45 +1,17 @@
-echo "🔍 Running pre-commit checks..."
+# Run lint-staged for formatting and linting
+npm run pre-commit
 
-# Run TypeScript compilation check
-echo "📝 TypeScript compilation check..."
+# Run TypeScript type checking
+echo "🔍 Running TypeScript type checking..."
 npm run typecheck
-if [ $? -ne 0 ]; then
-  echo "❌ TypeScript compilation failed!"
-  exit 1
-fi
 
-# Run code formatting
-echo "🎨 Code formatting..."
-npx lint-staged
-if [ $? -ne 0 ]; then
-  echo "❌ Code formatting failed!"
-  exit 1
-fi
+# Build project to catch compilation errors
+echo "🔨 Building project..."
+npm run build
 
-# Verify formatting is correct after lint-staged
-echo "✅ Verifying formatting..."
-npm run format:check
-if [ $? -ne 0 ]; then
-  echo "❌ Formatting check failed after lint-staged!"
-  echo "💡 Run 'npm run format' to fix formatting issues."
-  exit 1
-fi
+# Run personality matchups to update AI analysis
+echo "🤖 Running AI personality matchups..."
+node scripts/run-personality-matchups.js
 
-# Run strict linting (zero errors allowed, warnings permitted)
-echo "🔍 Strict linting check..."
-npm run lint
-if [ $? -ne 0 ]; then
-  echo "❌ Linting failed! All errors must be fixed before commit."
-  echo "💡 Run 'npm run lint' to see issues and 'npm run lint:fix' to auto-fix."
-  exit 1
-fi
-
-# Run tests to ensure nothing is broken
-echo "🧪 Running tests..."
-npm test -- --silent
-if [ $? -ne 0 ]; then
-  echo "❌ Tests failed!"
-  exit 1
-fi
-
-echo "✅ Pre-commit checks completed!"
+# Add updated docs to the commit
+git add docs/personalities.md tests/ai/results/

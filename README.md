@@ -34,6 +34,7 @@ The USS Wasp project simulates modern amphibious assault operations featuring:
 ### 🤖 Advanced AI System
 - **Multi-layered AI**: Decision maker, state machine, and tactical priorities
 - **Difficulty Levels**: Novice, Veteran, Elite, and Adaptive
+- **AI Personalities**: 8 distinct tactical personalities with unique behaviors
 - **Military Operations**: USS Wasp operations, artillery, special forces
 - **Tactical Behaviors**: Hidden units, ambush tactics, objective control
 
@@ -93,6 +94,10 @@ npm run typecheck
 
 # Linting
 npm run lint
+
+# AI Testing
+npm run test:ai                 # Run comprehensive AI tests
+npm run test:personality        # Run personality matchup analysis
 ```
 
 ## Architecture

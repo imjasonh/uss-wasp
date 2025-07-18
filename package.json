@@ -24,7 +24,8 @@
     "prepare": "husky",
     "deps:pin": "node scripts/pin-dependencies.js",
     "deps:audit": "npm audit && npm outdated",
-    "actions:pin": "node scripts/pin-github-actions.js"
+    "actions:pin": "node scripts/pin-github-actions.js",
+    "test:personality": "node scripts/run-personality-matchups.js"
   },
   "keywords": [
     "uss-wasp",

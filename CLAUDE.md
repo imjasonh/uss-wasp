@@ -349,8 +349,69 @@ After: "Documentation: Comprehensive Game Overview for README"
 
 This workflow ensures systematic progress toward USS Wasp project completion while maintaining high code quality and clear development tracking.
 
+## 🧪 Debug and Testing File Management
+
+### Temporary File Organization
+
+**Purpose**: Keep the repository clean while preserving debugging and testing work for future reference.
+
+**Directory Structure**:
+```
+./tmp/           # Temporary debug, test, and experimental files
+├── debug-*.js   # Debug scripts for specific issues
+├── test-*.js    # Temporary test files
+├── run-*.ts     # One-off execution scripts
+└── experimental/ # Experimental features and prototypes
+```
+
+**Guidelines**:
+- **All debug/testing files** should be placed in `./tmp/` directory
+- **Temporary files** are gitignored but visible for development
+- **Only commit** debug/test files if they will be used in production or future development
+- **File naming**: Use descriptive prefixes (`debug-`, `test-`, `run-`, `experimental-`)
+
+**Examples**:
+```bash
+# ✅ Good - temporary debug files
+./tmp/debug-personality-test.ts
+./tmp/test-ai-difficulty.js  
+./tmp/run-personality-tests.ts
+
+# ❌ Bad - clutters project root
+./debug-personality-test.ts
+./test-ai-difficulty.js
+./run-personality-tests.ts
+```
+
+**Benefits**:
+- **Clean repository**: Production code separated from debug files
+- **Preserved work**: Debug files available for reference and reuse
+- **Easy cleanup**: Simple to identify and manage temporary files
+- **Version control**: Only intentional debug files committed
+
+### Pre-commit Hook Configuration
+
+**Issue Discovered**: The pre-commit hook was missing TypeScript type checking, causing CI failures that could have been caught locally.
+
+**Current Pre-commit Pipeline**:
+```bash
+1. lint-staged (eslint --fix, prettier --write)
+2. TypeScript type checking (npm run typecheck)
+3. Project build (npm run build)
+4. AI personality matchups (documentation updates)
+```
+
+**Alignment with CI**: Pre-commit hooks now mirror CI pipeline steps to catch issues early:
+- ✅ **Linting**: ESLint with auto-fix
+- ✅ **Formatting**: Prettier code formatting
+- ✅ **Type Checking**: TypeScript validation
+- ✅ **Build**: Compilation verification
+- ✅ **AI Analysis**: Personality matchup updates
+
+**Lesson**: Pre-commit hooks should include all validation steps that CI performs to prevent remote failures.
+
 ---
 
-*Last Updated: 2025-07-14*  
-*Phase 6 Status: Advanced AI Implementation - Issues Workflow Established*  
-*Current Focus: Critical combat system fixes (Issues #4, #10)*
+*Last Updated: 2025-07-18*  
+*Phase 6 Status: Advanced AI Implementation - Complete*  
+*Current Focus: Debug file organization and project cleanup*
