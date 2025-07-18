@@ -136,38 +136,38 @@ The USS Wasp AI Personality System provides diverse behavioral patterns for AI o
 #### Attacking Performance
 *When this personality is the attacker*
 
-1. 🗡️ **STRATEGIST**: 63.7% attack win rate (51W-29L) - 20.21 avg power
-2. ⚔️ **ADAPTIVE**: 50.0% attack win rate (40W-40L) - 19.69 avg power
-3. 🏹 **VETERAN**: 43.8% attack win rate (35W-45L) - 18.75 avg power
-4.  **BALANCED**: 42.5% attack win rate (34W-46L) - 18.38 avg power
-5.  **BERSERKER**: 41.3% attack win rate (33W-47L) - 18.86 avg power
-6.  **SPECIALIST**: 41.3% attack win rate (33W-47L) - 18.75 avg power
-7.  **CONSERVATIVE**: 18.8% attack win rate (15W-65L) - 13.43 avg power
-8.  **ROOKIE**: 18.8% attack win rate (15W-65L) - 12.32 avg power
+1. 🗡️ **STRATEGIST**: 62.5% attack win rate (50W-30L) - 20.54 avg power
+2. ⚔️ **SPECIALIST**: 46.3% attack win rate (37W-43L) - 18.97 avg power
+3. 🏹 **ADAPTIVE**: 46.3% attack win rate (37W-43L) - 19.90 avg power
+4.  **BERSERKER**: 42.5% attack win rate (34W-46L) - 18.96 avg power
+5.  **VETERAN**: 42.5% attack win rate (34W-46L) - 18.85 avg power
+6.  **BALANCED**: 41.3% attack win rate (33W-47L) - 18.44 avg power
+7.  **CONSERVATIVE**: 20.0% attack win rate (16W-64L) - 13.25 avg power
+8.  **ROOKIE**: 15.0% attack win rate (12W-68L) - 12.36 avg power
 
 #### Defensive Performance
 *When this personality is the defender*
 
-1. 🛡️ **STRATEGIST**: 87.5% defense win rate (70W-10L) - 22.51 avg power
-2. 🏰 **ADAPTIVE**: 83.8% defense win rate (67W-13L) - 21.80 avg power
-3. 🔒 **VETERAN**: 78.8% defense win rate (63W-17L) - 20.82 avg power
-4.  **SPECIALIST**: 78.8% defense win rate (63W-17L) - 20.72 avg power
-5.  **BERSERKER**: 73.8% defense win rate (59W-21L) - 20.63 avg power
-6.  **BALANCED**: 65.0% defense win rate (52W-28L) - 20.13 avg power
-7.  **CONSERVATIVE**: 6.3% defense win rate (5W-75L) - 14.55 avg power
-8.  **ROOKIE**: 6.3% defense win rate (5W-75L) - 13.36 avg power
+1. 🛡️ **STRATEGIST**: 87.5% defense win rate (70W-10L) - 22.44 avg power
+2. 🏰 **ADAPTIVE**: 85.0% defense win rate (68W-12L) - 21.65 avg power
+3. 🔒 **SPECIALIST**: 81.3% defense win rate (65W-15L) - 20.99 avg power
+4.  **VETERAN**: 78.8% defense win rate (63W-17L) - 20.95 avg power
+5.  **BERSERKER**: 73.8% defense win rate (59W-21L) - 20.84 avg power
+6.  **BALANCED**: 62.5% defense win rate (50W-30L) - 20.10 avg power
+7.  **CONSERVATIVE**: 10.0% defense win rate (8W-72L) - 14.46 avg power
+8.  **ROOKIE**: 5.0% defense win rate (4W-76L) - 13.53 avg power
 
 ### Overall Rankings
 
 #### By Combined Win Rate
-1. 🥇 **STRATEGIST**: 63.7% combined win rate (51W-29L)
-2. 🥈 **ADAPTIVE**: 50.0% combined win rate (40W-40L)
-3. 🥉 **VETERAN**: 43.8% combined win rate (35W-45L)
-4.  **BALANCED**: 42.5% combined win rate (34W-46L)
-5.  **BERSERKER**: 41.3% combined win rate (33W-47L)
-6.  **SPECIALIST**: 41.3% combined win rate (33W-47L)
-7.  **CONSERVATIVE**: 18.8% combined win rate (15W-65L)
-8.  **ROOKIE**: 18.8% combined win rate (15W-65L)
+1. 🥇 **STRATEGIST**: 62.5% combined win rate (50W-30L)
+2. 🥈 **SPECIALIST**: 46.3% combined win rate (37W-43L)
+3. 🥉 **ADAPTIVE**: 46.3% combined win rate (37W-43L)
+4.  **BERSERKER**: 42.5% combined win rate (34W-46L)
+5.  **VETERAN**: 42.5% combined win rate (34W-46L)
+6.  **BALANCED**: 41.3% combined win rate (33W-47L)
+7.  **CONSERVATIVE**: 20.0% combined win rate (16W-64L)
+8.  **ROOKIE**: 15.0% combined win rate (12W-68L)
 
 ## Detailed Matchup Matrix
 
@@ -176,28 +176,28 @@ The USS Wasp AI Personality System provides diverse behavioral patterns for AI o
 
 | **ATTACKER** \\ **DEFENDER** | **BERSERKER** | **STRATEGIST** | **CONSERVATIVE** | **BALANCED** | **ROOKIE** | **VETERAN** | **SPECIALIST** | **ADAPTIVE** |
 |-------------------------|---|---|---|---|---|---|---|---|
-| **BERSERKER** (A) | 100.0% (10-0) | 0.0% (0-10) | 100.0% (10-0) | 30.0% (3-7) | 100.0% (10-0) | 0.0% (0-10) | 0.0% (0-10) | 0.0% (0-10) |
-| **STRATEGIST** (A) | 30.0% (3-7) | 100.0% (10-0) | 100.0% (10-0) | 80.0% (8-2) | 100.0% (10-0) | 30.0% (3-7) | 50.0% (5-5) | 20.0% (2-8) |
-| **CONSERVATIVE** (A) | 0.0% (0-10) | 0.0% (0-10) | 100.0% (10-0) | 0.0% (0-10) | 50.0% (5-5) | 0.0% (0-10) | 0.0% (0-10) | 0.0% (0-10) |
-| **BALANCED** (A) | 20.0% (2-8) | 0.0% (0-10) | 100.0% (10-0) | 100.0% (10-0) | 100.0% (10-0) | 10.0% (1-9) | 0.0% (0-10) | 10.0% (1-9) |
-| **ROOKIE** (A) | 0.0% (0-10) | 0.0% (0-10) | 50.0% (5-5) | 0.0% (0-10) | 100.0% (10-0) | 0.0% (0-10) | 0.0% (0-10) | 0.0% (0-10) |
-| **VETERAN** (A) | 10.0% (1-9) | 0.0% (0-10) | 100.0% (10-0) | 30.0% (3-7) | 100.0% (10-0) | 100.0% (10-0) | 10.0% (1-9) | 0.0% (0-10) |
-| **SPECIALIST** (A) | 20.0% (2-8) | 0.0% (0-10) | 100.0% (10-0) | 0.0% (0-10) | 100.0% (10-0) | 10.0% (1-9) | 100.0% (10-0) | 0.0% (0-10) |
-| **ADAPTIVE** (A) | 30.0% (3-7) | 0.0% (0-10) | 100.0% (10-0) | 40.0% (4-6) | 100.0% (10-0) | 20.0% (2-8) | 10.0% (1-9) | 100.0% (10-0) |
+| **BERSERKER** (A) | 100.0% (10-0) | 0.0% (0-10) | 100.0% (10-0) | 40.0% (4-6) | 100.0% (10-0) | 0.0% (0-10) | 0.0% (0-10) | 0.0% (0-10) |
+| **STRATEGIST** (A) | 60.0% (6-4) | 100.0% (10-0) | 100.0% (10-0) | 70.0% (7-3) | 100.0% (10-0) | 40.0% (4-6) | 10.0% (1-9) | 20.0% (2-8) |
+| **CONSERVATIVE** (A) | 0.0% (0-10) | 0.0% (0-10) | 100.0% (10-0) | 0.0% (0-10) | 60.0% (6-4) | 0.0% (0-10) | 0.0% (0-10) | 0.0% (0-10) |
+| **BALANCED** (A) | 20.0% (2-8) | 0.0% (0-10) | 100.0% (10-0) | 100.0% (10-0) | 100.0% (10-0) | 0.0% (0-10) | 10.0% (1-9) | 0.0% (0-10) |
+| **ROOKIE** (A) | 0.0% (0-10) | 0.0% (0-10) | 20.0% (2-8) | 0.0% (0-10) | 100.0% (10-0) | 0.0% (0-10) | 0.0% (0-10) | 0.0% (0-10) |
+| **VETERAN** (A) | 10.0% (1-9) | 0.0% (0-10) | 100.0% (10-0) | 10.0% (1-9) | 100.0% (10-0) | 100.0% (10-0) | 20.0% (2-8) | 0.0% (0-10) |
+| **SPECIALIST** (A) | 20.0% (2-8) | 0.0% (0-10) | 100.0% (10-0) | 40.0% (4-6) | 100.0% (10-0) | 10.0% (1-9) | 100.0% (10-0) | 0.0% (0-10) |
+| **ADAPTIVE** (A) | 0.0% (0-10) | 0.0% (0-10) | 100.0% (10-0) | 40.0% (4-6) | 100.0% (10-0) | 20.0% (2-8) | 10.0% (1-9) | 100.0% (10-0) |
 
 ### Combat Power Comparison
 *Format: Attacker Power vs Defender Power*
 
 | **ATTACKER** \\ **DEFENDER** | **BERSERKER** | **STRATEGIST** | **CONSERVATIVE** | **BALANCED** | **ROOKIE** | **VETERAN** | **SPECIALIST** | **ADAPTIVE** |
 |-------------------------|---|---|---|---|---|---|---|---|
-| **BERSERKER** (A) | 19.41 vs 20.52 | 18.88 vs 22.56 | 18.71 vs 14.67 | 18.97 vs 19.79 | 18.81 vs 13.01 | 18.90 vs 21.09 | 18.53 vs 20.61 | 18.66 vs 21.72 |
-| **STRATEGIST** (A) | 20.23 vs 20.74 | 20.31 vs 22.55 | 19.99 vs 14.19 | 20.37 vs 19.84 | 19.98 vs 12.73 | 20.19 vs 20.61 | 20.50 vs 20.48 | 20.13 vs 21.96 |
-| **CONSERVATIVE** (A) | 13.28 vs 20.47 | 13.77 vs 22.00 | 13.68 vs 15.31 | 13.70 vs 19.75 | 13.32 vs 13.37 | 13.07 vs 21.35 | 12.89 vs 21.53 | 13.71 vs 22.21 |
-| **BALANCED** (A) | 18.65 vs 20.39 | 18.19 vs 22.42 | 18.42 vs 14.56 | 19.05 vs 20.10 | 18.11 vs 13.58 | 18.33 vs 20.30 | 17.56 vs 21.10 | 18.76 vs 21.67 |
-| **ROOKIE** (A) | 12.58 vs 20.78 | 11.65 vs 22.35 | 13.13 vs 14.09 | 12.05 vs 20.50 | 12.95 vs 13.71 | 11.98 vs 20.61 | 11.95 vs 21.04 | 12.26 vs 21.55 |
-| **VETERAN** (A) | 18.81 vs 21.32 | 18.69 vs 22.61 | 18.23 vs 14.48 | 18.81 vs 19.96 | 18.50 vs 12.23 | 18.98 vs 21.19 | 18.66 vs 20.41 | 19.31 vs 21.84 |
-| **SPECIALIST** (A) | 18.83 vs 20.47 | 18.92 vs 22.95 | 18.69 vs 14.72 | 18.97 vs 20.53 | 18.30 vs 14.34 | 18.82 vs 20.77 | 19.05 vs 19.76 | 18.43 vs 21.91 |
-| **ADAPTIVE** (A) | 19.97 vs 20.37 | 19.73 vs 22.65 | 20.04 vs 14.36 | 19.41 vs 20.60 | 19.21 vs 13.89 | 19.57 vs 20.67 | 19.91 vs 20.80 | 19.69 vs 21.54 |
+| **BERSERKER** (A) | 19.07 vs 20.87 | 19.36 vs 22.39 | 19.27 vs 14.24 | 18.96 vs 20.20 | 19.28 vs 13.70 | 18.67 vs 21.49 | 18.48 vs 21.71 | 18.62 vs 21.21 |
+| **STRATEGIST** (A) | 20.75 vs 20.13 | 20.96 vs 22.01 | 20.86 vs 14.89 | 20.12 vs 19.53 | 20.88 vs 13.18 | 20.14 vs 20.33 | 20.17 vs 21.04 | 20.45 vs 21.27 |
+| **CONSERVATIVE** (A) | 13.14 vs 20.61 | 13.17 vs 22.94 | 12.85 vs 14.65 | 13.58 vs 20.17 | 13.44 vs 12.72 | 13.54 vs 20.82 | 13.10 vs 21.05 | 13.15 vs 21.76 |
+| **BALANCED** (A) | 18.54 vs 21.41 | 18.67 vs 23.17 | 17.45 vs 13.94 | 18.23 vs 20.51 | 18.40 vs 13.63 | 19.05 vs 21.58 | 18.71 vs 20.94 | 18.46 vs 21.93 |
+| **ROOKIE** (A) | 12.79 vs 20.56 | 11.78 vs 21.91 | 12.56 vs 14.53 | 12.14 vs 19.29 | 12.85 vs 14.45 | 12.17 vs 20.68 | 11.93 vs 20.22 | 12.67 vs 22.14 |
+| **VETERAN** (A) | 18.87 vs 21.03 | 18.85 vs 22.03 | 19.07 vs 14.00 | 19.01 vs 20.53 | 18.35 vs 13.33 | 19.04 vs 20.35 | 18.79 vs 20.20 | 18.84 vs 21.45 |
+| **SPECIALIST** (A) | 18.58 vs 20.56 | 18.06 vs 22.38 | 19.51 vs 14.83 | 19.11 vs 20.28 | 18.85 vs 13.27 | 19.89 vs 20.97 | 18.98 vs 21.43 | 18.81 vs 21.62 |
+| **ADAPTIVE** (A) | 20.12 vs 21.59 | 20.17 vs 22.67 | 19.95 vs 14.59 | 19.95 vs 20.32 | 19.74 vs 13.96 | 19.91 vs 21.34 | 19.38 vs 21.34 | 20.00 vs 21.81 |
 
 ## Balance Analysis
 
@@ -206,20 +206,20 @@ The USS Wasp AI Personality System provides diverse behavioral patterns for AI o
 #### Best Attackers
 *Personalities that excel when attacking*
 
-1. **STRATEGIST**: 63.7% attack vs 87.5% defense (-23.8% attack advantage)
-2. **ADAPTIVE**: 50.0% attack vs 83.8% defense (-33.8% attack advantage)
-3. **VETERAN**: 43.8% attack vs 78.8% defense (-35.0% attack advantage)
-4. **BALANCED**: 42.5% attack vs 65.0% defense (-22.5% attack advantage)
-5. **BERSERKER**: 41.3% attack vs 73.8% defense (-32.5% attack advantage)
+1. **STRATEGIST**: 62.5% attack vs 87.5% defense (-25.0% attack advantage)
+2. **SPECIALIST**: 46.3% attack vs 81.3% defense (-35.0% attack advantage)
+3. **ADAPTIVE**: 46.3% attack vs 85.0% defense (-38.7% attack advantage)
+4. **BERSERKER**: 42.5% attack vs 73.8% defense (-31.3% attack advantage)
+5. **VETERAN**: 42.5% attack vs 78.8% defense (-36.3% attack advantage)
 
 #### Best Defenders
 *Personalities that excel when defending*
 
-1. **STRATEGIST**: 87.5% defense vs 63.7% attack (+23.8% defense advantage)
-2. **ADAPTIVE**: 83.8% defense vs 50.0% attack (+33.8% defense advantage)
-3. **VETERAN**: 78.8% defense vs 43.8% attack (+35.0% defense advantage)
-4. **SPECIALIST**: 78.8% defense vs 41.3% attack (+37.5% defense advantage)
-5. **BERSERKER**: 73.8% defense vs 41.3% attack (+32.5% defense advantage)
+1. **STRATEGIST**: 87.5% defense vs 62.5% attack (+25.0% defense advantage)
+2. **ADAPTIVE**: 85.0% defense vs 46.3% attack (+38.7% defense advantage)
+3. **SPECIALIST**: 81.3% defense vs 46.3% attack (+35.0% defense advantage)
+4. **VETERAN**: 78.8% defense vs 42.5% attack (+36.3% defense advantage)
+5. **BERSERKER**: 73.8% defense vs 42.5% attack (+31.3% defense advantage)
 
 ### Most Attacking Matchups
 *Matchups where attacker has >70% win rate*
@@ -254,17 +254,19 @@ The USS Wasp AI Personality System provides diverse behavioral patterns for AI o
 - **SPECIALIST** (defender) vs **CONSERVATIVE** (attacker): 100.0% (10-0)
 - **ADAPTIVE** (defender) vs **CONSERVATIVE** (attacker): 100.0% (10-0)
 - **STRATEGIST** (defender) vs **BALANCED** (attacker): 100.0% (10-0)
-- **SPECIALIST** (defender) vs **BALANCED** (attacker): 100.0% (10-0)
+- **VETERAN** (defender) vs **BALANCED** (attacker): 100.0% (10-0)
+- **ADAPTIVE** (defender) vs **BALANCED** (attacker): 100.0% (10-0)
 - **BERSERKER** (defender) vs **ROOKIE** (attacker): 100.0% (10-0)
 - **STRATEGIST** (defender) vs **ROOKIE** (attacker): 100.0% (10-0)
-- **BALANCED** (defender) vs **ROOKIE** (attacker): 100.0% (10-0)
 
 ### Most Balanced Matchups
 *Matchups with 40-60% win rate (attacker perspective)*
 
-- **STRATEGIST** (attacker) vs **SPECIALIST** (defender): 50.0% (5-5)
-- **CONSERVATIVE** (attacker) vs **ROOKIE** (defender): 50.0% (5-5)
-- **ROOKIE** (attacker) vs **CONSERVATIVE** (defender): 50.0% (5-5)
+- **BERSERKER** (attacker) vs **BALANCED** (defender): 40.0% (4-6)
+- **STRATEGIST** (attacker) vs **BERSERKER** (defender): 60.0% (6-4)
+- **STRATEGIST** (attacker) vs **VETERAN** (defender): 40.0% (4-6)
+- **CONSERVATIVE** (attacker) vs **ROOKIE** (defender): 60.0% (6-4)
+- **SPECIALIST** (attacker) vs **BALANCED** (defender): 40.0% (4-6)
 - **ADAPTIVE** (attacker) vs **BALANCED** (defender): 40.0% (4-6)
 
 ## Strategic Insights
@@ -365,4 +367,4 @@ The system dynamically adjusts these weights based on:
 - Current battlefield situation
 - Attack vs defense role
 
-*Report generated on 7/18/2025, 4:49:19 PM*
+*Report generated on 7/18/2025, 5:24:52 PM*
