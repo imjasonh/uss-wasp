@@ -72,16 +72,19 @@ export class AIDecisionMaker {
     const tacticalPriorities = this.determineTacticalPriorities(context);
     
     // NEW: Generate coordinated multi-unit plans BEFORE individual decisions
-    const coordinatedDecisions = this.generateCoordinatedPlans(context, usedUnits, remainingCP);
-    decisions.push(...coordinatedDecisions);
-    
-    // Update used units and remaining CP after coordination
-    for (const decision of coordinatedDecisions) {
-      if (decision.unitId) {
-        usedUnits.add(decision.unitId);
+    // Only generate coordination in action phase to avoid interfering with other phases
+    if (context.phase === TurnPhase.ACTION || context.phase === 'action') {
+      const coordinatedDecisions = this.generateCoordinatedPlans(context, usedUnits, remainingCP);
+      decisions.push(...coordinatedDecisions);
+      
+      // Update used units and remaining CP after coordination
+      for (const decision of coordinatedDecisions) {
+        if (decision.unitId) {
+          usedUnits.add(decision.unitId);
+        }
       }
+      remainingCP -= coordinatedDecisions.length;
     }
-    remainingCP -= coordinatedDecisions.length;
     
     // Generate decisions based on priorities, tracking used units and CP
     for (const priority of tacticalPriorities) {
@@ -3837,19 +3840,41 @@ export class AIDecisionMaker {
         // Artillery attacks target first (if in range)
         const artilleryDistance = this.calculateDistance(artillery.state.position, target.state.position);
         if (artilleryDistance <= 3) { // Artillery has longer range
-          decisions.push({
-            type: AIDecisionType.ATTACK_TARGET,
-            priority: 15, // Very high priority for coordination
-            unitId: artillery.id,
-            targetUnitId: target.id,
-            reasoning: `Combined arms: Artillery attacks ${target.type} for infantry assault`,
-            metadata: {
-              coordination: true,
-              combinedArms: true,
-              supportingInfantry: combatUnit.id,
-              targetId: target.id,
-            },
-          });
+          // Use artillery special ability instead of direct attack
+          const artilleryBarrage = artillery.specialAbilities.find(ability => 
+            ability.name.toLowerCase().includes('barrage') || ability.name.toLowerCase().includes('artillery')
+          );
+          
+          if (artilleryBarrage) {
+            decisions.push({
+              type: AIDecisionType.SPECIAL_ABILITY,
+              priority: 15, // Very high priority for coordination
+              unitId: artillery.id,
+              reasoning: `Combined arms: Artillery barrage on ${target.type} for infantry assault`,
+              metadata: {
+                coordination: true,
+                combinedArms: true,
+                supportingInfantry: combatUnit.id,
+                targetId: target.id,
+                abilityName: artilleryBarrage.name,
+              },
+            });
+          } else {
+            // Fallback to direct attack if no artillery ability
+            decisions.push({
+              type: AIDecisionType.ATTACK_TARGET,
+              priority: 15, // Very high priority for coordination
+              unitId: artillery.id,
+              targetUnitId: target.id,
+              reasoning: `Combined arms: Artillery attacks ${target.type} for infantry assault`,
+              metadata: {
+                coordination: true,
+                combinedArms: true,
+                supportingInfantry: combatUnit.id,
+                targetId: target.id,
+              },
+            });
+          }
         }
         
         // Combat unit follows up with assault
@@ -3870,23 +3895,9 @@ export class AIDecisionMaker {
             },
           });
         } else {
-          // Combat unit needs to move closer first
-          const assaultPosition = this.findAdvancementPosition(combatUnit, target, context);
-          if (assaultPosition) {
-            decisions.push({
-              type: AIDecisionType.MOVE_UNIT,
-              priority: 14, // High priority, but after artillery
-              unitId: combatUnit.id,
-              targetPosition: assaultPosition,
-              reasoning: `Combined arms: ${combatUnit.type} advances after artillery preparation`,
-              metadata: {
-                coordination: true,
-                combinedArms: true,
-                supportingArtillery: artillery.id,
-                targetId: target.id,
-              },
-            });
-          }
+          // Combat unit is not in range - skip coordination for this target
+          // (Movement should happen in movement phase, not action phase)
+          continue;
         }
         
         console.log(`[AI] Combined arms: ${artillery.id} + ${combatUnit.id} targeting ${target.type}`);
@@ -4068,19 +4079,41 @@ export class AIDecisionMaker {
         // Artillery provides supporting fires (attack if in range)
         const artilleryDistance = this.calculateDistance(artillery.state.position, target.state.position);
         if (artilleryDistance <= 3) { // Artillery has longer range
-          decisions.push({
-            type: AIDecisionType.ATTACK_TARGET,
-            priority: 11,
-            unitId: artillery.id,
-            targetUnitId: target.id,
-            reasoning: `Supporting fires: Artillery suppresses ${target.type} threatening ${infantry.type}`,
-            metadata: {
-              coordination: true,
-              supportingFires: true,
-              supportedUnit: infantry.id,
-              targetId: target.id,
-            },
-          });
+          // Use artillery special ability instead of direct attack
+          const artilleryBarrage = artillery.specialAbilities.find(ability => 
+            ability.name.toLowerCase().includes('barrage') || ability.name.toLowerCase().includes('artillery')
+          );
+          
+          if (artilleryBarrage) {
+            decisions.push({
+              type: AIDecisionType.SPECIAL_ABILITY,
+              priority: 11,
+              unitId: artillery.id,
+              reasoning: `Supporting fires: Artillery barrage suppresses ${target.type} threatening ${infantry.type}`,
+              metadata: {
+                coordination: true,
+                supportingFires: true,
+                supportedUnit: infantry.id,
+                targetId: target.id,
+                abilityName: artilleryBarrage.name,
+              },
+            });
+          } else {
+            // Fallback to direct attack if no artillery ability
+            decisions.push({
+              type: AIDecisionType.ATTACK_TARGET,
+              priority: 11,
+              unitId: artillery.id,
+              targetUnitId: target.id,
+              reasoning: `Supporting fires: Artillery suppresses ${target.type} threatening ${infantry.type}`,
+              metadata: {
+                coordination: true,
+                supportingFires: true,
+                supportedUnit: infantry.id,
+                targetId: target.id,
+              },
+            });
+          }
         }
         
         console.log(`[AI] Supporting fires: ${artillery.id} supports ${infantry.id}`);
