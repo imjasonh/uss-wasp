@@ -829,9 +829,10 @@ export class AIDecisionMaker {
   ): Record<TacticalPriority, number> {
     const modifiers: Record<TacticalPriority, number> = {} as Record<TacticalPriority, number>;
 
-    // Force preservation - higher when units are damaged
-    const averageHealth = this.calculateAverageUnitHealth(context.availableUnits);
-    modifiers[TacticalPriority.PRESERVE_FORCE] = averageHealth < 0.5 ? 2.0 : 1.0;
+    // Enhanced force preservation vs aggression balance
+    const balanceResult = this.calculateForcePreservationVsAggressionBalance(context);
+    modifiers[TacticalPriority.PRESERVE_FORCE] = balanceResult.preservationModifier;
+    modifiers[TacticalPriority.INFLICT_CASUALTIES] = (modifiers[TacticalPriority.INFLICT_CASUALTIES] || 1.0) * balanceResult.aggressionModifier;
 
     // Emergency resource scaling - increase priority weights in emergency situations
     const emergencyLevel = this.calculateEmergencyLevel(context);
@@ -1984,6 +1985,295 @@ export class AIDecisionMaker {
     const totalHealth = units.reduce((sum, unit) => sum + unit.state.currentHP / unit.stats.hp, 0);
     return totalHealth / units.length;
   }
+
+  /**
+   * Enhanced force preservation vs aggression balance calculation
+   * Considers multiple factors to dynamically balance defensive vs offensive priorities
+   */
+  private calculateForcePreservationVsAggressionBalance(context: AIDecisionContext): {
+    preservationModifier: number;
+    aggressionModifier: number;
+    balanceReasoning: string;
+  } {
+    // Base values
+    let preservationScore = 1.0;
+    let aggressionScore = 1.0;
+    const reasoningFactors: string[] = [];
+
+    // Factor 1: Unit health status
+    const averageHealth = this.calculateAverageUnitHealth(context.availableUnits);
+    const healthImpact = this.calculateHealthBalanceImpact(averageHealth);
+    preservationScore *= healthImpact.preservation;
+    aggressionScore *= healthImpact.aggression;
+    reasoningFactors.push(healthImpact.reason);
+
+    // Factor 2: Force strength ratio
+    const forceRatio = context.availableUnits.length / Math.max(1, context.enemyUnits.length);
+    const strengthImpact = this.calculateStrengthRatioImpact(forceRatio);
+    preservationScore *= strengthImpact.preservation;
+    aggressionScore *= strengthImpact.aggression;
+    reasoningFactors.push(strengthImpact.reason);
+
+    // Factor 3: Strategic situation (objectives, territory control)
+    const strategicImpact = this.calculateStrategicSituationImpact(context);
+    preservationScore *= strategicImpact.preservation;
+    aggressionScore *= strategicImpact.aggression;
+    reasoningFactors.push(strategicImpact.reason);
+
+    // Factor 4: Threat environment
+    const threatLevel = this.calculateOverallThreatLevel(context);
+    const threatImpact = this.calculateThreatEnvironmentImpact(threatLevel);
+    preservationScore *= threatImpact.preservation;
+    aggressionScore *= threatImpact.aggression;
+    reasoningFactors.push(threatImpact.reason);
+
+    // Factor 5: Mission phase (early/mid/late game adaptation)
+    const phaseImpact = this.calculateMissionPhaseImpact(context);
+    preservationScore *= phaseImpact.preservation;
+    aggressionScore *= phaseImpact.aggression;
+    reasoningFactors.push(phaseImpact.reason);
+
+    // Factor 6: AI personality and difficulty considerations
+    const personalityImpact = this.calculatePersonalityBalanceImpact();
+    preservationScore *= personalityImpact.preservation;
+    aggressionScore *= personalityImpact.aggression;
+    reasoningFactors.push(personalityImpact.reason);
+
+    // Apply bounds to prevent extreme values
+    const finalPreservationModifier = Math.max(0.2, Math.min(5.0, preservationScore));
+    const finalAggressionModifier = Math.max(0.2, Math.min(3.0, aggressionScore));
+
+    return {
+      preservationModifier: finalPreservationModifier,
+      aggressionModifier: finalAggressionModifier,
+      balanceReasoning: reasoningFactors.join('; ')
+    };
+  }
+
+  /**
+   * Calculate impact of unit health on preservation vs aggression balance
+   */
+  private calculateHealthBalanceImpact(averageHealth: number): {
+    preservation: number;
+    aggression: number;
+    reason: string;
+  } {
+    if (averageHealth < 0.3) {
+      return {
+        preservation: 3.0,
+        aggression: 0.4,
+        reason: 'Critical health - prioritize survival'
+      };
+    } else if (averageHealth < 0.5) {
+      return {
+        preservation: 2.0,
+        aggression: 0.7,
+        reason: 'Low health - favor preservation'
+      };
+    } else if (averageHealth > 0.8) {
+      return {
+        preservation: 0.7,
+        aggression: 1.5,
+        reason: 'Excellent health - enable aggression'
+      };
+    } else {
+      return {
+        preservation: 1.0,
+        aggression: 1.0,
+        reason: 'Moderate health - balanced approach'
+      };
+    }
+  }
+
+  /**
+   * Calculate impact of force strength ratio on balance
+   */
+  private calculateStrengthRatioImpact(forceRatio: number): {
+    preservation: number;
+    aggression: number;
+    reason: string;
+  } {
+    if (forceRatio < 0.5) {
+      return {
+        preservation: 2.5,
+        aggression: 0.5,
+        reason: 'Outnumbered - preserve forces'
+      };
+    } else if (forceRatio > 1.5) {
+      return {
+        preservation: 0.6,
+        aggression: 1.8,
+        reason: 'Superior numbers - press advantage'
+      };
+    } else {
+      return {
+        preservation: 1.0,
+        aggression: 1.1,
+        reason: 'Even forces - slight aggression'
+      };
+    }
+  }
+
+  /**
+   * Calculate impact of strategic situation on balance
+   */
+  private calculateStrategicSituationImpact(context: AIDecisionContext): {
+    preservation: number;
+    aggression: number;
+    reason: string;
+  } {
+    const territoryControl = context.resourceStatus?.territoryControl ?? 0.5;
+    const commandPoints = context.resourceStatus?.commandPoints ?? 0;
+
+    // Losing territory encourages aggressive recapture
+    if (territoryControl < 0.3) {
+      return {
+        preservation: 0.8,
+        aggression: 1.6,
+        reason: 'Losing territory - counterattack needed'
+      };
+    }
+
+    // Low command points favors preservation
+    if (commandPoints < 5) {
+      return {
+        preservation: 1.5,
+        aggression: 0.8,
+        reason: 'Low command points - conserve resources'
+      };
+    }
+
+    // Winning situation allows calculated aggression
+    if (territoryControl > 0.7) {
+      return {
+        preservation: 1.0,
+        aggression: 1.3,
+        reason: 'Territorial advantage - selective aggression'
+      };
+    }
+
+    return {
+      preservation: 1.0,
+      aggression: 1.0,
+      reason: 'Stable strategic position'
+    };
+  }
+
+  /**
+   * Calculate impact of threat environment on balance
+   */
+  private calculateThreatEnvironmentImpact(overallThreatLevel: number): {
+    preservation: number;
+    aggression: number;
+    reason: string;
+  } {
+    if (overallThreatLevel > 80) {
+      return {
+        preservation: 2.8,
+        aggression: 0.3,
+        reason: 'Extreme threat - survival mode'
+      };
+    } else if (overallThreatLevel > 60) {
+      return {
+        preservation: 1.8,
+        aggression: 0.6,
+        reason: 'High threat - defensive posture'
+      };
+    } else if (overallThreatLevel < 20) {
+      return {
+        preservation: 0.6,
+        aggression: 1.7,
+        reason: 'Low threat - opportunity for action'
+      };
+    } else {
+      return {
+        preservation: 1.0,
+        aggression: 1.0,
+        reason: 'Moderate threat - balanced response'
+      };
+    }
+  }
+
+  /**
+   * Calculate mission phase impact on preservation vs aggression
+   */
+  private calculateMissionPhaseImpact(context: AIDecisionContext): {
+    preservation: number;
+    aggression: number;
+    reason: string;
+  } {
+    const turn = context.turn ?? 1;
+    
+    if (turn <= 3) {
+      // Early game - establish position, moderate aggression
+      return {
+        preservation: 1.2,
+        aggression: 1.1,
+        reason: 'Early game - establish position'
+      };
+    } else if (turn <= 8) {
+      // Mid game - peak aggression phase
+      return {
+        preservation: 0.8,
+        aggression: 1.4,
+        reason: 'Mid game - decisive action phase'
+      };
+    } else {
+      // Late game - depends on position
+      const territoryControl = context.resourceStatus?.territoryControl ?? 0.5;
+      if (territoryControl > 0.6) {
+        return {
+          preservation: 1.3,
+          aggression: 0.9,
+          reason: 'Late game - hold advantages'
+        };
+      } else {
+        return {
+          preservation: 0.7,
+          aggression: 1.8,
+          reason: 'Late game - desperate push needed'
+        };
+      }
+    }
+  }
+
+  /**
+   * Calculate personality-based balance impact
+   */
+  private calculatePersonalityBalanceImpact(): {
+    preservation: number;
+    aggression: number;
+    reason: string;
+  } {
+    const aggression = this.personality?.aggression ?? 3;
+    const forwardLooking = this.personality?.forwardLooking ?? 3;
+    
+    // High aggression personalities favor offensive action
+    if (aggression >= 4) {
+      return {
+        preservation: 0.7,
+        aggression: 1.5,
+        reason: 'Aggressive personality - offensive focus'
+      };
+    }
+    
+    // High forward-looking personalities balance preservation and timing
+    if (forwardLooking >= 4 && aggression <= 2) {
+      return {
+        preservation: 1.4,
+        aggression: 0.8,
+        reason: 'Cautious planner - measured approach'
+      };
+    }
+    
+    // Balanced personalities
+    return {
+      preservation: 1.0,
+      aggression: 1.0,
+      reason: 'Balanced personality'
+    };
+  }
+
 
   private assessObjectiveThreats(context: AIDecisionContext): number {
     let threatLevel = 0;
