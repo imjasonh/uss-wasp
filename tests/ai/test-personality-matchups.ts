@@ -13,6 +13,7 @@ import { GameMap } from '../../src/core/game/Map';
 import { PlayerSide, UnitType, TurnPhase, ActionType } from '../../src/core/game/types';
 import { createTestUnits } from '../../src/testing/UnitTestHelper';
 import { Hex } from '../../src/core/hex';
+import { GameVisualizationLogger } from '../../src/core/logging/GameVisualizationLogger';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -28,6 +29,7 @@ interface BattleResult {
   combatActions: number;
   specialActions: number;
   objectiveActions: number;
+  visualizationLog?: string;
   errors: string[];
 }
 
@@ -151,7 +153,7 @@ export class PersonalityMatchupTester {
   /**
    * Run a single matchup between two personalities
    */
-  private async runMatchup(attackerPersonality: AIPersonalityType, defenderPersonality: AIPersonalityType): Promise<MatchupResults> {
+  protected async runMatchup(attackerPersonality: AIPersonalityType, defenderPersonality: AIPersonalityType): Promise<MatchupResults> {
     const battles: BattleResult[] = [];
     const errors: string[] = [];
     
@@ -261,8 +263,10 @@ export class PersonalityMatchupTester {
       assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
       defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
       
-      // Initialize game engine
+      // Initialize game engine with visualization logging
       const gameEngine = new GameEngine(gameState);
+      const gameId = `personality-${attackerPersonality}-vs-${defenderPersonality}-${Date.now()}`;
+      const vizLogger = gameEngine.enableVisualizationLogging(gameId);
       
       // Add AI controllers with personalities
       gameEngine.addAIController(assaultPlayer.id, attackerPersonality);
@@ -347,6 +351,19 @@ export class PersonalityMatchupTester {
       const assaultPower = this.calculateCombatPower(Array.from(assaultPlayer.units.values()));
       const defenderPower = this.calculateCombatPower(Array.from(defenderPlayer.units.values()));
       
+      // Save visualization log
+      const fullLog = vizLogger.exportVisualizationLog();
+      const logFileName = `personality-${attackerPersonality}-vs-${defenderPersonality}-${Date.now()}.json`;
+      const logPath = `./tests/ai/logs/personality-matchups/${logFileName}`;
+      
+      // Ensure logs directory exists
+      const logDir = './tests/ai/logs/personality-matchups';
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(logPath, JSON.stringify(fullLog, null, 2));
+      
       return {
         winner: winner!,
         loser: winner === PlayerSide.Assault ? PlayerSide.Defender : PlayerSide.Assault,
@@ -356,6 +373,7 @@ export class PersonalityMatchupTester {
         combatActions,
         specialActions,
         objectiveActions,
+        visualizationLog: logPath,
         errors
       };
       
@@ -373,6 +391,7 @@ export class PersonalityMatchupTester {
         combatActions: 0,
         specialActions: 0,
         objectiveActions: 0,
+        visualizationLog: undefined,
         errors
       };
     }

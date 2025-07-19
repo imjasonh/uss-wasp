@@ -12,6 +12,7 @@ import { ActionType, UnitType, UnitCategory, PlayerSide, TerrainType } from './t
 import { AIDifficulty, AIState, AIPerformanceMetrics, AIPersonalityType } from '../ai/types';
 import { GameLogger, LogCategory, LogLevel, getGameLogger } from '../logging/GameLogger';
 import { GameStateManager } from '../logging/GameStateManager';
+import { GameVisualizationLogger } from '../logging/GameVisualizationLogger';
 
 /**
  * Action result for UI feedback
@@ -47,7 +48,9 @@ interface SpecialAbilityData {
 export class GameEngine {
   private readonly aiControllers: Map<string, AIController> = new Map();
   private logger: GameLogger | null = null;
+  private visualizationLogger: GameVisualizationLogger | null = null;
   private stateManager: GameStateManager | null = null;
+  private visualizationEnabled: boolean = false;
 
   public constructor(private readonly gameState: GameState) {
     this.logger = getGameLogger();
@@ -62,6 +65,44 @@ export class GameEngine {
   public setLogger(logger: GameLogger): void {
     this.logger = logger;
     this.stateManager = new GameStateManager(logger);
+  }
+
+  /**
+   * Enable visualization logging for detailed game replay data
+   */
+  public enableVisualizationLogging(gameId?: string): GameVisualizationLogger {
+    const logGameId = gameId || this.gameState.gameId;
+    this.visualizationLogger = new GameVisualizationLogger(logGameId);
+    this.visualizationEnabled = true;
+    this.logger = this.visualizationLogger; // Use visualization logger as primary logger
+    this.stateManager = new GameStateManager(this.visualizationLogger);
+    return this.visualizationLogger;
+  }
+
+  /**
+   * Disable visualization logging and return to basic logging
+   */
+  public disableVisualizationLogging(): void {
+    this.visualizationEnabled = false;
+    this.visualizationLogger = null;
+    this.logger = getGameLogger();
+    if (this.logger) {
+      this.stateManager = new GameStateManager(this.logger);
+    }
+  }
+
+  /**
+   * Get the visualization logger if enabled
+   */
+  public getVisualizationLogger(): GameVisualizationLogger | null {
+    return this.visualizationLogger;
+  }
+
+  /**
+   * Check if visualization logging is enabled
+   */
+  public isVisualizationEnabled(): boolean {
+    return this.visualizationEnabled;
   }
 
   /**
@@ -137,8 +178,13 @@ export class GameEngine {
       player.spendCommandPoints(1); // Each action costs 1 CP
     }
 
-    // Log action result
-    this.logger?.logUnitAction(action, result, this.gameState, unit);
+    // Enhanced logging for visualization if enabled
+    if (this.visualizationEnabled && this.visualizationLogger) {
+      this.visualizationLogger.logVisualizationAction(action, result, this.gameState, unit);
+    } else {
+      // Standard logging
+      this.logger?.logUnitAction(action, result, this.gameState, unit);
+    }
 
     // Auto-snapshot if enabled
     this.stateManager?.checkAutoSnapshot(this.gameState);
@@ -242,8 +288,13 @@ export class GameEngine {
     // Resolve combat
     const combatResult = CombatSystem.resolveCombat(attacker, defender, this.gameState);
 
-    // Log detailed combat result
-    this.logger?.logCombat(attacker, defender, combatResult, this.gameState);
+    // Enhanced combat logging for visualization if enabled
+    if (this.visualizationEnabled && this.visualizationLogger) {
+      this.visualizationLogger.logVisualizationCombat(attacker, defender, combatResult, this.gameState);
+    } else {
+      // Standard combat logging
+      this.logger?.logCombat(attacker, defender, combatResult, this.gameState);
+    }
 
     // Apply special combat effects
     CombatSystem.applySpecialCombatEffects(attacker, defender, combatResult);
