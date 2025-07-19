@@ -9,10 +9,12 @@ import { GameState } from '../../dist/core/game/GameState.js';
 import { GameEngine } from '../../dist/core/game/GameEngine.js';
 import { Player } from '../../dist/core/game/Player.js';
 import { GameMap } from '../../dist/core/game/Map.js';
-import { PlayerSide, UnitType } from '../../dist/core/game/types.js';
+import { PlayerSide, UnitType, TurnPhase } from '../../dist/core/game/types.js';
 import { AIDifficulty } from '../../dist/core/ai/types.js';
 import { createTestUnits } from '../../dist/testing/UnitTestHelper.js';
 import { Hex } from '../../dist/core/hex/index.js';
+import { GameVisualizationLogger } from '../../dist/core/logging/GameVisualizationLogger.js';
+import * as fs from 'fs';
 
 interface BattleResult {
     game: number;
@@ -22,6 +24,7 @@ interface BattleResult {
     defenderActions?: number;
     assaultSurvivors?: number;
     defenderSurvivors?: number;
+    visualizationLog?: string;
     error?: string;
 }
 
@@ -57,10 +60,13 @@ function runQuickBattle(gameNumber: number): BattleResult {
         assaultUnits.forEach(unit => assaultPlayer.addUnit(unit));
         defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
 
-        // Set up AI controllers
+        // Set up AI controllers with visualization logging
         const gameEngine = new GameEngine(gameState);
+        const vizLogger = gameEngine.enableVisualizationLogging(`quick-battle-${gameNumber}`);
         gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
         gameEngine.addAIController(defenderPlayer.id, AIDifficulty.VETERAN);
+        
+        console.log(`✅ Visualization logging enabled for game ${gameNumber}`);
 
         // Give both sides command points
         assaultPlayer.commandPoints = 5;
@@ -80,18 +86,18 @@ function runQuickBattle(gameNumber: number): BattleResult {
             
             // Assault phase
             gameState.setActivePlayerBySide(PlayerSide.Assault);
-            gameState.phase = 'movement';
+            gameState.phase = TurnPhase.MOVEMENT;
             const assaultMovement = gameEngine.updateAI();
             
-            gameState.phase = 'action';
+            gameState.phase = TurnPhase.ACTION;
             const assaultActions = gameEngine.updateAI();
             
             // Defender phase
             gameState.setActivePlayerBySide(PlayerSide.Defender);
-            gameState.phase = 'movement';
+            gameState.phase = TurnPhase.MOVEMENT;
             const defenderMovement = gameEngine.updateAI();
             
-            gameState.phase = 'action';
+            gameState.phase = TurnPhase.ACTION;
             const defenderActions = gameEngine.updateAI();
             
             const turnAssaultActions = assaultMovement.length + assaultActions.length;
@@ -131,6 +137,23 @@ function runQuickBattle(gameNumber: number): BattleResult {
         console.log(`  Defender Actions: ${totalDefenderActions}`);
         console.log(`  Survivors: Assault ${assaultSurvivors}, Defender ${defenderSurvivors}`);
 
+        // Export visualization data
+        const fullLog = vizLogger.exportVisualizationLog();
+        const logFileName = `quick-battle-${gameNumber}-visualization.json`;
+        const logPath = `./tests/simulation/logs/${logFileName}`;
+        
+        // Ensure logs directory exists
+        if (!fs.existsSync('./tests/simulation/logs')) {
+            fs.mkdirSync('./tests/simulation/logs', { recursive: true });
+        }
+        
+        fs.writeFileSync(logPath, JSON.stringify(fullLog, null, 2));
+        console.log(`📊 Visualization log saved: ${logPath}`);
+        console.log(`   - Total actions: ${fullLog.summary.totalActions}`);
+        console.log(`   - Combat engagements: ${fullLog.summary.combatEngagements}`);
+        console.log(`   - Movement actions: ${fullLog.summary.movementActions}`);
+        console.log(`   - Log size: ${JSON.stringify(fullLog).length} characters`);
+
         return {
             game: gameNumber,
             winner: winner,
@@ -138,7 +161,8 @@ function runQuickBattle(gameNumber: number): BattleResult {
             assaultActions: totalAssaultActions,
             defenderActions: totalDefenderActions,
             assaultSurvivors: assaultSurvivors,
-            defenderSurvivors: defenderSurvivors
+            defenderSurvivors: defenderSurvivors,
+            visualizationLog: logPath
         };
 
     } catch (error) {
@@ -210,6 +234,13 @@ function runQuickBattleSeries(): BattleResult[] {
         
         console.log('\n🎖️ CONCLUSION: Advanced AI Implementation SUCCESSFUL!');
         console.log('   All 5 AI subsystems generating sophisticated tactical decisions');
+        
+        // Visualization logs summary
+        const logsCreated = validGames.filter(r => r.visualizationLog).length;
+        console.log(`\n📊 VISUALIZATION DATA:`);
+        console.log(`   ✅ Enhanced logs created: ${logsCreated}/${validGames.length} games`);
+        console.log(`   📁 Log location: ./tests/simulation/logs/`);
+        console.log(`   🎬 Ready for replay visualization and tactical analysis`);
     }
 
     return results;

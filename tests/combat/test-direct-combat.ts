@@ -12,6 +12,8 @@ import { PlayerSide, UnitType } from '../../dist/core/game/types.js';
 import { AIDifficulty } from '../../dist/core/ai/types.js';
 import { createTestUnits } from '../../dist/testing/UnitTestHelper.js';
 import { Hex } from '../../dist/core/hex/index.js';
+import { GameVisualizationLogger } from '../../dist/core/logging/GameVisualizationLogger.js';
+import * as fs from 'fs';
 
 console.log('🔥 Direct Combat AI Test');
 console.log('========================\n');
@@ -47,6 +49,9 @@ try {
     defenderUnits.forEach(unit => defenderPlayer.addUnit(unit));
 
     const gameEngine = new GameEngine(gameState);
+    const vizLogger = gameEngine.enableVisualizationLogging('direct-combat-test');
+    console.log('✅ Visualization logging enabled');
+    
     gameEngine.addAIController(assaultPlayer.id, AIDifficulty.VETERAN);
     gameEngine.addAIController(defenderPlayer.id, AIDifficulty.VETERAN);
 
@@ -103,6 +108,21 @@ try {
     console.log(`   Total Damage Dealt: ${totalDamageDealt}`);
     console.log(`   Assault Survivors: ${assaultPlayer.getLivingUnits().length}`);
     console.log(`   Defender Survivors: ${defenderPlayer.getLivingUnits().length}`);
+    
+    // Export visualization log
+    const fullLog = vizLogger.exportVisualizationLog();
+    const logPath = './tests/combat/logs/direct-combat-visualization.json';
+    
+    // Ensure logs directory exists
+    if (!fs.existsSync('./tests/combat/logs')) {
+        fs.mkdirSync('./tests/combat/logs', { recursive: true });
+    }
+    
+    fs.writeFileSync(logPath, JSON.stringify(fullLog, null, 2));
+    console.log(`\n📊 Visualization log saved: ${logPath}`);
+    console.log(`   - Total actions: ${fullLog.summary.totalActions}`);
+    console.log(`   - Combat engagements: ${fullLog.summary.combatEngagements}`);
+    console.log(`   - Movement actions: ${fullLog.summary.movementActions}`);
     
     if (totalCombatActions > 0) {
         console.log('\n✅ SUCCESS: AI systems engage in direct combat');
